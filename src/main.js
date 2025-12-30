@@ -1,3 +1,18 @@
+/**
+ * @file main.js
+ * @description The "Conductor" module for the Solar System simulation.
+ * It orchestrates the initialization of the 3D scene, manages the render loop,
+ * handles global state (scene, camera, renderer), and coordinates interaction between modules.
+ *
+ * This module is responsible for:
+ * 1. Initializing Three.js core components (Scene, Camera, Renderer).
+ * 2. Setting up lighting and loading assets.
+ * 3. Fetching configuration data (`system.json`).
+ * 4. Delegating object creation to `procedural.js`.
+ * 5. Delegating input handling to `input.js`.
+ * 6. Running the main animation loop.
+ */
+
 import * as THREE from 'three';
 import { createStarfield, createSun, createPlayerShip, createSystem } from './procedural.js';
 import { setupControls, setupInteraction } from './input.js';
@@ -5,14 +20,32 @@ import { setupControls, setupInteraction } from './input.js';
 // ============================================================================
 // State & Globals
 // ============================================================================
+
+/** @type {Array<{pivot?: THREE.Object3D, mesh?: THREE.Mesh, speed?: number, rotationSpeed?: number}>} */
 const animatedObjects = [];
-const interactionTargets = []; // Optimization for raycasting
+
+/** @type {Array<THREE.Object3D>} Optimization for raycasting - only check these objects */
+const interactionTargets = [];
+
+/** @type {THREE.Group|null} Reference to the player ship */
 let playerShip;
+
+/** @type {OrbitControls|null} Reference to the camera controls */
 let controls;
+
+/** @type {THREE.Scene} The Three.js scene */
 let scene;
+
+/** @type {THREE.PerspectiveCamera} The main camera */
 let camera;
+
+/** @type {THREE.WebGLRenderer} The renderer */
 let renderer;
-let useTextures = true; // Default state
+
+/** @type {boolean} Global state for texture usage */
+let useTextures = true;
+
+/** @type {boolean} Global state for camera mode (false = Overview, true = Chase) */
 let isShipView = false;
 
 // Expose globals for testing
@@ -28,6 +61,7 @@ window.controls = null;
  * Initializes the 3D application.
  * Sets up the scene, camera, renderer, lighting, and loads assets.
  * Also fetches system configuration and starts the animation loop.
+ * @returns {Promise<void>}
  */
 async function init() {
     // 1. Setup Basic Three.js Components
@@ -135,7 +169,8 @@ async function init() {
 // ============================================================================
 
 /**
- * Toggles the camera view between 'Overview' (OrbitControls) and 'Chase' (PlayerShip).
+ * Toggles the camera view between 'Overview' (OrbitControls centered on origin)
+ * and 'Chase' (locked behind PlayerShip).
  */
 function toggleCameraView() {
     isShipView = !isShipView;
@@ -158,7 +193,7 @@ function toggleCameraView() {
 /**
  * Toggles between High Definition (Textured) and Low Definition (Solid Color) materials.
  * Updates the button text and displays a toast notification.
- * @param {HTMLElement} [btnElement] - The button element to update the text of.
+ * @param {HTMLElement} [btnElement] - The button element to update the text of (optional).
  */
 function toggleTextures(btnElement) {
     useTextures = !useTextures;
@@ -191,7 +226,8 @@ const tempVec = new THREE.Vector3();
 
 /**
  * The main animation loop.
- * Updates rotations, ship orientation, and renders the scene.
+ * Updates object rotations, ship orientation, and renders the scene.
+ * Recursively calls `requestAnimationFrame`.
  */
 function animate() {
     requestAnimationFrame(animate);

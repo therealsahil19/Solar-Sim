@@ -51,6 +51,7 @@ This project uses a modular design to separate concerns:
     -   Initializes the application and kicks off the render loop.
     -   Fetches configuration data and delegates object creation to `procedural.js`.
     -   Passes the scene context to `input.js` to set up controls.
+    -   **Exposed Globals**: For testing purposes, `window.scene`, `window.playerShip`, and `window.controls` are exposed globally.
 
 2.  **Procedural Generation (`src/procedural.js`)**:
     -   Uses a "Factory" pattern. Functions like `createSystem` or `createSun` take parameters (and dependencies like `TextureLoader`) and return Three.js objects (Mesh, Group, etc.).
@@ -85,7 +86,7 @@ The file contains an array of planet objects. Each object has:
 | Property        | Type     | Description                                                                 |
 | :-------------- | :------- | :-------------------------------------------------------------------------- |
 | `name`          | `String` | The name of the planet or moon.                                             |
-| `color`         | `Hex`    | The color of the object (e.g., `0x2233FF`).                                 |
+| `color`         | `Hex`    | The color of the object (e.g., `0x2233FF` or `#2233FF`).                    |
 | `texture`       | `String` | (Optional) Path to the texture image file.                                  |
 | `size`          | `Number` | The radius of the sphere.                                                   |
 | `distance`      | `Number` | The distance from the parent body (orbit radius).                           |
