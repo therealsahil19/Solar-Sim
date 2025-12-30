@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solar System Vibe Check</title>
+    <title>Interactive 3D Solar System</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: system-ui, sans-serif; }
         canvas { display: block; }
@@ -16,6 +16,16 @@
             opacity: 0; transition: opacity 0.3s; pointer-events: none;
         }
         #toast.visible { opacity: 1; }
+
+        #onboarding-hint {
+            position: absolute; left: 50%; bottom: 12%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6); color: #fff; padding: 0.75rem 1.5rem;
+            border-radius: 999px; font-size: 0.95rem; text-align: center;
+            opacity: 0; transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            pointer-events: none; user-select: none;
+        }
+        #onboarding-hint.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+        #onboarding-hint.hidden { opacity: 0; transform: translateX(-50%) translateY(8px); }
 
         /* Loading Screen */
         #loading-screen {
@@ -76,7 +86,7 @@
     </div>
 
     <div id="ui-layer">
-        <h1 style="margin: 0 0 0.5rem 0; font-size: 1.2rem;">Solar System</h1>
+        <h1 style="margin: 0 0 0.5rem 0; font-size: 1.2rem;">Interactive 3D Solar System</h1>
         <div style="font-size: 0.9rem; line-height: 1.5;">
             <div>🖱️ Drag to Rotate • Scroll to Zoom</div>
             <div><span class="key">C</span> Toggle Camera View</div>
@@ -90,6 +100,7 @@
         </button>
     </div>
     <div id="toast"></div>
+    <div id="onboarding-hint">Drag to rotate • Scroll to zoom • Press C for ship view • Click a planet for info</div>
 
     <!-- Import Map to allow bare module imports for Three.js -->
     <script type="importmap">
