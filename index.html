@@ -78,8 +78,7 @@
     <div id="ui-layer">
         <h1 style="margin: 0 0 0.5rem 0; font-size: 1.2rem;">Solar System</h1>
         <div style="font-size: 0.9rem; line-height: 1.5;">
-            <div>🖱️ Drag to Rotate • Scroll to Zoom</div>
-            <div><span class="key">C</span> Toggle Camera View</div>
+            <div>Drag to rotate • Scroll to zoom • <span class="key">C</span>: camera • <span class="key">T</span>: textures • <span class="key">Space</span>: pause</div>
         </div>
         <!-- Accessible button for screen readers and mouse interaction -->
         <button id="btn-camera" class="icon-btn" aria-label="Toggle Camera View" title="Toggle Camera View (C)">
@@ -90,6 +89,10 @@
         </button>
     </div>
     <div id="toast"></div>
+
+    <div style="position: absolute; bottom: 1rem; right: 1rem; color: rgba(255,255,255,0.6); font-size: 0.8rem; pointer-events: none;">
+        Solar-Sim · Built with Three.js · <a href="https://github.com/therealsahil19/Solar-Sim" target="_blank" rel="noopener noreferrer" style="color: rgba(255,255,255,0.8); pointer-events: auto;">GitHub</a>
+    </div>
 
     <!-- Import Map to allow bare module imports for Three.js -->
     <script type="importmap">
