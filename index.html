@@ -15,6 +15,34 @@
             opacity: 0; transition: opacity 0.3s; pointer-events: none;
         }
         #toast.visible { opacity: 1; }
+
+        /* Palette's UX Addition: Camera Button */
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 50%;
+            width: 44px; /* Sufficient touch target size */
+            height: 44px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.1s;
+            pointer-events: auto; /* Enable clicks despite parent */
+            margin-top: 1rem;
+        }
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .icon-btn:active {
+            transform: scale(0.95);
+        }
+        .icon-btn:focus-visible {
+            outline: 2px solid #4a90e2;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body>
@@ -24,6 +52,9 @@
             <div>🖱️ Drag to Rotate • Scroll to Zoom</div>
             <div><span class="key">C</span> Toggle Camera View</div>
         </div>
+        <button id="btn-camera" class="icon-btn" aria-label="Toggle Camera View" title="Toggle Camera View (C)">
+            🎥
+        </button>
     </div>
     <div id="toast"></div>
 
@@ -307,28 +338,35 @@
             }
         });
 
-        // --- Camera Toggle (Key 'C') ---
+        // --- Camera Toggle (Key 'C' & Button) ---
         let isShipView = false;
+
+        function toggleCameraView() {
+            isShipView = !isShipView;
+            if (isShipView) {
+                // Switch to Ship View (Chase Cam)
+                controls.target.copy(playerShip.position);
+                // Position camera behind and above the ship
+                camera.position.set(
+                    playerShip.position.x + 5,
+                    playerShip.position.y + 3,
+                    playerShip.position.z + 5
+                );
+            } else {
+                // Switch to Sun View (Overview)
+                controls.target.set(0, 0, 0);
+                camera.position.set(0, 20, 40);
+            }
+            controls.update();
+        }
+
         window.addEventListener('keydown', (e) => {
             if (e.key.toLowerCase() === 'c') {
-                isShipView = !isShipView;
-                if (isShipView) {
-                    // Switch to Ship View (Chase Cam)
-                    controls.target.copy(playerShip.position);
-                    // Position camera behind and above the ship
-                    camera.position.set(
-                        playerShip.position.x + 5,
-                        playerShip.position.y + 3,
-                        playerShip.position.z + 5
-                    );
-                } else {
-                    // Switch to Sun View (Overview)
-                    controls.target.set(0, 0, 0);
-                    camera.position.set(0, 20, 40);
-                }
-                controls.update();
+                toggleCameraView();
             }
         });
+
+        document.getElementById('btn-camera').addEventListener('click', toggleCameraView);
 
         // ============================================================================
         // 6. Animation Loop
