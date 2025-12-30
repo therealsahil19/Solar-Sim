@@ -8,6 +8,7 @@
         "distance": 6,
         "speed": 0.02,
         "rotationSpeed": 0.005,
+        "description": "The smallest planet in our solar system and closest to the Sun.",
         "moons": []
     },
     {
@@ -19,6 +20,7 @@
         "distance": 10,
         "speed": 0.007,
         "rotationSpeed": 0.002,
+        "description": "Second planet from the Sun, named after the Roman goddess of love and beauty.",
         "moons": []
     },
     {
@@ -30,8 +32,9 @@
         "distance": 15,
         "speed": 0.005,
         "rotationSpeed": 0.02,
+        "description": "Our home planet, the third from the Sun and the only place known to inhabit life.",
         "moons": [
-            { "name": "Moon", "type": "Moon", "color": "#888888", "texture": "textures/moon.jpg", "size": 0.27, "distance": 2.5, "speed": 0.03, "rotationSpeed": 0.01 }
+            { "name": "Moon", "type": "Moon", "color": "#888888", "texture": "textures/moon.jpg", "size": 0.27, "distance": 2.5, "speed": 0.03, "rotationSpeed": 0.01, "description": "Earth's only natural satellite." }
         ]
     },
     {
@@ -43,9 +46,10 @@
         "distance": 22,
         "speed": 0.003,
         "rotationSpeed": 0.018,
+        "description": "The dusty, red fourth planet, home to the largest volcano in the solar system.",
         "moons": [
-            { "name": "Phobos", "type": "Moon", "color": "#555555", "size": 0.1, "distance": 0.8, "speed": 0.08, "rotationSpeed": 0.05 },
-            { "name": "Deimos", "type": "Moon", "color": "#555555", "size": 0.08, "distance": 1.2, "speed": 0.06, "rotationSpeed": 0.05 }
+            { "name": "Phobos", "type": "Moon", "color": "#555555", "size": 0.1, "distance": 0.8, "speed": 0.08, "rotationSpeed": 0.05, "description": "The larger and inner of the two moons of Mars." },
+            { "name": "Deimos", "type": "Moon", "color": "#555555", "size": 0.08, "distance": 1.2, "speed": 0.06, "rotationSpeed": 0.05, "description": "The smaller and outer of the two moons of Mars." }
         ]
     },
     {
@@ -57,6 +61,7 @@
         "distance": 35,
         "speed": 0.001,
         "rotationSpeed": 0.04,
+        "description": "The largest planet in the solar system, a gas giant with a Great Red Spot.",
         "moons": []
     },
     {
@@ -68,6 +73,7 @@
         "distance": 50,
         "speed": 0.0007,
         "rotationSpeed": 0.038,
+        "description": "Adorned with a complex system of icy rings, Saturn is unique in our solar system.",
         "moons": []
     },
     {
@@ -79,6 +85,7 @@
         "distance": 65,
         "speed": 0.0005,
         "rotationSpeed": 0.03,
+        "description": "The seventh planet from the Sun, rotating on its side.",
         "moons": []
     },
     {
@@ -90,6 +97,7 @@
         "distance": 80,
         "speed": 0.0004,
         "rotationSpeed": 0.032,
+        "description": "The eighth and farthest-known Solar planet from the Sun, dark, cold, and whipped by supersonic winds.",
         "moons": []
     }
 ]

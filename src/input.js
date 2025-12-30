@@ -39,61 +39,119 @@ export function setupControls(camera, domElement) {
  * @param {Object} callbacks - Callback functions for actions.
  * @param {Function} callbacks.onToggleCamera - Function to toggle camera mode.
  * @param {Function} callbacks.onToggleTexture - Function to toggle textures (accepts button element).
- * @param {Function} callbacks.onTogglePause - Function to toggle pause state.
+ * @param {Function} callbacks.onTogglePause - Function to toggle pause state (accepts button element).
  * @param {Function} callbacks.onFocusPlanet - Function to focus camera on a planet (index).
+ * @param {Function} callbacks.onResetCamera - Function to reset camera view.
+ * @param {Function} callbacks.onSetFocus - Function to focus/follow a specific mesh.
+ * @param {Function} callbacks.onUpdateTimeScale - Function to update simulation speed.
+ * @param {Function} callbacks.onObjectSelected - Function to notify main state of selection.
+ * @returns {Object} Helper functions for external use (e.g., updating UI).
  */
 export function setupInteraction(context, callbacks) {
     const { camera, rendererDomElement, interactionTargets } = context;
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    // Click Listener (Raycasting)
-    window.addEventListener('click', (event) => {
-        // We use window.innerWidth/Height because the renderer covers the full window
+    // Helper to populate UI
+    function updateSelectionUI(mesh) {
+        if (!mesh) return;
+        const d = mesh.userData;
+
+        // Update Toast
+        let text = `Selected: ${d.name}`;
+        if (d.type && d.size !== undefined) {
+            text += ` (${d.type})`;
+        }
+        const toast = document.getElementById('toast');
+        if (toast) {
+            toast.textContent = text;
+            toast.classList.add('visible');
+            if (toast.timeout) clearTimeout(toast.timeout);
+            toast.timeout = setTimeout(() => toast.classList.remove('visible'), 2000);
+        }
+
+        // Update Info Panel
+        const panel = document.getElementById('info-panel');
+        if (panel) {
+            document.getElementById('info-name').textContent = d.name;
+            document.getElementById('info-type').textContent = d.type || 'Unknown Type';
+            document.getElementById('info-desc').textContent = d.description || 'No description available.';
+            document.getElementById('info-radius').textContent = d.size ? `Radius: ${d.size.toFixed(2)} x Earth` : 'Radius: -';
+            document.getElementById('info-distance').textContent = d.distance ? `Orbit Radius: ${d.distance} units` : 'Orbit Radius: 0';
+
+            // Re-bind Follow Button
+            const btnFollow = document.getElementById('btn-follow');
+            // Clone node to remove old listeners
+            const newBtn = btnFollow.cloneNode(true);
+            btnFollow.parentNode.replaceChild(newBtn, btnFollow);
+
+            newBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent re-triggering scene click
+                callbacks.onSetFocus(mesh);
+            });
+
+            panel.style.display = 'block';
+        }
+    }
+
+    // Click & Double-Click Logic
+    let lastClickTime = 0;
+    const doubleClickDelay = 300; // ms
+
+    rendererDomElement.addEventListener('pointerup', (event) => {
+        // Only process left clicks
+        if (event.button !== 0) return;
+
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
         raycaster.setFromCamera(mouse, camera);
 
-        // Optimization: intersectObjects checks against a reduced list of spheres,
-        // ignoring the starfield and orbit lines.
         const intersects = raycaster.intersectObjects(interactionTargets, false);
 
-        for (let i = 0; i < intersects.length; i++) {
-            const userData = intersects[i].object.userData;
+        if (intersects.length > 0) {
+            const hit = intersects[0]; // Closest object
+            const mesh = hit.object;
+            const userData = mesh.userData;
+
             if (userData.name) {
-                // Extract metadata stored during creation (procedural.js)
-                const name = userData.name;
-                const type = userData.type;
-                const size = userData.size;
-                console.log("Planet clicked:", name);
+                // Determine if it's a double click
+                const currentTime = Date.now();
+                const isDoubleClick = (currentTime - lastClickTime) < doubleClickDelay;
+                lastClickTime = currentTime;
 
-                // Format the toast message: Name + Type + Size
-                let text = `Selected: ${name}`;
-                if (type && size !== undefined) {
-                    text += ` (${type}) – ${size.toFixed(2)} × Earth size`;
+                // 1. Select Object (Single Click Behavior)
+                // Notify Main
+                callbacks.onObjectSelected(mesh);
+                // Update UI
+                updateSelectionUI(mesh);
+
+                // 2. Double Click Behavior
+                if (isDoubleClick) {
+                    callbacks.onSetFocus(mesh);
                 }
-
-                // Show toast notification
-                const toast = document.getElementById('toast');
-                toast.textContent = text;
-                toast.classList.add('visible');
-
-                if (toast.timeout) clearTimeout(toast.timeout);
-                toast.timeout = setTimeout(() => toast.classList.remove('visible'), 2000);
-                break; // Only select the first hit (closest object)
             }
+        } else {
+             // Optional: Deselect logic if desired
+             // const infoPanel = document.getElementById('info-panel');
+             // if (infoPanel) infoPanel.style.display = 'none';
         }
     });
 
     // Keyboard Listener
     window.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();
+        if (document.activeElement.tagName === 'INPUT') return;
 
         if (key === 'c') {
             callbacks.onToggleCamera();
         } else if (key === ' ' || key === 'spacebar') {
-            callbacks.onTogglePause();
+             const btn = document.getElementById('btn-pause');
+             callbacks.onTogglePause(btn);
+        } else if (key === 'escape') {
+            callbacks.onResetCamera();
+            const panel = document.getElementById('info-panel');
+            if (panel) panel.style.display = 'none';
         } else {
             // Check for number keys 1-9
             const num = parseInt(key);
@@ -103,17 +161,28 @@ export function setupInteraction(context, callbacks) {
         }
     });
 
-    // UI Buttons
+    // UI Buttons Binding
     const btnCamera = document.getElementById('btn-camera');
-    if (btnCamera) {
-        btnCamera.addEventListener('click', callbacks.onToggleCamera);
-    }
+    if (btnCamera) btnCamera.addEventListener('click', callbacks.onToggleCamera);
 
     const btnTexture = document.getElementById('btn-texture');
-    if (btnTexture) {
-        btnTexture.addEventListener('click', () => {
-             // Pass the button element so the callback can update text
-             callbacks.onToggleTexture(btnTexture);
+    if (btnTexture) btnTexture.addEventListener('click', () => callbacks.onToggleTexture(btnTexture));
+
+    const btnReset = document.getElementById('btn-reset');
+    if (btnReset) btnReset.addEventListener('click', callbacks.onResetCamera);
+
+    const btnPause = document.getElementById('btn-pause');
+    if (btnPause) btnPause.addEventListener('click', () => callbacks.onTogglePause(btnPause));
+
+    const sliderSpeed = document.getElementById('slider-speed');
+    if (sliderSpeed) {
+        sliderSpeed.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            callbacks.onUpdateTimeScale(val);
         });
     }
+
+    return {
+        updateSelectionUI
+    };
 }
