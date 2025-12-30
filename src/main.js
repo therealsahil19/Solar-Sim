@@ -86,6 +86,10 @@ let selectedObject = null;
 /** @type {Object|null} Reference to input helpers (for UI updates) */
 let interactionHelpers = null;
 
+// Optimization state
+let frameCount = 0;
+let closestObjectCache = null;
+
 // Expose globals for testing
 window.scene = null;
 window.playerShip = null;
@@ -519,23 +523,31 @@ function animate() {
 
     // 3. Update Ship Orientation (Face nearest object)
     if (playerShip && animatedObjects.length > 0) {
-        let closestDist = Infinity;
-        let closestObj = null;
-        const shipPos = playerShip.position;
+        // Throttle the search for the nearest object to reduce matrix updates
+        if (frameCount % 10 === 0) {
+            let closestDist = Infinity;
+            let closestObj = null;
+            const shipPos = playerShip.position;
 
-        animatedObjects.forEach(obj => {
-            if (obj.mesh) {
-                obj.mesh.getWorldPosition(tempVec);
-                const dist = shipPos.distanceToSquared(tempVec);
-                if (dist < closestDist) {
-                    closestDist = dist;
-                    closestObj = obj.mesh;
+            animatedObjects.forEach(obj => {
+                if (obj.mesh) {
+                    // Only calculate world position for distance check if strictly necessary
+                    // Note: getWorldPosition updates the matrixWorld.
+                    obj.mesh.getWorldPosition(tempVec);
+                    const dist = shipPos.distanceToSquared(tempVec);
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        closestObj = obj.mesh;
+                    }
                 }
-            }
-        });
+            });
+            closestObjectCache = closestObj;
+        }
 
-        if (closestObj) {
-            closestObj.getWorldPosition(tempVec);
+        frameCount++;
+
+        if (closestObjectCache) {
+            closestObjectCache.getWorldPosition(tempVec);
             playerShip.lookAt(tempVec);
         }
     }
