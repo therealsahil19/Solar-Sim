@@ -55,28 +55,33 @@ export function setupInteraction(context, callbacks) {
 
         raycaster.setFromCamera(mouse, camera);
 
+        // Optimization: intersectObjects checks against a reduced list of spheres,
+        // ignoring the starfield and orbit lines.
         const intersects = raycaster.intersectObjects(interactionTargets, false);
 
         for (let i = 0; i < intersects.length; i++) {
             const userData = intersects[i].object.userData;
             if (userData.name) {
+                // Extract metadata stored during creation (procedural.js)
                 const name = userData.name;
                 const type = userData.type;
                 const size = userData.size;
                 console.log("Planet clicked:", name);
 
+                // Format the toast message: Name + Type + Size
                 let text = `Selected: ${name}`;
                 if (type && size !== undefined) {
                     text += ` (${type}) – ${size.toFixed(2)} × Earth size`;
                 }
 
+                // Show toast notification
                 const toast = document.getElementById('toast');
                 toast.textContent = text;
                 toast.classList.add('visible');
 
                 if (toast.timeout) clearTimeout(toast.timeout);
                 toast.timeout = setTimeout(() => toast.classList.remove('visible'), 2000);
-                break;
+                break; // Only select the first hit (closest object)
             }
         }
     });

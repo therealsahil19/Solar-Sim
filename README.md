@@ -1,4 +1,4 @@
-# Solar System Simulation
+# Interactive 3D Solar System
 
 This project is a 3D visualization of a solar system using [Three.js](https://threejs.org/). It features a procedural starfield, a central Sun, a configurable system of planets and moons, and a player ship.
 
@@ -12,7 +12,7 @@ This project is a 3D visualization of a solar system using [Three.js](https://th
     -   **Orbit Controls**: Freely zoom, rotate, and pan around the scene.
     -   **Chase View**: Toggle between a global view and a ship-following camera.
 -   **Interactive Elements**:
-    -   **Raycasting**: Click on any planet or moon to trigger a visual confirmation.
+    -   **Raycasting**: Click on any planet or moon to view detailed info (Name, Type, Size).
     -   **Player Ship**: A ship that automatically orients itself to face the nearest celestial body.
 -   **Automated Verification**: Includes a "Vibe Check" script using Playwright to verify the scene renders correctly.
 
@@ -40,7 +40,7 @@ The project follows a modular architecture:
     -   **Sun View** (Default): Centered on the system origin.
     -   **Ship View**: Locks the camera behind the player ship ("Chase Cam").
 -   **HD/LD Button**: Toggle between textured (High Definition) and solid color (Low Definition) rendering modes.
--   **Click**: Click on a planet to see a "Toast" notification with its name (e.g., "Selected: Earth").
+-   **Click**: Click on a planet to see a "Toast" notification with its name, type, and size relative to Earth.
 
 ## Architecture & Implementation
 
@@ -86,6 +86,7 @@ The file contains an array of planet objects. Each object has:
 | Property        | Type     | Description                                                                 |
 | :-------------- | :------- | :-------------------------------------------------------------------------- |
 | `name`          | `String` | The name of the planet or moon.                                             |
+| `type`          | `String` | The type of body (e.g., 'Planet', 'Moon').                                  |
 | `color`         | `Hex`    | The color of the object (e.g., `0x2233FF` or `#2233FF`).                    |
 | `texture`       | `String` | (Optional) Path to the texture image file.                                  |
 | `size`          | `Number` | The radius of the sphere.                                                   |
