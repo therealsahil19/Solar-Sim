@@ -11,7 +11,7 @@ This project is a 3D visualization of a solar system using [Three.js](https://th
     -   **Orbit Controls**: Freely zoom, rotate, and pan around the scene.
     -   **Chase View**: Toggle between a global view and a ship-following camera.
 -   **Interactive Elements**:
-    -   **Raycasting**: Click on any planet or moon to log its name to the browser console.
+    -   **Raycasting**: Click on any planet or moon to trigger a visual confirmation.
     -   **Player Ship**: A ship that automatically orients itself to face the nearest celestial body.
 -   **Automated Verification**: Includes a "Vibe Check" script using Playwright to verify the scene renders correctly.
 
@@ -26,10 +26,33 @@ This project is a 3D visualization of a solar system using [Three.js](https://th
 -   **Left Mouse Button**: Rotate the camera.
 -   **Right Mouse Button**: Pan the camera.
 -   **Scroll Wheel**: Zoom in/out.
--   **Key 'C'**: Toggle camera view between:
+-   **Key 'C' or 🎥 Button**: Toggle camera view between:
     -   **Sun View** (Default): Centered on the system origin.
     -   **Ship View**: Locks the camera behind the player ship ("Chase Cam").
--   **Click**: Click on a planet to see its name in the developer console (F12).
+-   **Click**: Click on a planet to see a "Toast" notification with its name (e.g., "Selected: Earth").
+
+## Architecture & Implementation
+
+This project is designed with simplicity and performance in mind, using a single-file architecture for ease of deployment and study.
+
+### Recursive Generation
+The solar system is generated recursively. Each `createSystem` call handles a celestial body and then calls itself for any children (moons). This creates a nested scene graph:
+- **Pivot Object**: Rotates around the parent to create the orbital motion.
+- **Body Group**: Offset from the pivot by the orbital distance.
+- **Mesh**: The visible sphere, which rotates on its own axis.
+
+### Performance Optimizations
+-   **Shared Geometries**: Instead of creating a new geometry for every orbit line or planet, the code reuses a single `baseOrbitGeometry` and `baseSphereGeometry`. These are cloned and scaled, significantly reducing memory overhead.
+-   **Starfield**: The background stars are rendered using a single `THREE.Points` object with thousands of vertices, rather than thousands of individual Mesh objects.
+-   **Raycasting Optimization**: The application maintains a specific `interactionTargets` array containing only the clickable planets. The raycaster checks against this small list instead of traversing the entire scene graph (which includes stars, orbit lines, etc.), making clicks highly responsive.
+
+## Accessibility
+
+The application includes several features to improve accessibility:
+-   **ARIA Attributes**: The main rendering canvas is explicitly labeled with `role="application"` and an `aria-label` to identify it to screen readers.
+-   **Keyboard Support**: Key interactions (like camera toggling) are mapped to keyboard shortcuts.
+-   **UI Contrast**: Text and buttons are styled with high-contrast backgrounds for readability against the space environment.
+-   **Interactive Elements**: Buttons and controls are accessible via pointer events, even when overlaying the 3D canvas.
 
 ## Configuration
 

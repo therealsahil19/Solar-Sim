@@ -7,6 +7,7 @@
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: system-ui, sans-serif; }
         canvas { display: block; }
+        /* UI Layer: Positioned over the 3D canvas. pointer-events: none allows clicks to pass through to the canvas */
         #ui-layer { position: absolute; top: 1rem; left: 1rem; color: rgba(255, 255, 255, 0.8); pointer-events: none; user-select: none; }
         .key { border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); }
         #toast {
@@ -17,6 +18,7 @@
         #toast.visible { opacity: 1; }
 
         /* Palette's UX Addition: Camera Button */
+        /* Explicitly re-enable pointer events for interactive UI elements */
         .icon-btn {
             background: rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -30,7 +32,7 @@
             align-items: center;
             justify-content: center;
             transition: background 0.2s, transform 0.1s;
-            pointer-events: auto; /* Enable clicks despite parent */
+            pointer-events: auto; /* Enable clicks despite parent having pointer-events: none */
             margin-top: 1rem;
         }
         .icon-btn:hover {
@@ -52,6 +54,7 @@
             <div>🖱️ Drag to Rotate • Scroll to Zoom</div>
             <div><span class="key">C</span> Toggle Camera View</div>
         </div>
+        <!-- Accessible button for screen readers and mouse interaction -->
         <button id="btn-camera" class="icon-btn" aria-label="Toggle Camera View" title="Toggle Camera View (C)">
             🎥
         </button>
@@ -82,6 +85,7 @@
 
         // Configure renderer
         renderer.setSize(window.innerWidth, window.innerHeight);
+        // Accessibility: Add ARIA roles to the canvas to identify it as an application
         renderer.domElement.setAttribute('role', 'application');
         renderer.domElement.setAttribute('aria-label', '3D Solar System Simulation');
         document.body.appendChild(renderer.domElement);
@@ -106,14 +110,18 @@
         const animatedObjects = [];
 
         // Optimization: Array to store only interactable objects for raycasting.
-        // This avoids checking thousands of stars and orbit lines every click.
+        // This avoids checking thousands of stars and orbit lines every click,
+        // which would be computationally expensive.
         const interactionTargets = [];
 
-        // The player ship object
+        // The player ship object reference
         let playerShip;
 
         // --- SHARED RESOURCES FOR OPTIMIZATION ---
-        // Reuse geometry and material for orbits to reduce draw calls and memory.
+        // We create base geometries once and clone/scale them for each instance.
+        // This significantly reduces memory usage and initialization time.
+
+        // 1. Orbit Geometry: A simple unit circle on the XZ plane.
         const baseOrbitGeometry = new THREE.BufferGeometry();
         {
             const points = [];
@@ -126,13 +134,14 @@
         }
         const baseOrbitMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.15, transparent: true });
 
-        // Reuse geometry for planets/moons to save memory.
+        // 2. Planet Geometry: A standard sphere.
         const baseSphereGeometry = new THREE.SphereGeometry(1, 32, 32);
         // -----------------------------------------
 
         /**
          * Creates a procedural starfield background using Points.
          * Generates random positions for stars within a large volume.
+         * Using THREE.Points is much more efficient than creating individual Meshes for stars.
          */
         function createStarfield() {
             const geometry = new THREE.BufferGeometry();
@@ -150,6 +159,7 @@
 
         /**
          * Creates a visual line representing the orbit path.
+         * Uses the shared baseOrbitGeometry and scales it to the required radius.
          * @param {number} radius - The radius of the orbit.
          * @returns {THREE.LineLoop} The orbit line object.
          */
@@ -166,7 +176,7 @@
          */
         function createSun() {
             const geometry = new THREE.SphereGeometry(2.5, 64, 64);
-            // MeshBasicMaterial is not affected by light, so the Sun 'glows'
+            // MeshBasicMaterial is not affected by light, so the Sun 'glows' even without an external light source
             const material = new THREE.MeshBasicMaterial({ color: 0xffffaa });
             const sun = new THREE.Mesh(geometry, material);
             scene.add(sun);
@@ -174,14 +184,15 @@
 
         /**
          * Creates the player ship using primitives (Cone + Cylinders).
-         * Position is fixed, but rotation will update.
+         * Uses simple geometries to avoid external asset loading (GLTF/OBJ).
+         * The ship is added to the global 'playerShip' variable for camera tracking.
          */
         function createPlayerShip() {
             const shipGroup = new THREE.Group();
 
             // Main Body (Cone)
             const bodyGeo = new THREE.ConeGeometry(0.5, 2, 8);
-            const bodyMat = new THREE.MeshNormalMaterial(); // Uses surface normals for colors
+            const bodyMat = new THREE.MeshNormalMaterial(); // Uses surface normals for colorful, debug-friendly appearance
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             // Rotate cone to point along positive Z axis (which lookAt uses)
             body.rotation.x = Math.PI / 2;
@@ -205,11 +216,19 @@
             shipGroup.position.set(20, 5, 20);
             scene.add(shipGroup);
             playerShip = shipGroup;
-            window.playerShip = playerShip; // Expose for testing
+            window.playerShip = playerShip; // Expose for testing/debugging
         }
 
         /**
          * Recursively creates a celestial body (planet or moon) and its satellites.
+         *
+         * SCENE GRAPH HIERARCHY:
+         * Parent
+         *  |-- Orbit Pivot (Rotates around Y axis, creating orbital motion)
+         *       |-- Body Group (Translated by 'distance' from pivot)
+         *            |-- Mesh (The visible sphere, rotates on its own axis)
+         *            |-- [Recursion] Child Systems (Moons)
+         *
          * @param {Object} data - Configuration object for the body (size, distance, etc.).
          * @param {THREE.Object3D} parent - The parent object to attach this system to (Scene or another Group).
          */
@@ -238,10 +257,10 @@
             const material = new THREE.MeshStandardMaterial({ color: data.color });
             const mesh = new THREE.Mesh(geometry, material);
             mesh.scale.set(data.size, data.size, data.size);
-            mesh.userData.name = data.name; // Store name for raycasting
+            mesh.userData.name = data.name; // Store name for raycasting identification
             bodyGroup.add(mesh);
 
-            // Add to raycasting targets
+            // Add to raycasting targets list (optimization)
             interactionTargets.push(mesh);
 
             // Register this body for animation updates
@@ -312,27 +331,29 @@
         // 5. Interaction Logic
         // ============================================================================
 
-        // --- Raycaster (Click to Log Name) ---
+        // --- Raycaster (Click to Identify Object) ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
         window.addEventListener('click', (event) => {
             // Calculate mouse position in normalized device coordinates
+            // (-1 to +1) for both components
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
 
-            // Optimization: Intersect only specific targets, not the whole scene.
+            // Optimization: Intersect only specific targets (planets/moons), not the whole scene.
             // recursive: false because interactionTargets contains the meshes directly.
             const intersects = raycaster.intersectObjects(interactionTargets, false);
 
             for (let i = 0; i < intersects.length; i++) {
-                // Check if the object has a name
+                // Check if the object has a name stored in userData
                 if (intersects[i].object.userData.name) {
                     const name = intersects[i].object.userData.name;
                     console.log("Planet clicked:", name);
 
+                    // Show Toast Notification
                     const toast = document.getElementById('toast');
                     toast.textContent = `Selected: ${name}`;
                     toast.classList.add('visible');
@@ -349,12 +370,16 @@
         // --- Camera Toggle (Key 'C' & Button) ---
         let isShipView = false;
 
+        /**
+         * Toggles the camera mode between the global Sun view and the Ship chase view.
+         * Updates the OrbitControls target to focus on the appropriate object.
+         */
         function toggleCameraView() {
             isShipView = !isShipView;
             if (isShipView) {
                 // Switch to Ship View (Chase Cam)
                 controls.target.copy(playerShip.position);
-                // Position camera behind and above the ship
+                // Position camera behind and above the ship for a 3rd person view
                 camera.position.set(
                     playerShip.position.x + 5,
                     playerShip.position.y + 3,
@@ -362,35 +387,37 @@
                 );
             } else {
                 // Switch to Sun View (Overview)
-                controls.target.set(0, 0, 0);
-                camera.position.set(0, 20, 40);
+                controls.target.set(0, 0, 0); // Reset target to origin
+                camera.position.set(0, 20, 40); // Reset camera position
             }
             controls.update();
         }
 
+        // Keyboard listener for 'C' key
         window.addEventListener('keydown', (e) => {
             if (e.key.toLowerCase() === 'c') {
                 toggleCameraView();
             }
         });
 
+        // UI Button listener
         document.getElementById('btn-camera').addEventListener('click', toggleCameraView);
 
         // ============================================================================
         // 6. Animation Loop
         // ============================================================================
-        const tempVec = new THREE.Vector3(); // Reused vector for calculations
+        const tempVec = new THREE.Vector3(); // Reused vector for calculations to avoid garbage collection
 
         function animate() {
             requestAnimationFrame(animate);
 
             // Update rotations for all registered objects
             animatedObjects.forEach(obj => {
-                if (obj.pivot) obj.pivot.rotation.y += obj.speed; // Orbit rotation
+                if (obj.pivot) obj.pivot.rotation.y += obj.speed; // Orbit rotation around parent
                 if (obj.mesh) obj.mesh.rotation.y += obj.rotationSpeed; // Self rotation
             });
 
-            // Update Ship Orientation: Face the nearest planet
+            // Update Ship Orientation: Automatically face the nearest planet
             if (playerShip && animatedObjects.length > 0) {
                 let closestDist = Infinity;
                 let closestObj = null;
@@ -412,7 +439,7 @@
                 }
             }
 
-            controls.update(); // Update controls
+            controls.update(); // Update controls (required for damping or auto-rotate if enabled)
             renderer.render(scene, camera); // Render the frame
         }
 
