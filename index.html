@@ -71,6 +71,16 @@
             outline-offset: 2px;
         }
 
+        /* Active/Inactive States */
+        .icon-btn[aria-pressed="true"] {
+            background: rgba(74, 144, 226, 0.6);
+            border-color: #4a90e2;
+            opacity: 1;
+        }
+        .icon-btn[aria-pressed="false"] {
+            opacity: 0.5;
+        }
+
         .texture-toggle {
             font-size: 0.9rem;
             border-radius: 8px;
@@ -161,19 +171,19 @@
             <div>Drag to rotate • Scroll to zoom • <span class="key">Space</span>: pause</div>
         </div>
         <!-- Accessible button for screen readers and mouse interaction -->
-        <button id="btn-camera" class="icon-btn" aria-label="Toggle Camera View" title="Toggle Camera View (C)" aria-keyshortcuts="c">
+        <button id="btn-camera" class="icon-btn" aria-label="Toggle Camera View" aria-pressed="false" title="Toggle Camera View (C)" aria-keyshortcuts="c">
             🎥
         </button>
         <button id="btn-reset" class="icon-btn" aria-label="Reset View" title="Reset View (Esc)" aria-keyshortcuts="Escape">
             ↺
         </button>
-        <button id="btn-texture" class="icon-btn texture-toggle" aria-label="Toggle Textures" title="Toggle Textures (T)" aria-keyshortcuts="t">
+        <button id="btn-texture" class="icon-btn texture-toggle" aria-label="Toggle Textures" aria-pressed="true" title="Toggle Textures (T)" aria-keyshortcuts="t">
             HD
         </button>
-        <button id="btn-labels" class="icon-btn" aria-label="Toggle Labels" title="Toggle Labels">
+        <button id="btn-labels" class="icon-btn" aria-label="Toggle Labels" aria-pressed="true" title="Toggle Labels">
             🏷️
         </button>
-        <button id="btn-orbits" class="icon-btn" aria-label="Toggle Orbits" title="Toggle Orbits">
+        <button id="btn-orbits" class="icon-btn" aria-label="Toggle Orbits" aria-pressed="true" title="Toggle Orbits">
             ⚪
         </button>
     </div>
