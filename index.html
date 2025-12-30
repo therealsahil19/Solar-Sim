@@ -10,6 +10,7 @@
     </style>
 </head>
 <body>
+    <!-- Import Map to allow bare module imports for Three.js -->
     <script type="importmap">
         {
             "imports": {
@@ -22,30 +23,48 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // 1. Setup
+        // ============================================================================
+        // 1. Scene Setup
+        // ============================================================================
+        // Initialize the basic Three.js components: Scene, Camera, and Renderer.
         const scene = new THREE.Scene();
+        // PerspectiveCamera(fov, aspect, near, far)
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+        // Configure renderer
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
+        // ============================================================================
         // 2. Lighting
+        // ============================================================================
+        // Point light represents the light emitting from the Sun.
         const pointLight = new THREE.PointLight(0xffffff, 2, 300);
-        pointLight.position.set(0, 0, 0);
+        pointLight.position.set(0, 0, 0); // Positioned at the center (where the Sun is)
         scene.add(pointLight);
 
-        const ambientLight = new THREE.AmbientLight(0x404040); // Dim ambient
+        // Ambient light ensures objects are not completely dark on the shadow side.
+        const ambientLight = new THREE.AmbientLight(0x404040); // Dim ambient light
         scene.add(ambientLight);
 
+        // ============================================================================
         // 3. Helpers & Generators
-        const animatedObjects = []; // Stores { mesh, pivot, speed, rotationSpeed }
+        // ============================================================================
+        // Array to store objects that need to be updated in the animation loop.
+        // Stores: { mesh, pivot, speed, rotationSpeed }
+        const animatedObjects = [];
 
-        // Starfield
+        /**
+         * Creates a procedural starfield background using Points.
+         * Generates random positions for stars within a large volume.
+         */
         function createStarfield() {
             const geometry = new THREE.BufferGeometry();
-            const count = 3000;
-            const positions = new Float32Array(count * 3);
+            const count = 3000; // Number of stars
+            const positions = new Float32Array(count * 3); // x, y, z for each star
             for(let i=0; i<count*3; i++) {
+                // Random position between -200 and 200
                 positions[i] = (Math.random() - 0.5) * 400;
             }
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -54,12 +73,17 @@
             scene.add(stars);
         }
 
-        // Orbit Line
+        /**
+         * Creates a visual line representing the orbit path.
+         * @param {number} radius - The radius of the orbit.
+         * @returns {THREE.LineLoop} The orbit line object.
+         */
         function createOrbitLine(radius) {
             const points = [];
-            const segments = 128;
+            const segments = 128; // Smoothness of the circle
             for (let i = 0; i <= segments; i++) {
                 const theta = (i / segments) * Math.PI * 2;
+                // Create points on the XZ plane (y=0)
                 points.push(new THREE.Vector3(Math.cos(theta) * radius, 0, Math.sin(theta) * radius));
             }
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -67,50 +91,57 @@
             return new THREE.LineLoop(geometry, material);
         }
 
-        // The Sun (Special Case)
+        /**
+         * Creates the Sun mesh and adds it to the scene.
+         * The Sun is treated as a special case (center of the system).
+         */
         function createSun() {
             const geometry = new THREE.SphereGeometry(2.5, 64, 64);
+            // MeshBasicMaterial is not affected by light, so the Sun 'glows'
             const material = new THREE.MeshBasicMaterial({ color: 0xffffaa });
             const sun = new THREE.Mesh(geometry, material);
             scene.add(sun);
         }
 
-        // System Generator
+        /**
+         * Recursively creates a celestial body (planet or moon) and its satellites.
+         * @param {Object} data - Configuration object for the body (size, distance, etc.).
+         * @param {THREE.Object3D} parent - The parent object to attach this system to (Scene or another Group).
+         */
         function createSystem(data, parent) {
-            // 1. Pivot: Controls the orbit speed around the parent
+            // 1. Pivot: An invisible object at the parent's center that rotates.
+            // This controls the orbital movement around the parent.
             const orbitPivot = new THREE.Object3D();
             parent.add(orbitPivot);
 
-            // 2. Orbit Line: Visual path (added to parent so it doesn't spin with the pivot)
+            // 2. Orbit Line: Visual path of the orbit.
+            // Added directly to the parent so it remains stationary and doesn't rotate with the pivot.
             if (data.distance > 0) {
                 const orbitLine = createOrbitLine(data.distance);
-                orbitLine.rotation.x = Math.PI / 2; // Usually lines are XZ, but if I defined them XZ they are flat. Wait.
-                // In createOrbitLine: Vector3(x, 0, z) -> Flat on XZ plane.
-                // Default scene is Y-up.
-                // So no rotation needed for the line to be flat.
                 parent.add(orbitLine);
             }
 
-            // 3. Planet Group: Holds the body and its moons at the distance
+            // 3. Planet Group: Holds the body mesh and serves as the center for its own moons.
+            // It is offset by the distance from the pivot.
             const bodyGroup = new THREE.Group();
             bodyGroup.position.x = data.distance;
             orbitPivot.add(bodyGroup);
 
-            // 4. The Mesh: The visual planet itself
+            // 4. The Mesh: The actual visual representation of the planet/moon.
             const geometry = new THREE.SphereGeometry(data.size, 32, 32);
             const material = new THREE.MeshStandardMaterial({ color: data.color });
             const mesh = new THREE.Mesh(geometry, material);
             bodyGroup.add(mesh);
 
-            // Register for animation
+            // Register this body for animation updates
             animatedObjects.push({
-                pivot: orbitPivot,
-                mesh: mesh,
-                speed: data.speed || 0,
-                rotationSpeed: data.rotationSpeed || 0
+                pivot: orbitPivot,       // Rotates for orbit
+                mesh: mesh,              // Rotates for self-rotation
+                speed: data.speed || 0,  // Orbital speed
+                rotationSpeed: data.rotationSpeed || 0 // Self-rotation speed
             });
 
-            // 5. Recursion for Moons
+            // 5. Recursion: If this body has moons, generate them attached to this body's group.
             if (data.moons && data.moons.length > 0) {
                 data.moons.forEach(moonData => {
                     createSystem(moonData, bodyGroup);
@@ -118,7 +149,12 @@
             }
         }
 
+        // ============================================================================
         // 4. Configuration & Initialization
+        // ============================================================================
+
+        // Configuration array for the solar system.
+        // Each object represents a planet, with optional nested 'moons'.
         const planetData = [
             {
                 name: "Earth",
@@ -145,38 +181,44 @@
             }
         ];
 
+        // Initialize the scene objects
         createStarfield();
         createSun();
 
+        // Generate the planetary systems
         planetData.forEach(planet => {
             createSystem(planet, scene);
         });
 
-        // Controls
+        // Initialize OrbitControls to allow user interaction (rotate/zoom)
         const controls = new OrbitControls(camera, renderer.domElement);
-        camera.position.set(0, 20, 40);
+        camera.position.set(0, 20, 40); // Set initial camera position
         controls.update();
 
+        // ============================================================================
         // 5. Animation Loop
+        // ============================================================================
         function animate() {
             requestAnimationFrame(animate);
 
+            // Update rotations for all registered objects
             animatedObjects.forEach(obj => {
-                if (obj.pivot) obj.pivot.rotation.y += obj.speed;
-                if (obj.mesh) obj.mesh.rotation.y += obj.rotationSpeed;
+                if (obj.pivot) obj.pivot.rotation.y += obj.speed; // Orbit rotation
+                if (obj.mesh) obj.mesh.rotation.y += obj.rotationSpeed; // Self rotation
             });
 
-            controls.update();
-            renderer.render(scene, camera);
+            controls.update(); // Update controls
+            renderer.render(scene, camera); // Render the frame
         }
 
-        // Handle window resize
+        // Handle window resize to maintain aspect ratio
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+        // Start the loop
         animate();
     </script>
 </body>
