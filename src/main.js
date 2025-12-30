@@ -273,6 +273,9 @@ async function init() {
  */
 function toggleCameraView() {
     isShipView = !isShipView;
+    const btn = document.getElementById('btn-camera');
+    if (btn) btn.setAttribute('aria-pressed', isShipView);
+
     if (isShipView) {
         // Enable Chase Cam -> Disable Focus Mode
         focusTarget = null;
@@ -298,6 +301,9 @@ function toggleCameraView() {
 function resetCamera() {
     isShipView = false;
     focusTarget = null;
+    const btn = document.getElementById('btn-camera');
+    if (btn) btn.setAttribute('aria-pressed', 'false');
+
     controls.target.set(0, 0, 0);
     camera.position.set(0, 40, 80);
     controls.update();
@@ -333,6 +339,7 @@ function toggleTextures(btnElement) {
     // Update Button Text
     if (btnElement) {
         btnElement.textContent = useTextures ? "HD" : "LD";
+        btnElement.setAttribute('aria-pressed', useTextures);
     }
 
     // Update Materials
@@ -355,7 +362,10 @@ function toggleTextures(btnElement) {
 function toggleLabels() {
     showLabels = !showLabels;
     const btn = document.getElementById('btn-labels');
-    if (btn) btn.style.opacity = showLabels ? '1' : '0.5';
+    if (btn) {
+        btn.setAttribute('aria-pressed', showLabels);
+        btn.style.opacity = ''; // Remove inline style to let CSS take over
+    }
 
     allLabels.forEach(label => {
         label.visible = showLabels;
@@ -371,7 +381,10 @@ function toggleLabels() {
 function toggleOrbits() {
     showOrbits = !showOrbits;
     const btn = document.getElementById('btn-orbits');
-    if (btn) btn.style.opacity = showOrbits ? '1' : '0.5';
+    if (btn) {
+        btn.setAttribute('aria-pressed', showOrbits);
+        btn.style.opacity = ''; // Remove inline style to let CSS take over
+    }
 
     allOrbits.forEach(orbit => orbit.visible = showOrbits);
     allTrails.forEach(trail => trail.visible = showOrbits);
