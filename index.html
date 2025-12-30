@@ -108,7 +108,10 @@
         // 1. Scene Setup & Loading Manager
         // ============================================================================
 
-        // Loading Manager Setup
+        /**
+         * Loading Manager Setup
+         * Handles the visual loading screen state based on asset loading progress.
+         */
         const loadingScreen = document.getElementById('loading-screen');
         const loadingBar = document.getElementById('loading-bar');
 
@@ -118,6 +121,7 @@
             loadingBar.style.width = width + '%';
         };
         manager.onLoad = function ( ) {
+            // Fade out loading screen when all assets are loaded
             loadingScreen.style.opacity = 0;
             setTimeout(() => loadingScreen.style.display = 'none', 500);
         };
@@ -223,6 +227,7 @@
         /**
          * Creates the Sun mesh and adds it to the scene.
          * The Sun is treated as a special case (center of the system).
+         * It sets up both textured and solid materials for runtime switching.
          */
         function createSun() {
             const geometry = new THREE.SphereGeometry(2.5, 64, 64);
@@ -553,6 +558,10 @@
         // --- Texture Toggle ---
         const btnTexture = document.getElementById('btn-texture');
 
+        /**
+         * Toggles between High Quality (Textured) and Low Quality (Solid Color) modes.
+         * Swaps the material on all interactive objects (Sun, Planets, Moons).
+         */
         function toggleTextures() {
             useTextures = !useTextures;
             btnTexture.textContent = useTextures ? "HD" : "LD";
@@ -589,6 +598,13 @@
         // ============================================================================
         const tempVec = new THREE.Vector3(); // Reused vector for calculations to avoid garbage collection
 
+        /**
+         * Main animation loop.
+         * Handles:
+         * 1. Orbital and rotational movements.
+         * 2. Ship orientation updates.
+         * 3. Rendering.
+         */
         function animate() {
             requestAnimationFrame(animate);
 
