@@ -68,6 +68,7 @@
         "distance": 50,
         "speed": 0.0007,
         "rotationSpeed": 0.038,
+        "hasRing": true,
         "moons": []
     },
     {
@@ -79,6 +80,7 @@
         "distance": 65,
         "speed": 0.0005,
         "rotationSpeed": 0.03,
+        "hasRing": true,
         "moons": []
     },
     {
