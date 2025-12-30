@@ -1,13 +1,18 @@
 # Solar System Simulation
 
-This project is a 3D visualization of a solar system using [Three.js](https://threejs.org/). It features a procedural starfield, a central Sun, and a configurable system of planets and moons.
+This project is a 3D visualization of a solar system using [Three.js](https://threejs.org/). It features a procedural starfield, a central Sun, a configurable system of planets and moons, and a player ship.
 
 ## Features
 
 -   **3D Scene**: Rendered using Three.js with WebGL.
--   **Procedural Geometry**: Uses standard Three.js geometries for planets, orbits, and stars (no external texture assets required).
+-   **Procedural Geometry**: Uses standard Three.js geometries for planets, orbits, stars, and the player ship (no external texture assets required).
 -   **Recursive System Generation**: Planets and moons are generated from a nested data structure, allowing for theoretically infinite levels of sub-satellites (moons of moons).
--   **Orbit Controls**: Users can zoom, rotate, and pan around the scene.
+-   **Dynamic Camera**:
+    -   **Orbit Controls**: Freely zoom, rotate, and pan around the scene.
+    -   **Chase View**: Toggle between a global view and a ship-following camera.
+-   **Interactive Elements**:
+    -   **Raycasting**: Click on any planet or moon to log its name to the browser console.
+    -   **Player Ship**: A ship that automatically orients itself to face the nearest celestial body.
 -   **Automated Verification**: Includes a "Vibe Check" script using Playwright to verify the scene renders correctly.
 
 ## Project Structure
@@ -15,6 +20,16 @@ This project is a 3D visualization of a solar system using [Three.js](https://th
 -   `index.html`: The main application file. It contains the HTML, CSS, and all JavaScript logic (using ES modules).
 -   `test_scene.py`: A Python script for automated verification using Playwright.
 -   `README.md`: This documentation file.
+
+## Controls & Interaction
+
+-   **Left Mouse Button**: Rotate the camera.
+-   **Right Mouse Button**: Pan the camera.
+-   **Scroll Wheel**: Zoom in/out.
+-   **Key 'C'**: Toggle camera view between:
+    -   **Sun View** (Default): Centered on the system origin.
+    -   **Ship View**: Locks the camera behind the player ship ("Chase Cam").
+-   **Click**: Click on a planet to see its name in the developer console (F12).
 
 ## Configuration
 
