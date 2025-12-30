@@ -74,6 +74,17 @@ let showLabels = true;
 
 /** @type {boolean} Global state for orbits/trails */
 let showOrbits = true;
+/** @type {number} Global time scale factor */
+let timeScale = 1.0;
+
+/** @type {THREE.Object3D|null} The object currently being followed by the camera */
+let focusTarget = null;
+
+/** @type {THREE.Object3D|null} The currently selected object (for UI) */
+let selectedObject = null;
+
+/** @type {Object|null} Reference to input helpers (for UI updates) */
+let interactionHelpers = null;
 
 // Expose globals for testing
 window.scene = null;
@@ -231,10 +242,14 @@ async function init() {
         onToggleCamera: toggleCameraView,
         onToggleTexture: toggleTextures,
         onTogglePause: togglePause,
-        onFocusPlanet: focusPlanet
+        onFocusPlanet: focusPlanet, // Legacy keyboard shortcut
+        onResetCamera: resetCamera,
+        onSetFocus: setFocusTarget,
+        onUpdateTimeScale: updateTimeScale,
+        onObjectSelected: handleObjectSelection
     };
 
-    setupInteraction(context, callbacks);
+    interactionHelpers = setupInteraction(context, callbacks);
 
     // Bind new UI buttons
     document.getElementById('btn-labels').addEventListener('click', toggleLabels);
@@ -254,20 +269,53 @@ async function init() {
  */
 function toggleCameraView() {
     isShipView = !isShipView;
-    if (isShipView && playerShip) {
-        // Chase Cam
-        controls.target.copy(playerShip.position);
-        camera.position.set(
-            playerShip.position.x + 5,
-            playerShip.position.y + 3,
-            playerShip.position.z + 5
-        );
+    if (isShipView) {
+        // Enable Chase Cam -> Disable Focus Mode
+        focusTarget = null;
+        if (playerShip) {
+            controls.target.copy(playerShip.position);
+            camera.position.set(
+                playerShip.position.x + 5,
+                playerShip.position.y + 3,
+                playerShip.position.z + 5
+            );
+        }
     } else {
-        // Overview
+        // Disable Chase Cam -> Default to Overview (0,0,0)
         controls.target.set(0, 0, 0);
         camera.position.set(0, 40, 80);
     }
     controls.update();
+}
+
+/**
+ * Resets the camera to the default Sun view.
+ */
+function resetCamera() {
+    isShipView = false;
+    focusTarget = null;
+    controls.target.set(0, 0, 0);
+    camera.position.set(0, 40, 80);
+    controls.update();
+    showToast("View Reset");
+}
+
+/**
+ * Sets the camera focus target to a specific object.
+ * @param {THREE.Object3D} mesh - The object to follow.
+ */
+function setFocusTarget(mesh) {
+    focusTarget = mesh;
+    isShipView = false; // Disable ship view
+    showToast(`Following ${mesh.userData.name}`);
+}
+
+/**
+ * Updates the global time scale.
+ * @param {number} scale - The new time scale.
+ */
+function updateTimeScale(scale) {
+    timeScale = scale;
 }
 
 /**
@@ -321,26 +369,36 @@ function toggleOrbits() {
 
 /**
  * Toggles the pause state.
+ * @param {HTMLElement} [btnElement] - The button element to update.
  */
-function togglePause() {
+function togglePause(btnElement) {
     isPaused = !isPaused;
     window.isPaused = isPaused; // Update exposed global
+
+    if (btnElement) {
+        btnElement.textContent = isPaused ? "▶" : "⏸";
+    }
+
     showToast(isPaused ? "Paused" : "Resumed");
 }
 
 /**
- * Focuses the camera on a specific planet by index.
+ * Focuses the camera on a specific planet by index (Keyboard Shortcut).
  * @param {number} index - The index of the planet in the planets array.
  */
 function focusPlanet(index) {
     if (index < 0 || index >= planets.length) return;
 
     const planet = planets[index];
+    // Re-use the general focus logic
+    setFocusTarget(planet);
+    handleObjectSelection(planet); // Update state
 
-    // Switch to Overview mode if not already (to avoid conflict with ship chase)
-    if (isShipView) {
-        isShipView = false;
+    // Explicitly update UI via helper
+    if (interactionHelpers && interactionHelpers.updateSelectionUI) {
+        interactionHelpers.updateSelectionUI(planet);
     }
+}
 
     // Update controls target to planet position
     const targetPos = new THREE.Vector3();
@@ -359,6 +417,14 @@ function focusPlanet(index) {
         text += ` (${type}) – ${size.toFixed(2)} × Earth size`;
     }
     showToast(text);
+/**
+ * Handles object selection (updates UI state).
+ * @param {THREE.Object3D} mesh - The selected object.
+ */
+function handleObjectSelection(mesh) {
+    selectedObject = mesh;
+    // Note: The UI population happens in input.js currently,
+    // but main.js holds the reference for dynamic updates in animate().
 }
 
 /**
@@ -376,6 +442,7 @@ function showToast(message) {
 }
 
 const tempVec = new THREE.Vector3();
+const sunPos = new THREE.Vector3(0, 0, 0);
 
 /**
  * The main animation loop.
@@ -388,8 +455,8 @@ function animate() {
     if (!isPaused) {
         // 1. Update Rotations
         animatedObjects.forEach(obj => {
-            if (obj.pivot) obj.pivot.rotation.y += obj.speed;
-            if (obj.mesh) obj.mesh.rotation.y += obj.rotationSpeed;
+            if (obj.pivot) obj.pivot.rotation.y += obj.speed * timeScale;
+            if (obj.mesh) obj.mesh.rotation.y += obj.rotationSpeed * timeScale;
         });
 
         // 2. Starfield Rotation
@@ -423,6 +490,26 @@ function animate() {
     }
 
     // 4. Update Ship Orientation
+    // 2. Camera Logic
+    if (isShipView && playerShip) {
+        // Chase Cam
+        controls.target.copy(playerShip.position);
+        camera.position.set(
+            playerShip.position.x + 5,
+            playerShip.position.y + 3,
+            playerShip.position.z + 5
+        );
+    } else if (focusTarget) {
+        // Focus Mode (Follow)
+        const targetPos = new THREE.Vector3();
+        focusTarget.getWorldPosition(targetPos);
+
+        // Smoothly lerp target for better feel, or just snap
+        // Snapping ensures no jitter at high speeds
+        controls.target.copy(targetPos);
+    }
+
+    // 3. Update Ship Orientation (Face nearest object)
     if (playerShip && animatedObjects.length > 0) {
         let closestDist = Infinity;
         let closestObj = null;
@@ -442,6 +529,18 @@ function animate() {
         if (closestObj) {
             closestObj.getWorldPosition(tempVec);
             playerShip.lookAt(tempVec);
+        }
+    }
+
+    // 4. Update Dynamic UI (Info Panel)
+    if (selectedObject) {
+        const distEl = document.getElementById('info-dist-sun');
+        if (distEl) {
+            selectedObject.getWorldPosition(tempVec);
+            const dist = tempVec.distanceTo(sunPos);
+            // Assuming 1 unit = 1 million km or similar relative scale
+            // Just displaying the raw unit for now or formatting it
+            distEl.textContent = `Dist to Sun: ${dist.toFixed(1)} units`;
         }
     }
 

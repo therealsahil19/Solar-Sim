@@ -105,6 +105,8 @@ export function createSun(textureLoader, useTextures) {
     sun.userData.name = "Sun";
     sun.userData.type = "Star";
     sun.userData.size = 2.5;
+    sun.userData.description = "The star at the center of the Solar System.";
+    sun.userData.distance = 0;
     sun.userData.solidMaterial = solidMaterial;
     sun.userData.texturedMaterial = texturedMaterial;
 
@@ -171,6 +173,7 @@ export function createPlayerShip() {
  * @param {number} data.speed - Orbital speed around parent.
  * @param {number} data.rotationSpeed - Self-rotation speed.
  * @param {boolean} [data.hasRing] - Whether the body has rings.
+ * @param {string} [data.description] - Description of the body.
  * @param {Array<Object>} [data.moons] - Array of sub-satellites (recursive structure).
  * @param {THREE.TextureLoader} textureLoader - Loader for textures.
  * @param {boolean} useTextures - Initial texture state.
@@ -220,6 +223,8 @@ export function createSystem(data, textureLoader, useTextures) {
     mesh.userData.name = data.name;
     mesh.userData.type = data.type;
     mesh.userData.size = data.size;
+    mesh.userData.description = data.description || "";
+    mesh.userData.distance = data.distance;
     mesh.userData.solidMaterial = solidMaterial;
     mesh.userData.texturedMaterial = texturedMaterial;
 
