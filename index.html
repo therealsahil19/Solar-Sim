@@ -5,11 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solar System Vibe Check</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: system-ui, sans-serif; }
         canvas { display: block; }
+        #ui-layer { position: absolute; top: 1rem; left: 1rem; color: rgba(255, 255, 255, 0.8); pointer-events: none; user-select: none; }
+        .key { border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); }
+        #toast {
+            position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: white; padding: 0.5rem 1rem; border-radius: 20px;
+            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+        #toast.visible { opacity: 1; }
     </style>
 </head>
 <body>
+    <div id="ui-layer">
+        <h1 style="margin: 0 0 0.5rem 0; font-size: 1.2rem;">Solar System</h1>
+        <div style="font-size: 0.9rem; line-height: 1.5;">
+            <div>🖱️ Drag to Rotate • Scroll to Zoom</div>
+            <div><span class="key">C</span> Toggle Camera View</div>
+        </div>
+    </div>
+    <div id="toast"></div>
+
     <!-- Import Map to allow bare module imports for Three.js -->
     <script type="importmap">
         {
@@ -34,6 +51,8 @@
 
         // Configure renderer
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.domElement.setAttribute('role', 'application');
+        renderer.domElement.setAttribute('aria-label', '3D Solar System Simulation');
         document.body.appendChild(renderer.domElement);
 
         // ============================================================================
@@ -258,7 +277,17 @@
             for (let i = 0; i < intersects.length; i++) {
                 // Check if the object has a name
                 if (intersects[i].object.userData.name) {
-                    console.log("Planet clicked:", intersects[i].object.userData.name);
+                    const name = intersects[i].object.userData.name;
+                    console.log("Planet clicked:", name);
+
+                    const toast = document.getElementById('toast');
+                    toast.textContent = `Selected: ${name}`;
+                    toast.classList.add('visible');
+
+                    // Clear existing timeout if any (simple debounce)
+                    if (toast.timeout) clearTimeout(toast.timeout);
+                    toast.timeout = setTimeout(() => toast.classList.remove('visible'), 2000);
+
                     break; // Stop after finding the first named object
                 }
             }
