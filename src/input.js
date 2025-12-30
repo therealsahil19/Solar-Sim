@@ -63,7 +63,7 @@ export function setupInteraction(context, callbacks) {
         // Update Toast
         let text = `Selected: ${d.name}`;
         if (d.type && d.size !== undefined) {
-            text += ` (${d.type})`;
+            text += ` (${d.type}) – ${d.size.toFixed(2)} × Earth size`;
         }
         const toast = document.getElementById('toast');
         if (toast) {
