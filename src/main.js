@@ -485,9 +485,9 @@ function animate() {
                 // For a small buffer (100 points) and few planets (8), this is fine.
                 // For larger buffers, a ring buffer pointer is better.
                 // Let's implement shifting for simplicity of rendering (always 0 to N).
-                for (let i = positions.length - 1; i >= 3; i--) {
-                    positions[i] = positions[i - 3];
-                }
+                // Optimization: Use copyWithin for native memory block copy
+                positions.copyWithin(3, 0, positions.length - 3);
+
                 positions[0] = tempVec.x;
                 positions[1] = tempVec.y;
                 positions[2] = tempVec.z;
