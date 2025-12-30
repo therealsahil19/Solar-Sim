@@ -178,10 +178,15 @@ export function setupInteraction(context, callbacks) {
     if (btnPause) btnPause.addEventListener('click', () => callbacks.onTogglePause(btnPause));
 
     const sliderSpeed = document.getElementById('slider-speed');
+    const speedValue = document.getElementById('speed-value');
     if (sliderSpeed) {
         sliderSpeed.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             callbacks.onUpdateTimeScale(val);
+            const valStr = val.toFixed(1);
+            if (speedValue) speedValue.textContent = valStr + 'x';
+            sliderSpeed.setAttribute('aria-valuenow', val);
+            sliderSpeed.setAttribute('aria-valuetext', valStr + 'x');
         });
     }
 
