@@ -148,6 +148,9 @@ export function setupInteraction(context, callbacks) {
 
         if (key === 'c') {
             callbacks.onToggleCamera();
+        } else if (key === 't') {
+            const btn = document.getElementById('btn-texture');
+            callbacks.onToggleTexture(btn);
         } else if (key === ' ' || key === 'spacebar') {
              const btn = document.getElementById('btn-pause');
              callbacks.onTogglePause(btn);
