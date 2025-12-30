@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World of Space</title>
+    <title>Solar System Vibe Check</title>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { margin: 0; overflow: hidden; background-color: #000; }
         canvas { display: block; }
     </style>
 </head>
@@ -30,67 +30,141 @@
         document.body.appendChild(renderer.domElement);
 
         // 2. Lighting
-        const pointLight = new THREE.PointLight(0xffffff, 2, 100);
+        const pointLight = new THREE.PointLight(0xffffff, 2, 300);
         pointLight.position.set(0, 0, 0);
         scene.add(pointLight);
 
-        const ambientLight = new THREE.AmbientLight(0x606060); // Soft white light
+        const ambientLight = new THREE.AmbientLight(0x404040); // Dim ambient
         scene.add(ambientLight);
 
-        // 3. Objects
+        // 3. Helpers & Generators
+        const animatedObjects = []; // Stores { mesh, pivot, speed, rotationSpeed }
 
-        // Sun
-        const sunGeometry = new THREE.SphereGeometry(2, 32, 32);
-        const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Basic material so it glows (doesn't need light to show)
-        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-        scene.add(sun);
+        // Starfield
+        function createStarfield() {
+            const geometry = new THREE.BufferGeometry();
+            const count = 3000;
+            const positions = new Float32Array(count * 3);
+            for(let i=0; i<count*3; i++) {
+                positions[i] = (Math.random() - 0.5) * 400;
+            }
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2, transparent: true, opacity: 0.8 });
+            const stars = new THREE.Points(geometry, material);
+            scene.add(stars);
+        }
 
-        // Earth Pivot (Center of the solar system for Earth's orbit)
-        const earthPivot = new THREE.Object3D();
-        scene.add(earthPivot);
+        // Orbit Line
+        function createOrbitLine(radius) {
+            const points = [];
+            const segments = 128;
+            for (let i = 0; i <= segments; i++) {
+                const theta = (i / segments) * Math.PI * 2;
+                points.push(new THREE.Vector3(Math.cos(theta) * radius, 0, Math.sin(theta) * radius));
+            }
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.15, transparent: true });
+            return new THREE.LineLoop(geometry, material);
+        }
 
-        // Earth
-        const earthGeometry = new THREE.SphereGeometry(1, 32, 32);
-        const earthMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-        const earth = new THREE.Mesh(earthGeometry, earthMaterial);
-        earth.position.x = 10; // Distance from Sun
-        earthPivot.add(earth);
+        // The Sun (Special Case)
+        function createSun() {
+            const geometry = new THREE.SphereGeometry(2.5, 64, 64);
+            const material = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+            const sun = new THREE.Mesh(geometry, material);
+            scene.add(sun);
+        }
 
-        // Moon
-        const moonGeometry = new THREE.SphereGeometry(0.3, 32, 32);
-        const moonMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
-        const moon = new THREE.Mesh(moonGeometry, moonMaterial);
-        moon.position.x = 2; // Distance from Earth
-        earth.add(moon);
+        // System Generator
+        function createSystem(data, parent) {
+            // 1. Pivot: Controls the orbit speed around the parent
+            const orbitPivot = new THREE.Object3D();
+            parent.add(orbitPivot);
+
+            // 2. Orbit Line: Visual path (added to parent so it doesn't spin with the pivot)
+            if (data.distance > 0) {
+                const orbitLine = createOrbitLine(data.distance);
+                orbitLine.rotation.x = Math.PI / 2; // Usually lines are XZ, but if I defined them XZ they are flat. Wait.
+                // In createOrbitLine: Vector3(x, 0, z) -> Flat on XZ plane.
+                // Default scene is Y-up.
+                // So no rotation needed for the line to be flat.
+                parent.add(orbitLine);
+            }
+
+            // 3. Planet Group: Holds the body and its moons at the distance
+            const bodyGroup = new THREE.Group();
+            bodyGroup.position.x = data.distance;
+            orbitPivot.add(bodyGroup);
+
+            // 4. The Mesh: The visual planet itself
+            const geometry = new THREE.SphereGeometry(data.size, 32, 32);
+            const material = new THREE.MeshStandardMaterial({ color: data.color });
+            const mesh = new THREE.Mesh(geometry, material);
+            bodyGroup.add(mesh);
+
+            // Register for animation
+            animatedObjects.push({
+                pivot: orbitPivot,
+                mesh: mesh,
+                speed: data.speed || 0,
+                rotationSpeed: data.rotationSpeed || 0
+            });
+
+            // 5. Recursion for Moons
+            if (data.moons && data.moons.length > 0) {
+                data.moons.forEach(moonData => {
+                    createSystem(moonData, bodyGroup);
+                });
+            }
+        }
+
+        // 4. Configuration & Initialization
+        const planetData = [
+            {
+                name: "Earth",
+                color: 0x2233FF,
+                size: 1,
+                distance: 15,
+                speed: 0.005,
+                rotationSpeed: 0.02,
+                moons: [
+                    { name: "Moon", color: 0xAAAAAA, size: 0.27, distance: 2.5, speed: 0.03, rotationSpeed: 0.01 }
+                ]
+            },
+            {
+                name: "Mars",
+                color: 0xFF4500,
+                size: 0.53,
+                distance: 22,
+                speed: 0.003,
+                rotationSpeed: 0.018,
+                moons: [
+                    { name: "Phobos", color: 0x555555, size: 0.1, distance: 0.8, speed: 0.08, rotationSpeed: 0.05 },
+                    { name: "Deimos", color: 0x555555, size: 0.08, distance: 1.2, speed: 0.06, rotationSpeed: 0.05 }
+                ]
+            }
+        ];
+
+        createStarfield();
+        createSun();
+
+        planetData.forEach(planet => {
+            createSystem(planet, scene);
+        });
 
         // Controls
         const controls = new OrbitControls(camera, renderer.domElement);
-        camera.position.z = 20;
+        camera.position.set(0, 20, 40);
         controls.update();
 
-        // 4. Animation
+        // 5. Animation Loop
         function animate() {
             requestAnimationFrame(animate);
 
-            // Rotate Earth's pivot (Orbit around Sun)
-            earthPivot.rotation.y += 0.01;
-
-            // Rotate Earth (Day/Night cycle)
-            earth.rotation.y += 0.05;
-
-            // Moon automatically orbits Earth because it is a child of Earth
-            // But if we want it to orbit independently of Earth's rotation, we might need a moon pivot.
-            // Requirement says: "Moon parented to the Earth".
-            // If Moon is parented to Earth, and Earth rotates, the Moon will rotate with the Earth (geosynchronous lock to Earth's surface if position is fixed).
-            // Usually Moon orbits Earth.
-            // If I just leave it parented to Earth, it will spin around the Earth as the Earth spins.
-            // Let's add a "Moon Pivot" at Earth's center if we want independent orbit speed, or just animate the moon's position?
-            // "Create a tiny gray Sphere (Moon) parented to the Earth." -> OK.
-            // "Movemement: ... rotate the Earth's pivot (orbit) and the Earth itself (day/night cycle)."
-            // It doesn't explicitly say "Rotate Moon".
-            // However, "Verify that you can look around and see things moving."
-            // If Earth rotates, Moon will rotate with it. That counts as moving.
-            // I'll stick to the strict "parented to the Earth" instruction.
+            animatedObjects.forEach(obj => {
+                if (obj.pivot) obj.pivot.rotation.y += obj.speed;
+                if (obj.mesh) obj.mesh.rotation.y += obj.rotationSpeed;
+            });
 
             controls.update();
             renderer.render(scene, camera);
