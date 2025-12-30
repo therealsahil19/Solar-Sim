@@ -1,6 +1,7 @@
 [
     {
         "name": "Mercury",
+        "type": "Planet",
         "color": "#AAAAAA",
         "texture": "textures/mercury.jpg",
         "size": 0.38,
@@ -11,6 +12,7 @@
     },
     {
         "name": "Venus",
+        "type": "Planet",
         "color": "#E3BB76",
         "texture": "textures/venus.jpg",
         "size": 0.95,
@@ -21,6 +23,7 @@
     },
     {
         "name": "Earth",
+        "type": "Planet",
         "color": "#2233FF",
         "texture": "textures/earth.jpg",
         "size": 1,
@@ -28,11 +31,12 @@
         "speed": 0.005,
         "rotationSpeed": 0.02,
         "moons": [
-            { "name": "Moon", "color": "#888888", "texture": "textures/moon.jpg", "size": 0.27, "distance": 2.5, "speed": 0.03, "rotationSpeed": 0.01 }
+            { "name": "Moon", "type": "Moon", "color": "#888888", "texture": "textures/moon.jpg", "size": 0.27, "distance": 2.5, "speed": 0.03, "rotationSpeed": 0.01 }
         ]
     },
     {
         "name": "Mars",
+        "type": "Planet",
         "color": "#FF4500",
         "texture": "textures/mars.jpg",
         "size": 0.53,
@@ -40,12 +44,13 @@
         "speed": 0.003,
         "rotationSpeed": 0.018,
         "moons": [
-            { "name": "Phobos", "color": "#555555", "size": 0.1, "distance": 0.8, "speed": 0.08, "rotationSpeed": 0.05 },
-            { "name": "Deimos", "color": "#555555", "size": 0.08, "distance": 1.2, "speed": 0.06, "rotationSpeed": 0.05 }
+            { "name": "Phobos", "type": "Moon", "color": "#555555", "size": 0.1, "distance": 0.8, "speed": 0.08, "rotationSpeed": 0.05 },
+            { "name": "Deimos", "type": "Moon", "color": "#555555", "size": 0.08, "distance": 1.2, "speed": 0.06, "rotationSpeed": 0.05 }
         ]
     },
     {
         "name": "Jupiter",
+        "type": "Planet",
         "color": "#D8CA9D",
         "texture": "textures/jupiter.jpg",
         "size": 3.5,
@@ -56,6 +61,7 @@
     },
     {
         "name": "Saturn",
+        "type": "Planet",
         "color": "#D2C0A5",
         "texture": "textures/saturn.jpg",
         "size": 3,
@@ -66,6 +72,7 @@
     },
     {
         "name": "Uranus",
+        "type": "Planet",
         "color": "#93B8BE",
         "texture": "textures/uranus.jpg",
         "size": 2,
@@ -76,6 +83,7 @@
     },
     {
         "name": "Neptune",
+        "type": "Planet",
         "color": "#4B70DD",
         "texture": "textures/neptune.jpg",
         "size": 1.9,

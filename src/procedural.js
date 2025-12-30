@@ -75,7 +75,8 @@ export function createSun(textureLoader, useTextures) {
     const sun = new THREE.Mesh(geometry, useTextures ? texturedMaterial : solidMaterial);
 
     sun.userData.name = "Sun";
-    sun.userData.type = "star";
+    sun.userData.type = "Star";
+    sun.userData.size = 2.5;
     sun.userData.solidMaterial = solidMaterial;
     sun.userData.texturedMaterial = texturedMaterial;
 
@@ -166,6 +167,8 @@ export function createSystem(data, textureLoader, useTextures) {
     const mesh = new THREE.Mesh(geometry, useTextures ? texturedMaterial : solidMaterial);
     mesh.scale.set(data.size, data.size, data.size);
     mesh.userData.name = data.name;
+    mesh.userData.type = data.type;
+    mesh.userData.size = data.size;
     mesh.userData.solidMaterial = solidMaterial;
     mesh.userData.texturedMaterial = texturedMaterial;
 

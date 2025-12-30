@@ -39,6 +39,8 @@ export function setupControls(camera, domElement) {
  * @param {Object} callbacks - Callback functions for actions.
  * @param {Function} callbacks.onToggleCamera - Function to toggle camera mode.
  * @param {Function} callbacks.onToggleTexture - Function to toggle textures (accepts button element).
+ * @param {Function} callbacks.onTogglePause - Function to toggle pause state.
+ * @param {Function} callbacks.onFocusPlanet - Function to focus camera on a planet (index).
  */
 export function setupInteraction(context, callbacks) {
     const { camera, rendererDomElement, interactionTargets } = context;
@@ -56,12 +58,20 @@ export function setupInteraction(context, callbacks) {
         const intersects = raycaster.intersectObjects(interactionTargets, false);
 
         for (let i = 0; i < intersects.length; i++) {
-            if (intersects[i].object.userData.name) {
-                const name = intersects[i].object.userData.name;
+            const userData = intersects[i].object.userData;
+            if (userData.name) {
+                const name = userData.name;
+                const type = userData.type;
+                const size = userData.size;
                 console.log("Planet clicked:", name);
 
+                let text = `Selected: ${name}`;
+                if (type && size !== undefined) {
+                    text += ` (${type}) – ${size.toFixed(2)} × Earth size`;
+                }
+
                 const toast = document.getElementById('toast');
-                toast.textContent = `Selected: ${name}`;
+                toast.textContent = text;
                 toast.classList.add('visible');
 
                 if (toast.timeout) clearTimeout(toast.timeout);
@@ -71,10 +81,20 @@ export function setupInteraction(context, callbacks) {
         }
     });
 
-    // Keyboard Listener ('C' key)
+    // Keyboard Listener
     window.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === 'c') {
+        const key = e.key.toLowerCase();
+
+        if (key === 'c') {
             callbacks.onToggleCamera();
+        } else if (key === ' ' || key === 'spacebar') {
+            callbacks.onTogglePause();
+        } else {
+            // Check for number keys 1-9
+            const num = parseInt(key);
+            if (!isNaN(num) && num >= 1 && num <= 9) {
+                callbacks.onFocusPlanet(num - 1); // 0-indexed
+            }
         }
     });
 
