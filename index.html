@@ -55,6 +55,9 @@
         // Stores: { mesh, pivot, speed, rotationSpeed }
         const animatedObjects = [];
 
+        // The player ship object
+        let playerShip;
+
         /**
          * Creates a procedural starfield background using Points.
          * Generates random positions for stars within a large volume.
@@ -104,6 +107,42 @@
         }
 
         /**
+         * Creates the player ship using primitives (Cone + Cylinders).
+         * Position is fixed, but rotation will update.
+         */
+        function createPlayerShip() {
+            const shipGroup = new THREE.Group();
+
+            // Main Body (Cone)
+            const bodyGeo = new THREE.ConeGeometry(0.5, 2, 8);
+            const bodyMat = new THREE.MeshNormalMaterial(); // Uses surface normals for colors
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            // Rotate cone to point along positive Z axis (which lookAt uses)
+            body.rotation.x = Math.PI / 2;
+            shipGroup.add(body);
+
+            // Engines (Cylinders)
+            const engineGeo = new THREE.CylinderGeometry(0.2, 0.1, 1.5, 8);
+            const engineMat = new THREE.MeshNormalMaterial();
+
+            const leftEngine = new THREE.Mesh(engineGeo, engineMat);
+            leftEngine.position.set(-0.6, 0, -0.5);
+            leftEngine.rotation.x = Math.PI / 2;
+            shipGroup.add(leftEngine);
+
+            const rightEngine = new THREE.Mesh(engineGeo, engineMat);
+            rightEngine.position.set(0.6, 0, -0.5);
+            rightEngine.rotation.x = Math.PI / 2;
+            shipGroup.add(rightEngine);
+
+            // Set initial position away from the center
+            shipGroup.position.set(20, 5, 20);
+            scene.add(shipGroup);
+            playerShip = shipGroup;
+            window.playerShip = playerShip; // Expose for testing
+        }
+
+        /**
          * Recursively creates a celestial body (planet or moon) and its satellites.
          * @param {Object} data - Configuration object for the body (size, distance, etc.).
          * @param {THREE.Object3D} parent - The parent object to attach this system to (Scene or another Group).
@@ -131,6 +170,7 @@
             const geometry = new THREE.SphereGeometry(data.size, 32, 32);
             const material = new THREE.MeshStandardMaterial({ color: data.color });
             const mesh = new THREE.Mesh(geometry, material);
+            mesh.userData.name = data.name; // Store name for raycasting
             bodyGroup.add(mesh);
 
             // Register this body for animation updates
@@ -184,6 +224,7 @@
         // Initialize the scene objects
         createStarfield();
         createSun();
+        createPlayerShip();
 
         // Generate the planetary systems
         planetData.forEach(planet => {
@@ -192,12 +233,65 @@
 
         // Initialize OrbitControls to allow user interaction (rotate/zoom)
         const controls = new OrbitControls(camera, renderer.domElement);
+        window.controls = controls; // Expose for testing
         camera.position.set(0, 20, 40); // Set initial camera position
         controls.update();
 
         // ============================================================================
-        // 5. Animation Loop
+        // 5. Interaction Logic
         // ============================================================================
+
+        // --- Raycaster (Click to Log Name) ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', (event) => {
+            // Calculate mouse position in normalized device coordinates
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Intersect recursively
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            for (let i = 0; i < intersects.length; i++) {
+                // Check if the object has a name
+                if (intersects[i].object.userData.name) {
+                    console.log("Planet clicked:", intersects[i].object.userData.name);
+                    break; // Stop after finding the first named object
+                }
+            }
+        });
+
+        // --- Camera Toggle (Key 'C') ---
+        let isShipView = false;
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'c') {
+                isShipView = !isShipView;
+                if (isShipView) {
+                    // Switch to Ship View (Chase Cam)
+                    controls.target.copy(playerShip.position);
+                    // Position camera behind and above the ship
+                    camera.position.set(
+                        playerShip.position.x + 5,
+                        playerShip.position.y + 3,
+                        playerShip.position.z + 5
+                    );
+                } else {
+                    // Switch to Sun View (Overview)
+                    controls.target.set(0, 0, 0);
+                    camera.position.set(0, 20, 40);
+                }
+                controls.update();
+            }
+        });
+
+        // ============================================================================
+        // 6. Animation Loop
+        // ============================================================================
+        const tempVec = new THREE.Vector3(); // Reused vector for calculations
+
         function animate() {
             requestAnimationFrame(animate);
 
@@ -206,6 +300,28 @@
                 if (obj.pivot) obj.pivot.rotation.y += obj.speed; // Orbit rotation
                 if (obj.mesh) obj.mesh.rotation.y += obj.rotationSpeed; // Self rotation
             });
+
+            // Update Ship Orientation: Face the nearest planet
+            if (playerShip && animatedObjects.length > 0) {
+                let closestDist = Infinity;
+                let closestObj = null;
+                const shipPos = playerShip.position;
+
+                animatedObjects.forEach(obj => {
+                    // Get world position of the planet mesh
+                    obj.mesh.getWorldPosition(tempVec);
+                    const dist = shipPos.distanceToSquared(tempVec);
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        closestObj = obj.mesh;
+                    }
+                });
+
+                if (closestObj) {
+                    closestObj.getWorldPosition(tempVec);
+                    playerShip.lookAt(tempVec);
+                }
+            }
 
             controls.update(); // Update controls
             renderer.render(scene, camera); // Render the frame
