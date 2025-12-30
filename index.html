@@ -105,6 +105,10 @@
         // Stores: { mesh, pivot, speed, rotationSpeed }
         const animatedObjects = [];
 
+        // Optimization: Array to store only interactable objects for raycasting.
+        // This avoids checking thousands of stars and orbit lines every click.
+        const interactionTargets = [];
+
         // The player ship object
         let playerShip;
 
@@ -237,6 +241,9 @@
             mesh.userData.name = data.name; // Store name for raycasting
             bodyGroup.add(mesh);
 
+            // Add to raycasting targets
+            interactionTargets.push(mesh);
+
             // Register this body for animation updates
             animatedObjects.push({
                 pivot: orbitPivot,       // Rotates for orbit
@@ -316,8 +323,9 @@
 
             raycaster.setFromCamera(mouse, camera);
 
-            // Intersect recursively
-            const intersects = raycaster.intersectObjects(scene.children, true);
+            // Optimization: Intersect only specific targets, not the whole scene.
+            // recursive: false because interactionTargets contains the meshes directly.
+            const intersects = raycaster.intersectObjects(interactionTargets, false);
 
             for (let i = 0; i < intersects.length; i++) {
                 // Check if the object has a name
