@@ -117,8 +117,11 @@ export function createPlayerShip() {
 
 /**
  * Recursively creates a celestial body system (planet + moons).
+ * This function implements the recursive logic to support an infinite hierarchy of satellites.
+ *
  * @param {Object} data - Configuration object for the planet/moon.
  * @param {string} data.name - Name of the body.
+ * @param {string} data.type - Type of body (e.g., 'Planet', 'Moon').
  * @param {string|number} data.color - Color of the body (hex or CSS string).
  * @param {string} [data.texture] - Path to texture image.
  * @param {number} data.size - Radius of the body.
