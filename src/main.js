@@ -14,6 +14,7 @@
  */
 
 import * as THREE from 'three';
+import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 import { createStarfield, createSun, createPlayerShip, createSystem } from './procedural.js';
 import { setupControls, setupInteraction } from './input.js';
 
@@ -30,8 +31,19 @@ const interactionTargets = [];
 /** @type {Array<THREE.Mesh>} List of primary planets for keyboard shortcuts */
 const planets = [];
 
+/** @type {Array<THREE.Line>} List of trail lines to update */
+const activeTrails = [];
+
+// Lists for toggling visibility
+const allOrbits = [];
+const allTrails = [];
+const allLabels = [];
+
 /** @type {THREE.Group|null} Reference to the player ship */
 let playerShip;
+
+/** @type {THREE.Points|null} Reference to starfield */
+let starfield;
 
 /** @type {OrbitControls|null} Reference to the camera controls */
 let controls;
@@ -45,6 +57,9 @@ let camera;
 /** @type {THREE.WebGLRenderer} The renderer */
 let renderer;
 
+/** @type {CSS2DRenderer} The label renderer */
+let labelRenderer;
+
 /** @type {boolean} Global state for texture usage */
 let useTextures = true;
 
@@ -54,6 +69,11 @@ let isShipView = false;
 /** @type {boolean} Global state for pause */
 let isPaused = false;
 
+/** @type {boolean} Global state for labels */
+let showLabels = true;
+
+/** @type {boolean} Global state for orbits/trails */
+let showOrbits = true;
 /** @type {number} Global time scale factor */
 let timeScale = 1.0;
 
@@ -96,6 +116,14 @@ async function init() {
     renderer.domElement.setAttribute('aria-label', '3D Solar System Simulation');
     document.body.appendChild(renderer.domElement);
 
+    // Setup CSS2DRenderer for labels
+    labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    labelRenderer.domElement.style.pointerEvents = 'none'; // Pass through clicks
+    document.body.appendChild(labelRenderer.domElement);
+
     // 2. Lighting
     const pointLight = new THREE.PointLight(0xffffff, 2, 300);
     scene.add(pointLight);
@@ -137,8 +165,8 @@ async function init() {
 
     // 4. Create Initial Objects (Procedural)
     // Starfield
-    const stars = createStarfield();
-    scene.add(stars);
+    starfield = createStarfield();
+    scene.add(starfield);
 
     // Sun
     const sun = createSun(textureLoader, useTextures);
@@ -163,10 +191,21 @@ async function init() {
             if (systemNode.orbit) {
                 scene.add(systemNode.orbit);
             }
+            if (systemNode.trail) {
+                scene.add(systemNode.trail);
+            }
 
             // Aggregate interaction and animation targets
             interactionTargets.push(...systemNode.interactables);
             animatedObjects.push(...systemNode.animated);
+
+            // Collect toggleable items
+            allOrbits.push(...systemNode.orbits);
+            allTrails.push(...systemNode.trails);
+            allLabels.push(...systemNode.labels);
+
+            // Collect trails for animation updates
+            activeTrails.push(...systemNode.trails);
 
             // Track primary planets (assuming system.json is flat list of planets)
             // The first interactable in the returned list is the main body of the system
@@ -180,6 +219,14 @@ async function init() {
     }
 
     // 6. Setup Controls & Input
+    controls = setupControls(camera, labelRenderer.domElement); // Use labelRenderer dom for input to capture over labels
+    // Wait, orbit controls usually attaches to the canvas.
+    // However, the label renderer is on top. If we attach to renderer.domElement, label renderer might block.
+    // But we set labelRenderer pointerEvents to none. So clicks pass through to canvas.
+    // So sticking with renderer.domElement is safer for OrbitControls unless we want controls on top layer.
+    // Actually, OrbitControls works best on the element receiving events.
+    // If pointer-events: none is on labelRenderer, the events go to canvas.
+    // So setupControls(camera, renderer.domElement) is correct.
     controls = setupControls(camera, renderer.domElement);
     window.controls = controls; // Expose to window
 
@@ -203,6 +250,10 @@ async function init() {
     };
 
     interactionHelpers = setupInteraction(context, callbacks);
+
+    // Bind new UI buttons
+    document.getElementById('btn-labels').addEventListener('click', toggleLabels);
+    document.getElementById('btn-orbits').addEventListener('click', toggleOrbits);
 
     // 7. Start Loop
     animate();
@@ -293,6 +344,29 @@ function toggleTextures(btnElement) {
     showToast(`Textures: ${useTextures ? "ON" : "OFF"}`);
 }
 
+function toggleLabels() {
+    showLabels = !showLabels;
+    const btn = document.getElementById('btn-labels');
+    if (btn) btn.style.opacity = showLabels ? '1' : '0.5';
+
+    allLabels.forEach(label => {
+        label.visible = showLabels;
+    });
+
+    showToast(`Labels: ${showLabels ? "ON" : "OFF"}`);
+}
+
+function toggleOrbits() {
+    showOrbits = !showOrbits;
+    const btn = document.getElementById('btn-orbits');
+    if (btn) btn.style.opacity = showOrbits ? '1' : '0.5';
+
+    allOrbits.forEach(orbit => orbit.visible = showOrbits);
+    allTrails.forEach(trail => trail.visible = showOrbits);
+
+    showToast(`Orbits: ${showOrbits ? "ON" : "OFF"}`);
+}
+
 /**
  * Toggles the pause state.
  * @param {HTMLElement} [btnElement] - The button element to update.
@@ -326,6 +400,23 @@ function focusPlanet(index) {
     }
 }
 
+    // Update controls target to planet position
+    const targetPos = new THREE.Vector3();
+    planet.getWorldPosition(targetPos);
+    controls.target.copy(targetPos);
+
+    controls.update();
+
+    // Trigger Toast
+    const name = planet.userData.name;
+    const type = planet.userData.type;
+    const size = planet.userData.size;
+
+    let text = `Selected: ${name}`;
+    if (type && size !== undefined) {
+        text += ` (${type}) – ${size.toFixed(2)} × Earth size`;
+    }
+    showToast(text);
 /**
  * Handles object selection (updates UI state).
  * @param {THREE.Object3D} mesh - The selected object.
@@ -361,14 +452,44 @@ const sunPos = new THREE.Vector3(0, 0, 0);
 function animate() {
     requestAnimationFrame(animate);
 
-    // 1. Update Rotations (only if not paused)
     if (!isPaused) {
+        // 1. Update Rotations
         animatedObjects.forEach(obj => {
             if (obj.pivot) obj.pivot.rotation.y += obj.speed * timeScale;
             if (obj.mesh) obj.mesh.rotation.y += obj.rotationSpeed * timeScale;
         });
+
+        // 2. Starfield Rotation
+        if (starfield) {
+            starfield.rotation.y += 0.0003;
+        }
+
+        // 3. Update Trails
+        if (showOrbits) {
+            activeTrails.forEach(trail => {
+                const target = trail.userData.target;
+                if (!target) return;
+
+                target.getWorldPosition(tempVec);
+                const positions = trail.userData.positions;
+
+                // Shift positions: This is a simple O(N) shift.
+                // For a small buffer (100 points) and few planets (8), this is fine.
+                // For larger buffers, a ring buffer pointer is better.
+                // Let's implement shifting for simplicity of rendering (always 0 to N).
+                for (let i = positions.length - 1; i >= 3; i--) {
+                    positions[i] = positions[i - 3];
+                }
+                positions[0] = tempVec.x;
+                positions[1] = tempVec.y;
+                positions[2] = tempVec.z;
+
+                trail.geometry.attributes.position.needsUpdate = true;
+            });
+        }
     }
 
+    // 4. Update Ship Orientation
     // 2. Camera Logic
     if (isShipView && playerShip) {
         // Chase Cam
@@ -425,15 +546,19 @@ function animate() {
 
     // 5. Render
     if (controls) controls.update();
-    if (renderer && scene && camera) renderer.render(scene, camera);
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+        labelRenderer.render(scene, camera);
+    }
 }
 
 // Handle Resize
 window.addEventListener('resize', () => {
-    if (camera && renderer) {
+    if (camera && renderer && labelRenderer) {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
     }
 });
 
