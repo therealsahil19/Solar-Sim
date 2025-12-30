@@ -2,9 +2,6 @@ import os
 import urllib.request
 import ssl
 
-# Bypass SSL verification for simple script usage if needed (though solarsystemscope should be fine)
-ssl._create_default_https_context = ssl._create_unverified_context
-
 TEXTURES_DIR = "textures"
 BASE_URL = "https://www.solarsystemscope.com/textures/download"
 
