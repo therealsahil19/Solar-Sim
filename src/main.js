@@ -412,23 +412,6 @@ function focusPlanet(index) {
     }
 }
 
-    // Update controls target to planet position
-    const targetPos = new THREE.Vector3();
-    planet.getWorldPosition(targetPos);
-    controls.target.copy(targetPos);
-
-    controls.update();
-
-    // Trigger Toast
-    const name = planet.userData.name;
-    const type = planet.userData.type;
-    const size = planet.userData.size;
-
-    let text = `Selected: ${name}`;
-    if (type && size !== undefined) {
-        text += ` (${type}) – ${size.toFixed(2)} × Earth size`;
-    }
-    showToast(text);
 /**
  * Handles object selection (updates UI state).
  * @param {THREE.Object3D} mesh - The selected object.
