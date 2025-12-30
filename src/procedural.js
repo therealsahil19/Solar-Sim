@@ -1,6 +1,16 @@
+/**
+ * @file procedural.js
+ * @description Factory module for generating 3D objects in the simulation.
+ *
+ * This module follows a functional "Factory" pattern. It exports pure functions
+ * that accept configuration/dependencies and return Three.js objects (Meshes, Groups, Points).
+ * It does not maintain global state or modify the scene directly.
+ */
+
 import * as THREE from 'three';
 
 // --- Shared Resources ---
+// Reusing geometry reduces memory overhead significantly
 const baseOrbitGeometry = new THREE.BufferGeometry();
 {
     const points = [];
@@ -16,8 +26,8 @@ const baseOrbitMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, opacity
 const baseSphereGeometry = new THREE.SphereGeometry(1, 64, 64);
 
 /**
- * Creates a procedural starfield background.
- * @returns {THREE.Points}
+ * Creates a procedural starfield background using points.
+ * @returns {THREE.Points} The starfield particle system.
  */
 export function createStarfield() {
     const geometry = new THREE.BufferGeometry();
@@ -32,9 +42,10 @@ export function createStarfield() {
 }
 
 /**
- * Creates an orbit line.
- * @param {number} radius
- * @returns {THREE.LineLoop}
+ * Creates an orbit line visualization.
+ * Scaled from the shared unit circle geometry.
+ * @param {number} radius - The radius of the orbit.
+ * @returns {THREE.LineLoop} The orbit line object.
  */
 export function createOrbitLine(radius) {
     const line = new THREE.LineLoop(baseOrbitGeometry, baseOrbitMaterial);
@@ -43,10 +54,10 @@ export function createOrbitLine(radius) {
 }
 
 /**
- * Creates the Sun mesh.
- * @param {THREE.TextureLoader} textureLoader
- * @param {boolean} useTextures
- * @returns {THREE.Mesh}
+ * Creates the central Sun mesh.
+ * @param {THREE.TextureLoader} textureLoader - The loader instance for fetching textures.
+ * @param {boolean} useTextures - Whether to apply the texture initially.
+ * @returns {THREE.Mesh} The Sun mesh, with userData containing both material references.
  */
 export function createSun(textureLoader, useTextures) {
     const geometry = new THREE.SphereGeometry(2.5, 64, 64);
@@ -72,8 +83,8 @@ export function createSun(textureLoader, useTextures) {
 }
 
 /**
- * Creates the player ship group.
- * @returns {THREE.Group}
+ * Creates the player ship group consisting of a body and engines.
+ * @returns {THREE.Group} The player ship group.
  */
 export function createPlayerShip() {
     const shipGroup = new THREE.Group();
@@ -105,10 +116,22 @@ export function createPlayerShip() {
 
 /**
  * Recursively creates a celestial body system (planet + moons).
- * @param {Object} data - Planet data from JSON
- * @param {THREE.TextureLoader} textureLoader
- * @param {boolean} useTextures
- * @returns {Object} { pivot, orbit, interactables, animated }
+ * @param {Object} data - Configuration object for the planet/moon.
+ * @param {string} data.name - Name of the body.
+ * @param {string|number} data.color - Color of the body (hex or CSS string).
+ * @param {string} [data.texture] - Path to texture image.
+ * @param {number} data.size - Radius of the body.
+ * @param {number} data.distance - Orbital distance from parent.
+ * @param {number} data.speed - Orbital speed around parent.
+ * @param {number} data.rotationSpeed - Self-rotation speed.
+ * @param {Array<Object>} [data.moons] - Array of sub-satellites (recursive structure).
+ * @param {THREE.TextureLoader} textureLoader - Loader for textures.
+ * @param {boolean} useTextures - Initial texture state.
+ * @returns {Object} An object containing the generated components:
+ *  - `pivot` {THREE.Object3D}: The center point for orbit rotation.
+ *  - `orbit` {THREE.LineLoop|null}: The visual orbit line.
+ *  - `interactables` {Array<THREE.Mesh>}: Flat list of interactive meshes (this body + all descendants).
+ *  - `animated` {Array<Object>}: Flat list of objects needing animation updates (this body + all descendants).
  */
 export function createSystem(data, textureLoader, useTextures) {
     // 1. Pivot
