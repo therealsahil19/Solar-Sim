@@ -97,7 +97,19 @@ async function init() {
     manager.onLoad = function ( ) {
         if (loadingScreen) {
             loadingScreen.style.opacity = '0';
-            setTimeout(() => loadingScreen.style.display = 'none', 500);
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+
+                // Show onboarding hint
+                const hint = document.getElementById('onboarding-hint');
+                if (hint) {
+                    hint.classList.add('visible');
+                    setTimeout(() => {
+                        hint.classList.remove('visible');
+                        hint.classList.add('hidden');
+                    }, 5500); // 5.5s visible
+                }
+            }, 500);
         }
     };
 
