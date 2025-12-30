@@ -389,6 +389,7 @@ function togglePause(btnElement) {
 
     if (btnElement) {
         btnElement.textContent = isPaused ? "▶" : "⏸";
+        btnElement.setAttribute('aria-label', isPaused ? "Resume Simulation" : "Pause Simulation");
     }
 
     showToast(isPaused ? "Paused" : "Resumed");

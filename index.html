@@ -180,10 +180,13 @@
     </div>
 
     <div id="time-controls">
-        <button id="btn-pause" title="Pause/Play">⏸</button>
+        <button id="btn-pause" title="Pause/Play" aria-label="Pause Simulation">⏸</button>
         <div style="display: flex; flex-direction: column; font-size: 0.8rem; color: #ccc;">
-            <label for="slider-speed" style="margin-bottom: 2px;">Speed</label>
-            <input type="range" id="slider-speed" min="0.1" max="5.0" step="0.1" value="1.0">
+            <div style="display: flex; justify-content: space-between; width: 100px;">
+                <label for="slider-speed" style="margin-bottom: 2px;">Speed</label>
+                <span id="speed-value" style="font-size: 0.8rem; opacity: 0.8;">1.0x</span>
+            </div>
+            <input type="range" id="slider-speed" min="0.1" max="5.0" step="0.1" value="1.0" aria-valuemin="0.1" aria-valuemax="5.0" aria-valuenow="1.0" aria-valuetext="1.0x">
         </div>
     </div>
 
