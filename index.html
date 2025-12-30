@@ -77,6 +77,24 @@
         // The player ship object
         let playerShip;
 
+        // --- SHARED RESOURCES FOR OPTIMIZATION ---
+        // Reuse geometry and material for orbits to reduce draw calls and memory.
+        const baseOrbitGeometry = new THREE.BufferGeometry();
+        {
+            const points = [];
+            const segments = 128;
+            for (let i = 0; i <= segments; i++) {
+                const theta = (i / segments) * Math.PI * 2;
+                points.push(new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta)));
+            }
+            baseOrbitGeometry.setFromPoints(points);
+        }
+        const baseOrbitMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.15, transparent: true });
+
+        // Reuse geometry for planets/moons to save memory.
+        const baseSphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+        // -----------------------------------------
+
         /**
          * Creates a procedural starfield background using Points.
          * Generates random positions for stars within a large volume.
@@ -101,16 +119,10 @@
          * @returns {THREE.LineLoop} The orbit line object.
          */
         function createOrbitLine(radius) {
-            const points = [];
-            const segments = 128; // Smoothness of the circle
-            for (let i = 0; i <= segments; i++) {
-                const theta = (i / segments) * Math.PI * 2;
-                // Create points on the XZ plane (y=0)
-                points.push(new THREE.Vector3(Math.cos(theta) * radius, 0, Math.sin(theta) * radius));
-            }
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const material = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.15, transparent: true });
-            return new THREE.LineLoop(geometry, material);
+            // Optimization: Reuse geometry and material
+            const line = new THREE.LineLoop(baseOrbitGeometry, baseOrbitMaterial);
+            line.scale.set(radius, 1, radius);
+            return line;
         }
 
         /**
@@ -186,9 +198,11 @@
             orbitPivot.add(bodyGroup);
 
             // 4. The Mesh: The actual visual representation of the planet/moon.
-            const geometry = new THREE.SphereGeometry(data.size, 32, 32);
+            // Optimization: Reuse shared sphere geometry
+            const geometry = baseSphereGeometry;
             const material = new THREE.MeshStandardMaterial({ color: data.color });
             const mesh = new THREE.Mesh(geometry, material);
+            mesh.scale.set(data.size, data.size, data.size);
             mesh.userData.name = data.name; // Store name for raycasting
             bodyGroup.add(mesh);
 
