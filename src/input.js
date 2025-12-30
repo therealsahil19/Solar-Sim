@@ -52,7 +52,10 @@ export function setupInteraction(context, callbacks) {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    // Helper to populate UI
+    /**
+     * Updates the user interface (Toast & Info Panel) with details about the selected object.
+     * @param {THREE.Object3D} mesh - The selected mesh containing userData.
+     */
     function updateSelectionUI(mesh) {
         if (!mesh) return;
         const d = mesh.userData;

@@ -56,7 +56,8 @@ export function createOrbitLine(radius) {
 
 /**
  * Helper to create a radial gradient texture for the Sun's glow.
- * @returns {THREE.CanvasTexture}
+ * Uses an offscreen canvas to generate a procedural gradient.
+ * @returns {THREE.CanvasTexture} The generated texture.
  */
 function createGlowTexture() {
     const canvas = document.createElement('canvas');

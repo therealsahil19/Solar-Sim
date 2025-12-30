@@ -344,6 +344,10 @@ function toggleTextures(btnElement) {
     showToast(`Textures: ${useTextures ? "ON" : "OFF"}`);
 }
 
+/**
+ * Toggles the visibility of planet text labels.
+ * Updates the button opacity to reflect state.
+ */
 function toggleLabels() {
     showLabels = !showLabels;
     const btn = document.getElementById('btn-labels');
@@ -356,6 +360,10 @@ function toggleLabels() {
     showToast(`Labels: ${showLabels ? "ON" : "OFF"}`);
 }
 
+/**
+ * Toggles the visibility of orbit lines and trails.
+ * Updates the button opacity to reflect state.
+ */
 function toggleOrbits() {
     showOrbits = !showOrbits;
     const btn = document.getElementById('btn-orbits');
