@@ -5,7 +5,8 @@ This project is a 3D visualization of a solar system using [Three.js](https://th
 ## Features
 
 -   **3D Scene**: Rendered using Three.js with WebGL.
--   **Procedural Geometry**: Uses standard Three.js geometries for planets, orbits, stars, and the player ship (no external texture assets required).
+-   **Hybrid Visuals**: Supports both high-quality texture mapping (HD) and a performance-optimized solid color mode (LD), switchable at runtime.
+-   **Texture Management**: Includes a custom loading manager with a visual progress bar.
 -   **Recursive System Generation**: Planets and moons are generated from a nested data structure, allowing for theoretically infinite levels of sub-satellites (moons of moons).
 -   **Dynamic Camera**:
     -   **Orbit Controls**: Freely zoom, rotate, and pan around the scene.
@@ -18,7 +19,9 @@ This project is a 3D visualization of a solar system using [Three.js](https://th
 ## Project Structure
 
 -   `index.html`: The main application file. It contains the HTML, CSS, and all JavaScript logic (using ES modules).
+-   `textures/`: Directory containing image assets for planets and the sun.
 -   `test_scene.py`: A Python script for automated verification using Playwright.
+-   `download_textures.py`: Helper script to download required texture assets.
 -   `README.md`: This documentation file.
 
 ## Controls & Interaction
@@ -29,6 +32,7 @@ This project is a 3D visualization of a solar system using [Three.js](https://th
 -   **Key 'C' or 🎥 Button**: Toggle camera view between:
     -   **Sun View** (Default): Centered on the system origin.
     -   **Ship View**: Locks the camera behind the player ship ("Chase Cam").
+-   **HD/LD Button**: Toggle between textured (High Definition) and solid color (Low Definition) rendering modes.
 -   **Click**: Click on a planet to see a "Toast" notification with its name (e.g., "Selected: Earth").
 
 ## Architecture & Implementation
@@ -45,6 +49,7 @@ The solar system is generated recursively. Each `createSystem` call handles a ce
 -   **Shared Geometries**: Instead of creating a new geometry for every orbit line or planet, the code reuses a single `baseOrbitGeometry` and `baseSphereGeometry`. These are cloned and scaled, significantly reducing memory overhead.
 -   **Starfield**: The background stars are rendered using a single `THREE.Points` object with thousands of vertices, rather than thousands of individual Mesh objects.
 -   **Raycasting Optimization**: The application maintains a specific `interactionTargets` array containing only the clickable planets. The raycaster checks against this small list instead of traversing the entire scene graph (which includes stars, orbit lines, etc.), making clicks highly responsive.
+-   **Interaction Targets**: Only objects explicitly added to the `interactionTargets` array are checked for mouse clicks, avoiding unnecessary calculations for non-interactive elements like orbit lines or stars.
 
 ## Accessibility
 
@@ -52,7 +57,7 @@ The application includes several features to improve accessibility:
 -   **ARIA Attributes**: The main rendering canvas is explicitly labeled with `role="application"` and an `aria-label` to identify it to screen readers.
 -   **Keyboard Support**: Key interactions (like camera toggling) are mapped to keyboard shortcuts.
 -   **UI Contrast**: Text and buttons are styled with high-contrast backgrounds for readability against the space environment.
--   **Interactive Elements**: Buttons and controls are accessible via pointer events, even when overlaying the 3D canvas.
+-   **Interactive Elements**: Buttons and controls are accessible via pointer events (`pointer-events: auto`), even when overlaying the 3D canvas (`pointer-events: none` container).
 
 ## Configuration
 
@@ -66,6 +71,7 @@ Each celestial body is defined by an object with the following properties:
 | :-------------- | :------- | :-------------------------------------------------------------------------- |
 | `name`          | `String` | The name of the planet or moon.                                             |
 | `color`         | `Hex`    | The color of the object (e.g., `0x2233FF`).                                 |
+| `texture`       | `String` | (Optional) Path to the texture image file.                                  |
 | `size`          | `Number` | The radius of the sphere.                                                   |
 | `distance`      | `Number` | The distance from the parent body (orbit radius).                           |
 | `speed`         | `Number` | The orbital speed around the parent.                                        |
@@ -80,6 +86,7 @@ To add a new planet, simply append a new object to the `planetData` array in `in
 {
     name: "Jupiter",
     color: 0xDDAA88,
+    texture: "textures/jupiter.jpg",
     size: 2.0,
     distance: 35,
     speed: 0.002,
