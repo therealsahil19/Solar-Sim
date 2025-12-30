@@ -1,0 +1,87 @@
+[
+    {
+        "name": "Mercury",
+        "color": "#AAAAAA",
+        "texture": "textures/mercury.jpg",
+        "size": 0.38,
+        "distance": 6,
+        "speed": 0.02,
+        "rotationSpeed": 0.005,
+        "moons": []
+    },
+    {
+        "name": "Venus",
+        "color": "#E3BB76",
+        "texture": "textures/venus.jpg",
+        "size": 0.95,
+        "distance": 10,
+        "speed": 0.007,
+        "rotationSpeed": 0.002,
+        "moons": []
+    },
+    {
+        "name": "Earth",
+        "color": "#2233FF",
+        "texture": "textures/earth.jpg",
+        "size": 1,
+        "distance": 15,
+        "speed": 0.005,
+        "rotationSpeed": 0.02,
+        "moons": [
+            { "name": "Moon", "color": "#888888", "texture": "textures/moon.jpg", "size": 0.27, "distance": 2.5, "speed": 0.03, "rotationSpeed": 0.01 }
+        ]
+    },
+    {
+        "name": "Mars",
+        "color": "#FF4500",
+        "texture": "textures/mars.jpg",
+        "size": 0.53,
+        "distance": 22,
+        "speed": 0.003,
+        "rotationSpeed": 0.018,
+        "moons": [
+            { "name": "Phobos", "color": "#555555", "size": 0.1, "distance": 0.8, "speed": 0.08, "rotationSpeed": 0.05 },
+            { "name": "Deimos", "color": "#555555", "size": 0.08, "distance": 1.2, "speed": 0.06, "rotationSpeed": 0.05 }
+        ]
+    },
+    {
+        "name": "Jupiter",
+        "color": "#D8CA9D",
+        "texture": "textures/jupiter.jpg",
+        "size": 3.5,
+        "distance": 35,
+        "speed": 0.001,
+        "rotationSpeed": 0.04,
+        "moons": []
+    },
+    {
+        "name": "Saturn",
+        "color": "#D2C0A5",
+        "texture": "textures/saturn.jpg",
+        "size": 3,
+        "distance": 50,
+        "speed": 0.0007,
+        "rotationSpeed": 0.038,
+        "moons": []
+    },
+    {
+        "name": "Uranus",
+        "color": "#93B8BE",
+        "texture": "textures/uranus.jpg",
+        "size": 2,
+        "distance": 65,
+        "speed": 0.0005,
+        "rotationSpeed": 0.03,
+        "moons": []
+    },
+    {
+        "name": "Neptune",
+        "color": "#4B70DD",
+        "texture": "textures/neptune.jpg",
+        "size": 1.9,
+        "distance": 80,
+        "speed": 0.0004,
+        "rotationSpeed": 0.032,
+        "moons": []
+    }
+]
