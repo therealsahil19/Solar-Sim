@@ -23,6 +23,12 @@ window.controls = null;
 // ============================================================================
 // Initialization
 // ============================================================================
+
+/**
+ * Initializes the 3D application.
+ * Sets up the scene, camera, renderer, lighting, and loads assets.
+ * Also fetches system configuration and starts the animation loop.
+ */
 async function init() {
     // 1. Setup Basic Three.js Components
     scene = new THREE.Scene();
@@ -128,6 +134,9 @@ async function init() {
 // Logic Helpers
 // ============================================================================
 
+/**
+ * Toggles the camera view between 'Overview' (OrbitControls) and 'Chase' (PlayerShip).
+ */
 function toggleCameraView() {
     isShipView = !isShipView;
     if (isShipView && playerShip) {
@@ -146,6 +155,11 @@ function toggleCameraView() {
     controls.update();
 }
 
+/**
+ * Toggles between High Definition (Textured) and Low Definition (Solid Color) materials.
+ * Updates the button text and displays a toast notification.
+ * @param {HTMLElement} [btnElement] - The button element to update the text of.
+ */
 function toggleTextures(btnElement) {
     useTextures = !useTextures;
 
@@ -175,6 +189,10 @@ function toggleTextures(btnElement) {
 
 const tempVec = new THREE.Vector3();
 
+/**
+ * The main animation loop.
+ * Updates rotations, ship orientation, and renders the scene.
+ */
 function animate() {
     requestAnimationFrame(animate);
 

@@ -18,8 +18,15 @@ This project is a 3D visualization of a solar system using [Three.js](https://th
 
 ## Project Structure
 
--   `index.html`: The main application file. It contains the HTML, CSS, and all JavaScript logic (using ES modules).
+The project follows a modular architecture:
+
+-   `src/`: Contains the source code modules.
+    -   `main.js`: The "Conductor" of the application. Handles initialization, the animation loop, and orchestrates the other modules.
+    -   `procedural.js`: Factory functions for generating 3D objects (Sun, planets, ship, starfield) without side effects.
+    -   `input.js`: Manages user input, including controls, raycasting (mouse clicks), and keyboard shortcuts.
 -   `textures/`: Directory containing image assets for planets and the sun.
+-   `index.html`: The entry point. Imports `src/main.js` as a module.
+-   `system.json`: Configuration file defining the celestial bodies.
 -   `test_scene.py`: A Python script for automated verification using Playwright.
 -   `download_textures.py`: Helper script to download required texture assets.
 -   `README.md`: This documentation file.
@@ -37,35 +44,43 @@ This project is a 3D visualization of a solar system using [Three.js](https://th
 
 ## Architecture & Implementation
 
-This project is designed with simplicity and performance in mind, using a single-file architecture for ease of deployment and study.
+This project uses a modular design to separate concerns:
 
-### Recursive Generation
-The solar system is generated recursively. Each `createSystem` call handles a celestial body and then calls itself for any children (moons). This creates a nested scene graph:
-- **Pivot Object**: Rotates around the parent to create the orbital motion.
-- **Body Group**: Offset from the pivot by the orbital distance.
-- **Mesh**: The visible sphere, which rotates on its own axis.
+1.  **Main (`src/main.js`)**:
+    -   Holds the global state (scene, camera, renderer).
+    -   Initializes the application and kicks off the render loop.
+    -   Fetches configuration data and delegates object creation to `procedural.js`.
+    -   Passes the scene context to `input.js` to set up controls.
+
+2.  **Procedural Generation (`src/procedural.js`)**:
+    -   Uses a "Factory" pattern. Functions like `createSystem` or `createSun` take parameters (and dependencies like `TextureLoader`) and return Three.js objects (Mesh, Group, etc.).
+    -   Does not modify the global scene directly.
+    -   **Recursive Generation**: `createSystem` recursively calls itself to generate moons and sub-moons based on the nested structure in `system.json`.
+
+3.  **Input Handling (`src/input.js`)**:
+    -   Encapsulates all event listeners (click, keydown, resize).
+    -   Uses dependency injection: `main.js` passes the necessary context (camera, interactable objects list) to `input.js` so it can perform raycasting without needing global variables.
 
 ### Performance Optimizations
--   **Shared Geometries**: Instead of creating a new geometry for every orbit line or planet, the code reuses a single `baseOrbitGeometry` and `baseSphereGeometry`. These are cloned and scaled, significantly reducing memory overhead.
--   **Starfield**: The background stars are rendered using a single `THREE.Points` object with thousands of vertices, rather than thousands of individual Mesh objects.
--   **Raycasting Optimization**: The application maintains a specific `interactionTargets` array containing only the clickable planets. The raycaster checks against this small list instead of traversing the entire scene graph (which includes stars, orbit lines, etc.), making clicks highly responsive.
--   **Interaction Targets**: Only objects explicitly added to the `interactionTargets` array are checked for mouse clicks, avoiding unnecessary calculations for non-interactive elements like orbit lines or stars.
+-   **Shared Geometries**: The code reuses `baseOrbitGeometry` and `baseSphereGeometry` across all instances to reduce memory usage.
+-   **Raycasting Optimization**: An `interactionTargets` array tracks only the interactive meshes (planets/sun), avoiding expensive raycast checks against the starfield or orbit lines.
+-   **Material Switching**: Users can toggle textures off (LD mode) for better performance on low-end devices.
 
 ## Accessibility
 
 The application includes several features to improve accessibility:
 -   **ARIA Attributes**: The main rendering canvas is explicitly labeled with `role="application"` and an `aria-label` to identify it to screen readers.
 -   **Keyboard Support**: Key interactions (like camera toggling) are mapped to keyboard shortcuts.
--   **UI Contrast**: Text and buttons are styled with high-contrast backgrounds for readability against the space environment.
--   **Interactive Elements**: Buttons and controls are accessible via pointer events (`pointer-events: auto`), even when overlaying the 3D canvas (`pointer-events: none` container).
+-   **UI Contrast**: Text and buttons are styled with high-contrast backgrounds.
+-   **Pointer Events**: UI overlays use `pointer-events: none` to allow clicking through to the canvas, but interactive buttons explicitly re-enable `pointer-events: auto`.
 
 ## Configuration
 
-The solar system is defined by the `planetData` array in `index.html`. You can easily extend the simulation by adding new objects to this array.
+The solar system layout is defined in `system.json`. You can modify this file to change the simulation without touching the code.
 
-### Data Structure
+### Data Structure (`system.json`)
 
-Each celestial body is defined by an object with the following properties:
+The file contains an array of planet objects. Each object has:
 
 | Property        | Type     | Description                                                                 |
 | :-------------- | :------- | :-------------------------------------------------------------------------- |
@@ -78,34 +93,9 @@ Each celestial body is defined by an object with the following properties:
 | `rotationSpeed` | `Number` | The speed of the object's self-rotation.                                    |
 | `moons`         | `Array`  | (Optional) An array of objects defining the satellites of this body.        |
 
-### Example: Adding a New Planet
-
-To add a new planet, simply append a new object to the `planetData` array in `index.html`:
-
-```javascript
-{
-    name: "Jupiter",
-    color: 0xDDAA88,
-    texture: "textures/jupiter.jpg",
-    size: 2.0,
-    distance: 35,
-    speed: 0.002,
-    rotationSpeed: 0.04,
-    moons: [
-        { name: "Europa", color: 0xEEEEEE, size: 0.3, distance: 3, speed: 0.04, rotationSpeed: 0.01 }
-    ]
-}
-```
-
 ## How to Run
 
-Because this project uses ES modules (importing Three.js directly), you cannot simply open `index.html` in a file browser. It must be served via a local HTTP server.
-
-### Prerequisites
-
--   **Python 3**: Used to run the simple HTTP server.
-
-### Steps
+Because this project uses ES modules, it must be served via a local HTTP server.
 
 1.  Open a terminal in the project directory.
 2.  Start the local server:
@@ -117,30 +107,12 @@ Because this project uses ES modules (importing Three.js directly), you cannot s
     http://localhost:8000
     ```
 
-## Automated Verification ("Vibe Check")
+## Automated Verification
 
-This project includes an automated test to ensure the 3D scene loads correctly.
-
-### Prerequisites
-
--   **Python 3**
--   **Playwright**
-
-### Installation
+To run the "Vibe Check" (verification script):
 
 ```bash
 pip install playwright
 playwright install
-```
-
-### Running the Test
-
-```bash
 python3 test_scene.py
 ```
-
-This script will:
-1.  Start a temporary local server.
-2.  Launch a headless browser.
-3.  Check if the canvas element is present and visible.
-4.  Report the result.
