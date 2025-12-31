@@ -9,11 +9,12 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
     -   **Data-Driven**: Planets and moons are generated entirely from configuration data (`system.json`).
     -   **Recursive Satellites**: Supports theoretically infinite nesting of moons (moons of moons).
     -   **Starfield**: Procedurally generated background stars.
+    -   **Player Ship**: Procedurally generated spacecraft geometry (Cone + Cylinders).
 -   **Interactive Controls**:
     -   **Orbit Controls**: Pan, zoom, and rotate around the scene with the mouse.
-    -   **Focus Mode**: Double-click any planet to smoothly animate the camera to follow it.
-    -   **Ship View**: Toggle a "Chase Camera" mode behind a procedural player ship.
-    -   **Raycasting**: Click on planets to view details (Name, Type, Size, Distance) via Info Panel.
+    -   **Focus Mode**: Double-click any planet (or use the Sidebar/Keys) to smoothly animate the camera to follow it.
+    -   **Ship View**: Toggle a "Chase Camera" mode behind a procedural player ship that auto-orients to the nearest celestial body.
+    -   **Raycasting**: Click on planets to view details (Name, Type, Size, Distance) via the Info Panel.
 -   **Dynamic Visuals**:
     -   **Orbit Trails**: Planets leave fading trail lines as they orbit (optimized with typed arrays).
     -   **Texture Toggling**: Switch between High-Res Textures (HD) and Solid Colors (LD) for performance on low-end devices.
@@ -21,11 +22,13 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
     -   **Glow Effects**: Procedural sun glow generated via offscreen canvas.
     -   **Shadows**: Dynamic point light shadows for depth.
 -   **UI & UX**:
-    -   **Info Panel**: Detailed information overlay for selected celestial bodies.
-    -   **Toast Notifications**: Quick feedback for actions (e.g., "Textures: OFF").
+    -   **Navigation Sidebar**: A collapsible sidebar listing all celestial bodies (hierarchically) for quick "fast travel" to any object.
+    -   **Info Panel**: Detailed information overlay for selected celestial bodies, including dynamic distance calculations.
+    -   **Responsive Design**: The interface (Glassmorphism panels, CSS Grid/Flexbox) adapts gracefully to mobile and desktop screens.
+    -   **Toast Notifications**: Quick feedback for actions (e.g., "Textures: OFF", "View Reset").
     -   **On-Screen Controls**: Accessible buttons for camera, textures, pause, and speed.
     -   **Speed Control**: Slider to adjust the time scale of the simulation.
-    -   **Onboarding**: Loading screen and initial hint overlay.
+    -   **Onboarding**: Loading screen with progress bar and an initial "Welcome" modal.
 
 ## Performance & Optimizations ("Bolt")
 
@@ -37,11 +40,11 @@ This project implements several optimization strategies (internally referred to 
     -   **Trail Updates**: Vertex updates for orbit trails are throttled to every 2 frames.
 
 2.  **Caching**:
-    -   **Material Cache**: Solid color materials are cached and reused to reduce the number of shader programs and draw calls.
+    -   **Material Cache**: Solid color materials are cached by color key to reduce the number of shader programs and draw calls.
     -   **Matrix Caching**: The render loop uses `matrixWorld` from the previous frame for position calculations instead of forcing synchronous `updateWorldMatrix()` calls.
 
 3.  **Memory Management**:
-    -   **Shared Geometry**: All orbit lines share a single unit-circle geometry, scaled per instance.
+    -   **Shared Geometry**: All orbit lines share a single unit-circle geometry, scaled per instance. The same applies to spheres.
     -   **Typed Arrays**: Trail updates use `Float32Array.prototype.copyWithin` for highly efficient memory shifting (O(N)) instead of manual array iteration.
 
 4.  **Render Loop Splitting**:
@@ -167,6 +170,7 @@ The application is designed to be accessible:
     -   `aria-label` for state changes (e.g., Pause/Resume).
     -   `aria-live="polite"` for Toast notifications.
     -   `aria-valuenow` for loading bars and sliders.
+    -   `aria-hidden` for managing sidebar visibility.
 -   **Keyboard Navigation**: All core actions are mapped to keyboard shortcuts.
 -   **Visuals**: High contrast UI text and support for disabling complex textures/labels for clarity.
 
