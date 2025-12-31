@@ -99,7 +99,7 @@ export function setupInteraction(context, callbacks) {
             });
 
             // Ensure panel is visible (flex for Palette layout)
-            panel.style.display = 'flex';
+            panel.classList.add('visible');
         }
     }
 
@@ -167,7 +167,7 @@ export function setupInteraction(context, callbacks) {
         } else if (key === 'escape') {
             callbacks.onResetCamera();
             const panel = document.getElementById('info-panel');
-            if (panel) panel.style.display = 'none';
+            if (panel) panel.classList.remove('visible');
         } else {
             // Check for number keys 1-9
             const num = parseInt(key);

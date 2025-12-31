@@ -160,6 +160,7 @@ async function init() {
             loadingScreen.style.opacity = '0';
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
+                loadingScreen.setAttribute('aria-hidden', 'true'); // A11y
 
                 // Palette: Trigger Welcome Modal
                 if (interactionHelpers && interactionHelpers.openModal) {
@@ -363,7 +364,6 @@ function toggleLabels() {
     const btn = document.getElementById('btn-labels');
     if (btn) {
         btn.setAttribute('aria-pressed', showLabels);
-        btn.style.opacity = ''; // Remove inline style to let CSS take over
     }
 
     allLabels.forEach(label => {
@@ -382,7 +382,6 @@ function toggleOrbits() {
     const btn = document.getElementById('btn-orbits');
     if (btn) {
         btn.setAttribute('aria-pressed', showOrbits);
-        btn.style.opacity = ''; // Remove inline style to let CSS take over
     }
 
     allOrbits.forEach(orbit => orbit.visible = showOrbits);
