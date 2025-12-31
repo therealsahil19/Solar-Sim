@@ -117,6 +117,8 @@ async function init() {
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.domElement.setAttribute('role', 'application');
     renderer.domElement.setAttribute('aria-label', '3D Solar System Simulation');
     document.body.appendChild(renderer.domElement);
@@ -130,9 +132,14 @@ async function init() {
     document.body.appendChild(labelRenderer.domElement);
 
     // 2. Lighting
-    const pointLight = new THREE.PointLight(0xffffff, 2, 300);
+    const pointLight = new THREE.PointLight(0xffffff, 1.5, 0, 0);
+    pointLight.castShadow = true;
+    pointLight.shadow.mapSize.width = 2048;
+    pointLight.shadow.mapSize.height = 2048;
+    pointLight.shadow.bias = -0.0001;
     scene.add(pointLight);
-    const ambientLight = new THREE.AmbientLight(0x404040);
+
+    const ambientLight = new THREE.AmbientLight(0x606060);
     scene.add(ambientLight);
 
     // 3. Loading Manager & Texture Loader
