@@ -95,7 +95,8 @@ export function setupInteraction(context, callbacks) {
                 callbacks.onSetFocus(mesh);
             });
 
-            panel.style.display = 'block';
+            // Ensure panel is visible (flex for Palette layout)
+            panel.style.display = 'flex';
         }
     }
 
@@ -205,7 +206,38 @@ export function setupInteraction(context, callbacks) {
         });
     }
 
+    // Modal Interaction (Palette's Onboarding)
+    const welcomeModal = document.getElementById('welcome-modal');
+    const btnHelp = document.getElementById('btn-help');
+    const btnStart = document.getElementById('btn-start');
+
+    function openModal() {
+        if (welcomeModal) {
+            welcomeModal.showModal(); // Built-in dialog method handles focus trap
+        }
+    }
+
+    function closeModal() {
+        if (welcomeModal) {
+            welcomeModal.close();
+        }
+    }
+
+    if (btnHelp) {
+        btnHelp.addEventListener('click', () => {
+            openModal();
+        });
+    }
+
+    if (btnStart) {
+        btnStart.addEventListener('click', () => {
+            closeModal();
+        });
+    }
+
     return {
-        updateSelectionUI
+        updateSelectionUI,
+        openModal,
+        closeModal
     };
 }

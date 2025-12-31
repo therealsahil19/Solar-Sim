@@ -161,15 +161,9 @@ async function init() {
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
 
-                // Show onboarding hint at the bottom center
-                const hint = document.getElementById('onboarding-hint');
-                if (hint) {
-                    hint.classList.add('visible');
-                    // Hide hint after 5.5 seconds
-                    setTimeout(() => {
-                        hint.classList.remove('visible');
-                        hint.classList.add('hidden');
-                    }, 5500);
+                // Palette: Trigger Welcome Modal
+                if (interactionHelpers && interactionHelpers.openModal) {
+                    interactionHelpers.openModal();
                 }
             }, 500);
         }

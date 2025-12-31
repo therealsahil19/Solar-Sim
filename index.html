@@ -31,12 +31,14 @@
             /* Radii */
             --radius-sm: 4px;
             --radius-md: 8px;
-            --radius-lg: 20px;
+            --radius-lg: 12px;
             --radius-full: 9999px;
 
             /* Z-Indices */
+            --z-bg: 0;
             --z-ui: 10;
             --z-toast: 20;
+            --z-modal: 50;
             --z-loader: 9999;
 
             /* Typography */
@@ -45,53 +47,218 @@
             --font-size-sm: 0.9rem;
             --font-size-md: 1rem;
             --font-size-lg: 1.2rem;
+            --font-size-xl: 1.5rem;
         }
 
-        body { margin: 0; overflow: hidden; background-color: var(--color-bg); font-family: var(--font-family); }
-        canvas { display: block; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--color-bg);
+            font-family: var(--font-family);
+            color: var(--color-text-primary);
+        }
 
-        /* UI Layer */
-        #ui-layer {
-            position: absolute; top: var(--space-md); left: var(--space-md);
-            color: var(--color-text-primary); opacity: 0.8;
-            pointer-events: none; user-select: none;
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: var(--z-bg);
+        }
+
+        /*
+           Layout Architecture: Grid Overlay
+           Replaces absolute positioning with a structured grid.
+        */
+        #app-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-rows: auto 1fr auto; /* Header, Main, Footer */
+            grid-template-columns: 1fr auto;   /* Main, Sidebar */
+            grid-template-areas:
+                "header info"
+                "main info"
+                "footer footer";
+            pointer-events: none; /* Allow clicks to pass through to canvas */
             z-index: var(--z-ui);
+            box-sizing: border-box;
+            padding: var(--space-md);
+            gap: var(--space-md);
         }
 
-        .key {
+        /* Component: Glass Panel */
+        .glass-panel {
+            background: var(--color-surface-translucent);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--color-border);
-            padding: 2px 6px;
-            border-radius: var(--radius-sm);
-            background: var(--color-border-faint);
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            pointer-events: auto; /* Re-enable pointer events for UI elements */
+            color: var(--color-text-primary);
         }
 
-        #toast {
-            position: absolute; bottom: 5rem; left: 50%; transform: translateX(-50%);
-            background: var(--color-surface-dim); color: var(--color-text-primary);
+        /* Region: Top Bar */
+        #top-bar {
+            grid-area: header;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: var(--space-sm) var(--space-md);
-            border-radius: var(--radius-lg);
+            align-self: start;
+            height: 40px;
+        }
+
+        #top-bar h1 {
+            margin: 0;
+            font-size: var(--font-size-md);
+            font-weight: 600;
+        }
+
+        /* Region: Info Panel */
+        #info-panel {
+            grid-area: info;
+            display: none; /* Toggled via JS */
+            width: 260px;
+            padding: var(--space-md);
+            align-self: start;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        #info-panel h2 { margin: 0; font-size: var(--font-size-lg); }
+        #info-panel p { font-size: var(--font-size-sm); color: var(--color-text-secondary); margin: 0; line-height: 1.4; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--space-xs);
+            margin-top: var(--space-sm);
+            padding-top: var(--space-sm);
+            border-top: 1px solid var(--color-border-faint);
+            font-size: var(--font-size-sm);
+        }
+
+        /* Region: Bottom Dock */
+        #bottom-dock {
+            grid-area: footer;
+            display: flex;
+            justify-content: center;
+            align-items: end;
+            gap: var(--space-md);
+            pointer-events: none; /* Let clicks pass */
+            flex-wrap: wrap;
+        }
+
+        .dock-group {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+        }
+
+        /* Controls */
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .icon-btn, .icon-btn-small {
+            background: var(--color-border-faint);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            font-size: 1.2rem;
+            border-radius: 50%; /* Circular */
+        }
+
+        .icon-btn-small {
+            width: 32px;
+            height: 32px;
+            font-size: 1rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .icon-btn:hover, .icon-btn-small:hover { background: var(--color-border); }
+        .icon-btn:active, .icon-btn-small:active { transform: scale(0.95); }
+        .icon-btn:focus-visible, .icon-btn-small:focus-visible {
+            outline: 2px solid var(--color-accent);
+            outline-offset: 2px;
+        }
+
+        .icon-btn[aria-pressed="true"] {
+            background: var(--color-accent-transparent);
+            border-color: var(--color-accent);
+        }
+
+        .texture-toggle {
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        #btn-follow {
+            background: var(--color-accent);
+            color: white;
+            border: none;
+            padding: var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-weight: bold;
+            width: 100%;
+            margin-top: var(--space-sm);
+        }
+        #btn-follow:hover { background: var(--color-accent-hover); }
+
+        /* Range Slider */
+        input[type="range"] {
+            accent-color: var(--color-accent);
+            cursor: pointer;
+        }
+
+        /* Toast */
+        #toast {
+            position: absolute; bottom: 8rem; left: 50%; transform: translateX(-50%);
+            background: var(--color-surface-dim);
+            backdrop-filter: blur(4px);
+            color: var(--color-text-primary);
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-full);
             opacity: 0; transition: opacity 0.3s; pointer-events: none;
             z-index: var(--z-toast);
+            white-space: nowrap;
         }
         #toast.visible { opacity: 1; }
 
-        #onboarding-hint {
-            position: absolute; left: 50%; bottom: 12%; transform: translateX(-50%);
-            background: var(--color-surface-dim);
+        /* Planet Labels (CSS2D) */
+        .planet-label {
             color: var(--color-text-primary);
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--radius-full);
-            font-size: 0.95rem; text-align: center;
-            opacity: 0; transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-            pointer-events: none; user-select: none;
-            z-index: var(--z-toast);
+            font-family: sans-serif;
+            padding: 2px 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            pointer-events: none;
+            user-select: none;
+            text-shadow: 0 0 2px black;
+            margin-top: -24px; /* Offset above planet */
+            white-space: nowrap;
         }
-        #onboarding-hint.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-        #onboarding-hint.hidden { opacity: 0; transform: translateX(-50%) translateY(8px); }
 
         /* Loading Screen */
         #loading-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--color-bg);
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
@@ -100,10 +267,10 @@
             transition: opacity 0.5s;
         }
         #loading-bar-container {
-            width: 200px; height: 10px;
+            width: 200px; height: 6px;
             background: var(--color-loading-track);
             margin-top: var(--space-md);
-            border-radius: var(--radius-sm); overflow: hidden;
+            border-radius: var(--radius-full); overflow: hidden;
         }
         #loading-bar {
             width: 0%; height: 100%;
@@ -111,188 +278,208 @@
             transition: width 0.2s;
         }
 
-        /* Palette's UX Addition: Camera & Texture Buttons */
-        .icon-btn {
-            background: var(--color-border-faint);
-            border: 1px solid var(--color-border);
-            color: var(--color-text-primary);
-            border-radius: 50%;
-            width: 44px; height: 44px;
-            cursor: pointer;
-            font-size: var(--font-size-lg);
-            display: flex;
+        /* Welcome Modal */
+        dialog {
+            border: none;
+            padding: 0;
+            background: transparent;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            max-height: none;
+            position: fixed;
+            z-index: var(--z-modal);
+            display: flex; /* Hidden by default via browser, flex when open */
             align-items: center;
             justify-content: center;
-            transition: background 0.2s, transform 0.1s;
-            pointer-events: auto;
-            margin-top: 0.75rem;
+            /* Browser default override */
+            color: inherit;
         }
-        .icon-btn:hover {
-            background: var(--color-border);
-        }
-        .icon-btn:active {
-            transform: scale(0.95);
-        }
-        .icon-btn:focus-visible {
-            outline: 2px solid var(--color-accent);
-            outline-offset: 2px;
-        }
+        dialog:not([open]) { display: none; }
 
-        /* Active/Inactive States */
-        .icon-btn[aria-pressed="true"] {
-            background: var(--color-accent-transparent);
-            border-color: var(--color-accent);
-            opacity: 1;
-        }
-        .icon-btn[aria-pressed="false"] {
-            opacity: 0.5;
-        }
-
-        .texture-toggle {
-            font-size: var(--font-size-sm);
-            border-radius: var(--radius-md);
-            width: auto;
-            padding: 0 10px;
-        }
-
-        /* Planet Labels (CSS2D) */
-        .planet-label {
-            color: var(--color-text-primary);
-            font-family: sans-serif;
-            padding: 2px 5px;
-            background: rgba(0, 0, 0, 0.4); /* Keeping this for label readability on 3D bg */
-            border-radius: var(--radius-sm);
-            font-size: 12px;
-            pointer-events: none;
-            user-select: none;
-            text-shadow: 0 0 2px black;
-            margin-top: -20px;
-        }
-
-        /* Info Panel */
-        #info-panel {
-            position: absolute;
-            top: var(--space-xl);
-            right: var(--space-xl);
-            width: 250px;
-            background: var(--color-surface-translucent);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            padding: var(--space-md);
-            color: var(--color-text-primary);
-            display: none;
-            pointer-events: auto;
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(4px);
         }
-        #info-panel h2 { margin: 0 0 var(--space-sm) 0; font-size: var(--font-size-lg); }
-        #info-panel p { font-size: var(--font-size-sm); line-height: 1.4; color: var(--color-text-secondary); margin-bottom: var(--space-sm); }
-        #info-panel .stats {
-            font-size: 0.85rem;
-            margin-top: var(--space-md);
-            border-top: 1px solid var(--color-border-faint);
-            padding-top: var(--space-sm);
-        }
-        #info-panel .stats div { margin-bottom: 0.25rem; }
 
-        #btn-follow {
-            margin-top: var(--space-md);
-            width: 100%;
-            background: var(--color-accent);
-            color: var(--color-text-primary);
-            border: none;
-            padding: var(--space-sm);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-weight: bold;
-        }
-        #btn-follow:hover { background: var(--color-accent-hover); }
-
-        /* Time Controls */
-        #time-controls {
-            position: absolute;
-            bottom: var(--space-xl);
-            left: var(--space-xl);
+        .modal-content {
             background: var(--color-surface-translucent);
-            padding: var(--space-sm) var(--space-md);
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
-            pointer-events: auto;
-            backdrop-filter: blur(2px);
-            border: 1px solid var(--color-border-faint);
-        }
-        #time-controls button {
-            background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;
-            display: flex; align-items: center;
-        }
-        #slider-speed {
-            width: 100px;
-            cursor: pointer;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
         }
 
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+            text-align: left;
+            margin: var(--space-lg) 0;
+            font-size: var(--font-size-sm);
+        }
+
+        .modal-item { display: flex; align-items: center; gap: var(--space-sm); }
+        .key-badge {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: white;
+            border: none;
+            padding: var(--space-md) var(--space-xl);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-lg);
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        }
+        .btn-primary:hover { background: var(--color-accent-hover); transform: translateY(-1px); }
+        .btn-primary:active { transform: translateY(0); }
+
+        /* Footer Link */
+        #footer-credits {
+            position: absolute; bottom: 1rem; right: 1rem;
+            font-size: 0.75rem; color: var(--color-text-muted);
+            pointer-events: none; z-index: var(--z-ui);
+        }
+        #footer-credits a { color: var(--color-text-secondary); pointer-events: auto; }
+
+        /* Media Queries */
+        @media (max-width: 768px) {
+            #app-overlay {
+                grid-template-rows: auto 1fr auto;
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "info"
+                    "main"
+                    "footer";
+                padding: var(--space-sm);
+            }
+            #bottom-dock { flex-direction: column-reverse; align-items: center; gap: var(--space-sm); }
+            .dock-group { width: auto; justify-content: center; }
+            #info-panel {
+                width: auto;
+                position: absolute; /* Float on mobile */
+                top: 60px; right: 10px; left: 10px;
+                max-height: 40%;
+                overflow-y: auto;
+                z-index: 30;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="loading-screen">
-        <h2>Loading Solar System...</h2>
-        <div id="loading-bar-container"><div id="loading-bar" role="progressbar" aria-label="Loading assets" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div></div>
-    </div>
 
-    <div id="ui-layer">
-        <h1 style="margin: 0 0 0.5rem 0; font-size: 1.2rem;">Interactive 3D Solar System</h1>
-        <div style="font-size: 0.9rem; line-height: 1.5;">
-            <div>Drag to rotate • Scroll to zoom • <span class="key">Space</span>: pause</div>
+    <!-- Loading Screen -->
+    <div id="loading-screen" role="alert" aria-busy="true">
+        <h2 style="font-weight: 300;">Loading Simulation...</h2>
+        <div id="loading-bar-container">
+            <div id="loading-bar" role="progressbar" aria-label="Loading assets" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
         </div>
-        <!-- Accessible button for screen readers and mouse interaction -->
-        <button id="btn-camera" class="icon-btn" aria-label="Toggle Camera View" aria-pressed="false" title="Toggle Camera View (C)" aria-keyshortcuts="c">
-            🎥
-        </button>
-        <button id="btn-reset" class="icon-btn" aria-label="Reset View" title="Reset View (Esc)" aria-keyshortcuts="Escape">
-            ↺
-        </button>
-        <button id="btn-texture" class="icon-btn texture-toggle" aria-label="Toggle Textures" aria-pressed="true" title="Toggle Textures (T)" aria-keyshortcuts="t">
-            HD
-        </button>
-        <button id="btn-labels" class="icon-btn" aria-label="Toggle Labels" aria-pressed="true" title="Toggle Labels (L)" aria-keyshortcuts="l">
-            🏷️
-        </button>
-        <button id="btn-orbits" class="icon-btn" aria-label="Toggle Orbits" aria-pressed="true" title="Toggle Orbits (O)" aria-keyshortcuts="o">
-            ⚪
-        </button>
     </div>
 
-    <div id="time-controls">
-        <button id="btn-pause" title="Pause/Play" aria-label="Pause Simulation">⏸</button>
-        <div style="display: flex; flex-direction: column; font-size: 0.8rem; color: var(--color-text-secondary);">
-            <div style="display: flex; justify-content: space-between; width: 100px;">
-                <label for="slider-speed" style="margin-bottom: 2px;">Speed</label>
-                <span id="speed-value" style="font-size: 0.8rem; opacity: 0.8;">1.0x</span>
+    <!-- Main App UI -->
+    <div id="app-overlay">
+
+        <!-- Top Bar -->
+        <nav id="top-bar" class="glass-panel">
+            <h1>Solar-Sim</h1>
+            <button id="btn-help" class="icon-btn-small" aria-label="Controls & Help" title="Help (?)">?</button>
+        </nav>
+
+        <!-- Right Side: Info Panel -->
+        <aside id="info-panel" class="glass-panel" aria-live="polite">
+            <h2 id="info-name">Planet Name</h2>
+            <div id="info-type" style="font-style: italic; color: var(--color-text-muted);">Type</div>
+            <p id="info-desc" style="margin-top: var(--space-sm);">Description goes here.</p>
+            <div class="stats-grid">
+                <div id="info-radius">Radius: -</div>
+                <div id="info-distance">Orbit: -</div>
+                <div id="info-dist-sun">Dist to Sun: -</div>
             </div>
-            <input type="range" id="slider-speed" min="0.1" max="5.0" step="0.1" value="1.0" aria-valuemin="0.1" aria-valuemax="5.0" aria-valuenow="1.0" aria-valuetext="1.0x">
+            <button id="btn-follow">Follow Object</button>
+        </aside>
+
+        <!-- Bottom Dock -->
+        <div id="bottom-dock">
+
+            <!-- Time Controls -->
+            <div id="time-controls" class="glass-panel dock-group">
+                <button id="btn-pause" title="Pause/Play (Space)" aria-label="Pause Simulation">⏸</button>
+                <div style="display: flex; flex-direction: column; width: 100px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 2px;">
+                        <label for="slider-speed">Speed</label>
+                        <span id="speed-value">1.0x</span>
+                    </div>
+                    <input type="range" id="slider-speed" min="0.1" max="5.0" step="0.1" value="1.0"
+                           aria-valuemin="0.1" aria-valuemax="5.0" aria-valuenow="1.0" aria-valuetext="1.0x">
+                </div>
+            </div>
+
+            <!-- View Controls -->
+            <div id="view-controls" class="glass-panel dock-group" role="toolbar" aria-label="Camera and View Controls">
+                <button id="btn-camera" class="icon-btn" aria-label="Toggle Camera View" aria-pressed="false" title="Toggle Ship View (C)" aria-keyshortcuts="c">
+                    🎥
+                </button>
+                <button id="btn-reset" class="icon-btn" aria-label="Reset View" title="Reset View (Esc)" aria-keyshortcuts="Escape">
+                    ↺
+                </button>
+                <button id="btn-texture" class="icon-btn texture-toggle" aria-label="Toggle Textures" aria-pressed="true" title="Toggle Textures (T)" aria-keyshortcuts="t">
+                    HD
+                </button>
+                <button id="btn-labels" class="icon-btn" aria-label="Toggle Labels" aria-pressed="true" title="Toggle Labels (L)" aria-keyshortcuts="l">
+                    🏷️
+                </button>
+                <button id="btn-orbits" class="icon-btn" aria-label="Toggle Orbits" aria-pressed="true" title="Toggle Orbits (O)" aria-keyshortcuts="o">
+                    ⚪
+                </button>
+            </div>
+
         </div>
+
     </div>
 
-    <div id="info-panel">
-        <h2 id="info-name">Planet Name</h2>
-        <div id="info-type" style="font-style: italic; color: var(--color-text-muted); margin-bottom: 0.5rem;">Type</div>
-        <p id="info-desc">Description goes here.</p>
-        <div class="stats">
-            <div id="info-radius">Radius: -</div>
-            <div id="info-distance">Distance: -</div>
-            <div id="info-dist-sun">Dist to Sun: -</div>
-        </div>
-        <button id="btn-follow">Follow</button>
-    </div>
-
+    <!-- Notification Toast -->
     <div id="toast" role="status" aria-live="polite"></div>
-    <div id="onboarding-hint">Drag to rotate • Scroll to zoom • Press C for ship view • Click a planet for info</div>
 
-    <div style="position: absolute; bottom: 1rem; right: 1rem; color: rgba(255,255,255,0.6); font-size: 0.8rem; pointer-events: none;">
-        Solar-Sim · Built with Three.js · <a href="https://github.com/therealsahil19/Solar-Sim" target="_blank" rel="noopener noreferrer" style="color: rgba(255,255,255,0.8); pointer-events: auto;">GitHub</a>
+    <!-- Onboarding / Help Modal -->
+    <dialog id="welcome-modal">
+        <div class="modal-content glass-panel">
+            <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">Interactive Solar System</h2>
+            <p style="color: var(--color-text-secondary);">Explore the cosmos in real-time.</p>
+
+            <div class="modal-grid">
+                <div class="modal-item">🖱️ <span><strong>Drag</strong> to Rotate</span></div>
+                <div class="modal-item">🖱️ <span><strong>Scroll</strong> to Zoom</span></div>
+                <div class="modal-item">🖱️ <span><strong>Click</strong> to Select</span></div>
+                <div class="modal-item">🖱️ <span><strong>Double Click</strong> to Focus</span></div>
+
+                <div class="modal-item"><span class="key-badge">C</span> <span>Ship Camera</span></div>
+                <div class="modal-item"><span class="key-badge">Space</span> <span>Pause / Play</span></div>
+                <div class="modal-item"><span class="key-badge">1-9</span> <span>Quick Focus</span></div>
+                <div class="modal-item"><span class="key-badge">Esc</span> <span>Reset View</span></div>
+            </div>
+
+            <button id="btn-start" class="btn-primary" autofocus>Start Exploration</button>
+        </div>
+    </dialog>
+
+    <div id="footer-credits">
+        Solar-Sim · Built with Three.js · <a href="https://github.com/therealsahil19/Solar-Sim" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
 
-    <!-- Import Map to allow bare module imports for Three.js -->
+    <!-- Import Map -->
     <script type="importmap">
         {
             "imports": {
