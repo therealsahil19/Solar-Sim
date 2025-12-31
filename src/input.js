@@ -8,6 +8,7 @@
  * 3. Keyboard shortcuts (e.g., 'C' for camera toggle).
  * 4. UI event listeners (Buttons).
  * 5. Command Palette initialization.
+ * 6. Theme Manager initialization.
  *
  * It uses dependency injection to access the Scene, Camera, and other context
  * without relying on global variables.
@@ -39,6 +40,8 @@ export function setupControls(camera, domElement) {
  * @param {HTMLElement} context.rendererDomElement - The canvas element.
  * @param {Array<THREE.Object3D>} context.interactionTargets - List of objects to check for clicks.
  * @param {Object} context.state - Global state object (e.g., { useTextures: boolean }).
+ * @param {InstanceRegistry} context.instanceRegistry - Registry for instanced meshes.
+ * @param {Array} context.planetData - The hierarchical system configuration data.
  * @param {Object} callbacks - Callback functions for actions.
  * @param {Function} callbacks.onToggleCamera - Function to toggle camera mode.
  * @param {Function} callbacks.onToggleTexture - Function to toggle textures (accepts button element).
@@ -107,6 +110,12 @@ export function setupInteraction(context, callbacks) {
     }
 
     // --- Navigation Helpers ---
+
+    /**
+     * Finds a mesh by its name in either the interaction targets or the instance registry.
+     * @param {string} name - The name of the object to find.
+     * @returns {THREE.Object3D|null} The found object or null.
+     */
     function findMeshByName(name) {
         // 1. Search in standard interaction targets (Sun, Non-instanced objects)
         const found = interactionTargets.find(obj => obj.userData.name === name);
@@ -120,6 +129,10 @@ export function setupInteraction(context, callbacks) {
         return null;
     }
 
+    /**
+     * Selects an object by name and focuses on it.
+     * @param {string} name - The name of the object.
+     */
     function selectByName(name) {
         const mesh = findMeshByName(name);
         if (mesh) {
@@ -195,12 +208,18 @@ export function setupInteraction(context, callbacks) {
     const btnHelp = document.getElementById('btn-help');
     const btnStart = document.getElementById('btn-start');
 
+    /**
+     * Opens the welcome/help modal.
+     */
     function openModal() {
         if (welcomeModal) {
             welcomeModal.showModal(); // Built-in dialog method handles focus trap
         }
     }
 
+    /**
+     * Closes the welcome/help modal.
+     */
     function closeModal() {
         if (welcomeModal) {
             welcomeModal.close();
@@ -311,6 +330,11 @@ export function setupInteraction(context, callbacks) {
 
     // --- Navigation Sidebar Logic ---
     // Recursively build the list
+    /**
+     * Recursively builds the navigation tree in the DOM.
+     * @param {HTMLElement} container - The DOM container for the list.
+     * @param {Array} items - The list of planet objects.
+     */
     function buildNavTree(container, items) {
         const ul = document.createElement('ul');
         ul.className = 'nav-ul';
@@ -351,7 +375,10 @@ export function setupInteraction(context, callbacks) {
         container.appendChild(ul);
     }
 
-    // Initialize Navigation
+    /**
+     * Initializes the navigation sidebar.
+     * @param {Array} planetData - The planet data to populate the sidebar with.
+     */
     function initNavigation(planetData) {
         const navList = document.getElementById('nav-list');
         const btnPlanets = document.getElementById('btn-planets');

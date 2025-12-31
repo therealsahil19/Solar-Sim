@@ -13,6 +13,10 @@ export class ThemeManager {
         this.loadPreference();
     }
 
+    /**
+     * Sets the application theme by updating the 'data-theme' attribute on the root element.
+     * @param {string} themeName - The name of the theme to set ('default', 'blueprint', 'oled').
+     */
     setTheme(themeName) {
         if (!this.themes.includes(themeName)) return;
 
@@ -22,6 +26,10 @@ export class ThemeManager {
         this.currentThemeIndex = this.themes.indexOf(themeName);
     }
 
+    /**
+     * Cycles to the next available theme in the list.
+     * @returns {string} The name of the new active theme.
+     */
     cycleTheme() {
         this.currentThemeIndex = (this.currentThemeIndex + 1) % this.themes.length;
         const nextTheme = this.themes[this.currentThemeIndex];
@@ -29,6 +37,9 @@ export class ThemeManager {
         return nextTheme;
     }
 
+    /**
+     * Loads the persisted theme preference from localStorage, or defaults to 'default'.
+     */
     loadPreference() {
         const stored = localStorage.getItem('theme');
         if (stored && this.themes.includes(stored)) {
@@ -39,6 +50,10 @@ export class ThemeManager {
         }
     }
 
+    /**
+     * Gets the current active theme name.
+     * @returns {string} The current theme name.
+     */
     getTheme() {
         return this.themes[this.currentThemeIndex];
     }

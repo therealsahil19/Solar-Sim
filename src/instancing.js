@@ -1,9 +1,22 @@
+/**
+ * @file instancing.js
+ * @description Manages InstancedMeshes to optimize rendering performance.
+ *
+ * BOLT OPTIMIZATION:
+ * This module groups similar objects (same geometry & material) into single
+ * `THREE.InstancedMesh` calls, drastically reducing the number of draw calls.
+ */
+
 import * as THREE from 'three';
 
 /**
  * Manages InstancedMeshes to reduce draw calls.
+ * Groups objects by geometry and material UUIDs.
  */
 export class InstanceRegistry {
+    /**
+     * @param {THREE.Scene} scene - The Three.js scene to add meshes to.
+     */
     constructor(scene) {
         this.scene = scene;
         // Map of key -> { mesh: InstancedMesh, instances: [{ pivot: Object3D, index: number }] }
@@ -112,6 +125,9 @@ export class InstanceRegistry {
     /**
      * Gets the intersection data for an instance.
      * Helper for Raycaster.
+     * @param {THREE.InstancedMesh} instanceMesh - The instanced mesh that was hit.
+     * @param {number} instanceId - The index of the instance that was hit.
+     * @returns {Object|null} The userData associated with the instance pivot.
      */
     getIntersectionData(instanceMesh, instanceId) {
         const group = this.groups.get(instanceMesh.userData.registryKey);

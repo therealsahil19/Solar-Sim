@@ -1,3 +1,13 @@
+/**
+ * @file trails.js
+ * @description Manages a unified trail system for efficient orbit rendering.
+ *
+ * BOLT OPTIMIZATION:
+ * Renders thousands of orbit trails using a single `THREE.LineSegments` geometry,
+ * massively reducing draw calls compared to individual Line objects.
+ * Uses a cyclic buffer to update trail positions efficiently.
+ */
+
 import * as THREE from 'three';
 
 /**
@@ -5,6 +15,11 @@ import * as THREE from 'three';
  * Uses a single LineSegments geometry with a cyclic buffer for each instance.
  */
 export class TrailManager {
+    /**
+     * @param {THREE.Scene} scene - The scene to add the trail system to.
+     * @param {number} [maxTrails=5000] - Maximum number of objects that can have trails.
+     * @param {number} [pointsPerTrail=100] - Number of points (segments) per trail.
+     */
     constructor(scene, maxTrails = 5000, pointsPerTrail = 100) {
         this.scene = scene;
         this.maxTrails = maxTrails;
@@ -79,6 +94,9 @@ export class TrailManager {
         this.updateTrailGeometry(index, history, col);
     }
 
+    /**
+     * Updates all trails. Call this in the animation loop.
+     */
     update() {
         // Update history for all trails
         const tempVec = new THREE.Vector3();
@@ -96,6 +114,12 @@ export class TrailManager {
         this.geometry.attributes.color.needsUpdate = true;
     }
 
+    /**
+     * Updates the geometry buffers for a specific trail.
+     * @param {number} trailIndex - Index of the trail in the system.
+     * @param {Array<THREE.Vector3>} history - Array of positions.
+     * @param {THREE.Color} color - Base color of the trail.
+     */
     updateTrailGeometry(trailIndex, history, color) {
         // Map trail to buffer position
         // Trail i occupies vertices: i * segments * 2 to (i+1) * segments * 2
@@ -132,6 +156,9 @@ export class TrailManager {
         }
     }
 
+    /**
+     * Resets the trail system (clears all trails).
+     */
     reset() {
         // Clear all trails logic if needed
         this.nextTrailIndex = 0;
