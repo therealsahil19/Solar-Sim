@@ -55,7 +55,7 @@ export function setupControls(camera, domElement) {
  *  - `closeModal()`: Closes the welcome/help modal.
  */
 export function setupInteraction(context, callbacks) {
-    const { camera, rendererDomElement, interactionTargets } = context;
+    const { camera, rendererDomElement, interactionTargets, instanceRegistry } = context;
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -107,7 +107,16 @@ export function setupInteraction(context, callbacks) {
 
     // --- Navigation Helpers ---
     function findMeshByName(name) {
-        return interactionTargets.find(obj => obj.userData.name === name);
+        // 1. Search in standard interaction targets (Sun, Non-instanced objects)
+        const found = interactionTargets.find(obj => obj.userData.name === name);
+        if (found) return found;
+
+        // 2. Search in Instance Registry
+        if (context.instanceRegistry) {
+            return context.instanceRegistry.findInstanceByName(name);
+        }
+
+        return null;
     }
 
     function selectByName(name) {
@@ -138,10 +147,29 @@ export function setupInteraction(context, callbacks) {
 
         if (intersects.length > 0) {
             const hit = intersects[0]; // Closest object
-            const mesh = hit.object;
-            const userData = mesh.userData;
+            let mesh = hit.object;
+            let userData = mesh.userData;
 
-            if (userData.name) {
+            // Bolt Support: Handle InstancedMesh
+            if (mesh.isInstancedMesh && context.instanceRegistry) {
+                // Use the registry to get the actual userData for this instance
+                const data = context.instanceRegistry.getIntersectionData(mesh, hit.instanceId);
+                if (data) {
+                    userData = data;
+                    // We can't really "select" the instance mesh itself as a focus target in the same way
+                    // unless focus logic supports it.
+                    // But we can create a proxy object or just pass the UserData and let main handle logic?
+                    // Currently 'onSetFocus' expects a mesh with matrixWorld.
+                    // The 'pivot' in registry has matrixWorld.
+                    // So we should retrieve the pivot!
+                    const group = context.instanceRegistry.groups.get(mesh.userData.registryKey);
+                    if (group) {
+                         mesh = group.instances[hit.instanceId].pivot; // Use the pivot as the "selected object"
+                    }
+                }
+            }
+
+            if (userData && userData.name) {
                 // Determine if it's a double click
                 const currentTime = Date.now();
                 const isDoubleClick = (currentTime - lastClickTime) < doubleClickDelay;

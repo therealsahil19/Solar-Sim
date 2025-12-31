@@ -18,6 +18,8 @@ import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 import { createStarfield, createSun, createPlayerShip, createSystem } from './procedural.js';
 import { createAsteroidBelt } from './debris.js';
 import { setupControls, setupInteraction } from './input.js';
+import { InstanceRegistry } from './instancing.js';
+import { TrailManager } from './trails.js';
 
 // ============================================================================
 // State & Globals
@@ -92,6 +94,8 @@ let interactionHelpers = null;
 let frameCount = 0;
 let closestObjectCache = null;
 let asteroidBelt = null; // Reference to asteroid belt for updates
+let instanceRegistry = null; // Bolt Support
+let trailManager = null; // Bolt Support
 
 // Expose globals for testing
 window.scene = null;
@@ -174,6 +178,14 @@ export async function init() {
 
     const textureLoader = new THREE.TextureLoader(manager);
 
+    // Bolt Support: Init Registry
+    instanceRegistry = new InstanceRegistry(scene);
+    trailManager = new TrailManager(scene, 5000, 50); // 5000 trails, 50 points each (reduced from 100 for memory)
+
+    // Hack: Attach to loader to pass through to recursive createSystem
+    textureLoader.instanceRegistry = instanceRegistry;
+    textureLoader.trailManager = trailManager;
+
     // 4. Create Initial Objects (Procedural)
     // Starfield
     starfield = createStarfield();
@@ -197,7 +209,11 @@ export async function init() {
     // 5. Load System Data & Generate Planets
     let planetData = null; // Declare in outer scope of init
     try {
-        const response = await fetch('system.json');
+        // Bolt Support: Allow loading custom config for benchmarking
+        const urlParams = new URLSearchParams(window.location.search);
+        const configUrl = urlParams.get('config') || 'system.json';
+
+        const response = await fetch(configUrl);
         planetData = await response.json();
 
         planetData.forEach(planetConfig => {
@@ -225,9 +241,31 @@ export async function init() {
             activeTrails.push(...systemNode.trails);
 
             // Track primary planets (assuming system.json is flat list of planets)
-            // The first interactable in the returned list is the main body of the system
-            if (systemNode.interactables.length > 0) {
-                planets.push(systemNode.interactables[0]);
+            // With instancing, interactables might be empty.
+            // Bolt Support: Use the pivot (systemNode.pivot) as the target for focus shortcuts
+            // The pivot contains the bodyGroup as a child, or is the parent of bodyGroup.
+            // Actually, `systemNode.pivot` is the orbit center. `systemNode.animated[0].mesh` is the body group (pivot).
+            // Let's use the object that holds the userData -> the instance pivot (bodyGroup).
+            // systemNode.animated[0].mesh is `bodyGroup` in procedural.js now.
+            if (systemNode.animated.length > 0) {
+                 const primaryBody = systemNode.animated[0].mesh;
+                 if (primaryBody) {
+                     planets.push(primaryBody);
+                 }
+            }
+        });
+
+        // Bolt Support: Build Instances
+        instanceRegistry.build();
+
+        // Add instanced meshes to interaction targets
+        instanceRegistry.groups.forEach(group => {
+            if (group.mesh) {
+                interactionTargets.push(group.mesh);
+                // Also add to planets list if it's a planet type?
+                // The current selection logic relies on raycasting, which works.
+                // But the keyboard shortcuts (1-9) rely on 'planets' array.
+                // We'll fix that separately or rely on 'Select' UI.
             }
         });
 
@@ -244,6 +282,7 @@ export async function init() {
         scene,
         rendererDomElement: renderer.domElement,
         interactionTargets,
+        instanceRegistry, // Bolt Support
         state: { useTextures }, // Passing state reference if needed
         planetData // Architect: Pass raw data for navigation builder
     };
@@ -473,6 +512,11 @@ function animate() {
             if (obj.mesh) obj.mesh.rotation.y += obj.rotationSpeed * timeScale;
         });
 
+        // Bolt Support: Update Instances
+        if (instanceRegistry) {
+            instanceRegistry.update();
+        }
+
         // Bolt Optimization: Update Asteroid Belt via Uniform (GPU)
         if (asteroidBelt && asteroidBelt.userData.timeUniform) {
             // Update time based on global time scale
@@ -574,6 +618,12 @@ function animate() {
     // The trails will be 1 frame behind visually, which is imperceptible at high FPS.
     // Bolt Optimization: Throttle trail updates to every 2 frames
     if (!isPaused && showOrbits && frameCount % 2 === 0) {
+        // Bolt Support: Update Unified Manager
+        if (trailManager) {
+            trailManager.update();
+        }
+
+        // Legacy trails (if any)
         activeTrails.forEach(trail => {
             const target = trail.userData.target;
             if (!target) return;
