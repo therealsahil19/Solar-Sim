@@ -154,6 +154,9 @@ export async function init() {
     const loadingBar = document.getElementById('loading-bar');
     const manager = new THREE.LoadingManager();
 
+    // State to track if assets have finished loading at least once
+    let assetsLoaded = false;
+
     manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
         if (loadingBar) {
             const width = (itemsLoaded / itemsTotal) * 100;
@@ -162,6 +165,7 @@ export async function init() {
         }
     };
     manager.onLoad = function ( ) {
+        assetsLoaded = true;
         if (loadingScreen) {
             loadingScreen.style.opacity = '0';
             setTimeout(() => {
@@ -187,7 +191,7 @@ export async function init() {
     textureLoader.trailManager = trailManager;
 
     // 4. Create Initial Objects (Procedural)
-    // Starfield
+    // Starfield (BufferGeometry, no texture)
     starfield = createStarfield();
     scene.add(starfield);
 
@@ -301,6 +305,13 @@ export async function init() {
     };
 
     interactionHelpers = setupInteraction(context, callbacks);
+
+    // Initial Load Check:
+    // If assets loaded VERY fast (before we got here), open the modal now.
+    // If they load later, manager.onLoad will handle it.
+    if (assetsLoaded && interactionHelpers.openModal) {
+        interactionHelpers.openModal();
+    }
 
     // 7. Start Loop
     animate();
