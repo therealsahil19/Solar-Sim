@@ -394,6 +394,23 @@ function toggleTextures(btnElement) {
         }
     });
 
+    // Bolt Support: Update Instanced Meshes (Moons, etc.)
+    if (instanceRegistry) {
+        instanceRegistry.groups.forEach(group => {
+            if (group.mesh && group.instances.length > 0) {
+                // InstancedMesh shares one material for all instances.
+                // We use the first instance's userData to find the material variants.
+                const sampleUserData = group.instances[0].pivot.userData;
+
+                if (useTextures && sampleUserData.texturedMaterial) {
+                    group.mesh.material = sampleUserData.texturedMaterial;
+                } else if (!useTextures && sampleUserData.solidMaterial) {
+                    group.mesh.material = sampleUserData.solidMaterial;
+                }
+            }
+        });
+    }
+
     // Toast
     showToast(`Textures: ${useTextures ? "ON" : "OFF"}`);
 }
