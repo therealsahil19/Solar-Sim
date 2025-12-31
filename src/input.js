@@ -212,7 +212,7 @@ export function setupInteraction(context, callbacks) {
      * Opens the welcome/help modal.
      */
     function openModal() {
-        if (welcomeModal) {
+        if (welcomeModal && !welcomeModal.open) {
             welcomeModal.showModal(); // Built-in dialog method handles focus trap
         }
     }
