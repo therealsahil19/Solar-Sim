@@ -4,21 +4,28 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
 
 ## Features
 
--   **Realistic 3D Rendering**: Uses Three.js for rendering celestial bodies, orbits, and starfields.
--   **Procedural Generation**: Planets and moons are generated from configuration data (`system.json`).
+-   **Realistic 3D Rendering**: Uses Three.js for high-performance rendering of celestial bodies, orbits, and starfields.
+-   **Procedural Generation**:
+    -   **Data-Driven**: Planets and moons are generated entirely from configuration data (`system.json`).
+    -   **Recursive Satellites**: Supports theoretically infinite nesting of moons (moons of moons).
+    -   **Starfield**: Procedurally generated background stars.
 -   **Interactive Controls**:
-    -   **Orbit Controls**: Pan, zoom, and rotate around the scene.
-    -   **Focus Mode**: Double-click any planet to focus the camera on it.
-    -   **Ship View**: Toggle a "chase camera" mode behind a player ship.
-    -   **Raycasting**: Click on planets to view details (Name, Type, Size, Distance).
+    -   **Orbit Controls**: Pan, zoom, and rotate around the scene with the mouse.
+    -   **Focus Mode**: Double-click any planet to smoothly animate the camera to follow it.
+    -   **Ship View**: Toggle a "Chase Camera" mode behind a procedural player ship.
+    -   **Raycasting**: Click on planets to view details (Name, Type, Size, Distance) via Info Panel.
 -   **Dynamic Visuals**:
-    -   **Trails**: Planets leave trail lines as they orbit.
-    -   **Texture Toggling**: Switch between High-Res Textures (HD) and Solid Colors (LD) for performance.
-    -   **Glow Effects**: Procedural sun glow.
--   **UI Overlays**:
-    -   **Info Panel**: Detailed information about the selected celestial body.
-    -   **Toast Notifications**: Quick feedback on interactions.
-    -   **On-Screen Controls**: Buttons for camera, textures, pause, and speed.
+    -   **Orbit Trails**: Planets leave fading trail lines as they orbit (optimized with typed arrays).
+    -   **Texture Toggling**: Switch between High-Res Textures (HD) and Solid Colors (LD) for performance on low-end devices.
+    -   **Dynamic Labels**: Text labels that overlay the 3D scene using `CSS2DRenderer`.
+    -   **Glow Effects**: Procedural sun glow generated via offscreen canvas.
+    -   **Shadows**: Dynamic point light shadows for depth.
+-   **UI & UX**:
+    -   **Info Panel**: Detailed information overlay for selected celestial bodies.
+    -   **Toast Notifications**: Quick feedback for actions (e.g., "Textures: OFF").
+    -   **On-Screen Controls**: Accessible buttons for camera, textures, pause, and speed.
+    -   **Speed Control**: Slider to adjust the time scale of the simulation.
+    -   **Onboarding**: Loading screen and initial hint overlay.
 
 ## Project Structure
 
@@ -29,6 +36,7 @@ The project is organized into a modular architecture:
 ├── index.html          # Entry point, loads styles and modules
 ├── system.json         # Configuration data for planets and moons
 ├── textures/           # Directory for texture assets
+├── download_textures.py # Helper script to fetch assets
 ├── src/
 │   ├── main.js         # The "Conductor" - initializes scene and loop
 │   ├── procedural.js   # "Factory" - creates 3D objects (planets, stars)
@@ -39,22 +47,19 @@ The project is organized into a modular architecture:
 ### Architecture
 
 1.  **`src/main.js`**:
-    -   Sets up the Three.js `Scene`, `Camera`, and `Renderer`.
-    -   Loads `system.json` and assets.
-    -   Maintains the global animation loop.
-    -   Orchestrates communication between Input and State.
+    -   **Orchestrator**: Sets up the Three.js `Scene`, `Camera`, `Renderer`, and `Lighting`.
+    -   **Render Loop**: Manages the animation loop, split into Pre-Render (updates) and Post-Render (trails) phases for optimization.
+    -   **Throttling**: Uses `frameCount` to throttle expensive operations like UI updates and Nearest Neighbor search for the ship.
 
 2.  **`src/procedural.js`**:
-    -   A collection of pure factory functions.
-    -   Generates meshes (`createSystem`, `createSun`, `createStarfield`).
-    -   Handles material creation (Textures vs. Solid Colors).
-    -   Does **not** modify the scene directly.
+    -   **Factory Pattern**: Pure functions that accept dependencies (like `TextureLoader`) and return Three.js objects.
+    -   **Recursion**: `createSystem` recursively builds the scene graph for planets and their moons.
+    -   **Material Management**: Creates both Textured and Solid materials for runtime switching.
 
 3.  **`src/input.js`**:
-    -   Manages `OrbitControls`.
-    -   Handles Raycasting (Mouse Clicks).
-    -   Binds Keyboard Shortcuts (1-9, C, Space, Esc).
-    -   Updates the DOM UI based on interactions.
+    -   **Dependency Injection**: Receives scene context to attach controls without global state dependency.
+    -   **Event Handling**: Centralizes `OrbitControls`, Raycasting (Mouse Clicks), and Keyboard Listeners.
+    -   **UI Updates**: Manages the DOM overlays (Info Panel, Toasts) based on interaction.
 
 ## Configuration (`system.json`)
 
@@ -64,31 +69,49 @@ The simulation is data-driven. `system.json` defines the hierarchy of celestial 
 ```json
 [
   {
-    "name": "Planet Name",
+    "name": "Earth",
     "type": "Planet",
-    "color": "#RRGGBB",
-    "texture": "textures/planet.jpg",
+    "color": "#2233FF",
+    "texture": "textures/earth.jpg",
     "size": 1.0,
-    "distance": 10.0,
+    "distance": 15.0,
     "speed": 0.01,
     "rotationSpeed": 0.02,
-    "description": "Description text...",
-    "moons": [ ... ]
+    "hasRing": false,
+    "description": "Our home planet.",
+    "moons": [
+       {
+         "name": "Moon",
+         "type": "Moon",
+         "size": 0.27,
+         "distance": 2.5,
+         ...
+       }
+    ]
   }
 ]
 ```
 
 ## Running the Project
 
+### 1. Prerequisites
+-   **Python 3** (or any static file server)
+
+### 2. Setup
+Download the required textures (optional, if `textures/` is empty):
+```bash
+python3 download_textures.py
+```
+*Note: This script fetches assets from solarsystemscope.com.*
+
+### 3. Start Server
 Because the project uses ES Modules (`import`), it must be served over HTTP (not `file://`).
+```bash
+python3 -m http.server
+```
 
-1.  **Python 3** (Pre-installed on most systems):
-    ```bash
-    python3 -m http.server
-    ```
-
-2.  Open your browser to:
-    `http://localhost:8000`
+### 4. View
+Open your browser to: `http://localhost:8000`
 
 ## Controls
 
@@ -100,14 +123,24 @@ Because the project uses ES Modules (`import`), it must be served over HTTP (not
 | **Double Click** | Focus on Object |
 | **Space** | Pause/Resume Simulation |
 | **C** | Toggle Camera (Overview / Ship View) |
+| **L** | Toggle Labels (Show/Hide) |
+| **O** | Toggle Orbits & Trails (Show/Hide) |
+| **T** | Toggle Textures (HD / LD) |
 | **Esc** | Reset View |
 | **1-9** | Focus on Planet 1-9 |
 
 ## Accessibility
 
--   **Screen Readers**: The canvas has `role="application"` and `aria-label`.
--   **Keyboard Navigation**: Full control support via keyboard shortcuts.
--   **Visuals**: High contrast UI and adjustable settings (Textures/Labels).
+The application is designed to be accessible:
+-   **Semantic HTML**: Uses proper button elements and inputs for UI controls.
+-   **ARIA Attributes**:
+    -   `role="application"` on the canvas.
+    -   `aria-pressed` on toggle buttons (Camera, Textures, Labels, Orbits).
+    -   `aria-label` for state changes (e.g., Pause/Resume).
+    -   `aria-live="polite"` for Toast notifications.
+    -   `aria-valuenow` for loading bars and sliders.
+-   **Keyboard Navigation**: All core actions are mapped to keyboard shortcuts.
+-   **Visuals**: High contrast UI text and support for disabling complex textures/labels for clarity.
 
 ---
 

@@ -539,7 +539,8 @@ function animate() {
     frameCount++;
 
     // 4. Update Dynamic UI (Info Panel)
-    // Throttle UI updates to avoid DOM thrashing (every 10 frames)
+    // Throttle UI updates to avoid DOM thrashing (every 10 frames).
+    // Updating the DOM every frame is expensive and unnecessary for human perception.
     if (selectedObject && frameCount % 10 === 0) {
         const distEl = document.getElementById('info-dist-sun');
         if (distEl) {
@@ -579,6 +580,9 @@ function animate() {
             const positions = trail.userData.positions;
 
             // Shift positions: This is a simple O(N) shift.
+            // copyWithin is a high-performance typed array method that moves memory blocks
+            // much faster than a manual loop. We shift data right by 3 floats (1 vector)
+            // to make room for the new position at index 0.
             positions.copyWithin(3, 0, positions.length - 3);
 
             positions[0] = tempVec.x;
