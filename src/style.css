@@ -1,6 +1,6 @@
 /*
    🎨 PALETTE DESIGN SYSTEM
-   Version: 2.1.0 "Unleashed" - Theming Engine & Semantic Tokens
+   Version: 2.2.0 "Unleashed" - Typography & Skeleton UI
 */
 
 /* ==========================================================================
@@ -86,14 +86,28 @@
     --radius-lg: 20px;
     --radius-full: 9999px;
 
+    /* --- Typography Scale --- */
+    --text-xs: 0.75rem;   /* 12px */
+    --text-sm: 0.875rem;  /* 14px */
+    --text-base: 1rem;    /* 16px */
+    --text-lg: 1.125rem;  /* 18px */
+    --text-xl: 1.25rem;   /* 20px */
+    --text-2xl: 1.5rem;   /* 24px */
+    --text-3xl: 1.875rem; /* 30px */
+
+    /* --- Layout Tokens --- */
+    --layout-sidebar-width: 320px;
+    --layout-header-height: 60px;
+
     /* --- Z-Indices --- */
     --z-bg: 0;
     --z-canvas: 1;
+    --z-loader: 50; /* Changed: Sits between canvas and UI */
     --z-ui: 100;
     --z-floating: 200;
     --z-toast: 300;
     --z-modal: 400;
-    --z-loader: 500;
+
 
     /* --- Typography --- */
     --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -153,7 +167,7 @@ body {
     color: var(--color-text-primary);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    font-size: 16px;
+    font-size: var(--text-base);
     line-height: 1.5;
     transition: background-color var(--duration-normal), color var(--duration-normal);
 }
@@ -185,8 +199,30 @@ canvas {
 ::-webkit-scrollbar-thumb:hover { background: var(--color-border); }
 
 /* ==========================================================================
-   3. COMPONENTS
+   3. COMPONENTS & UTILITIES
    ========================================================================== */
+
+/* --- Skeleton Loading --- */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--color-border-subtle) 25%,
+        var(--color-border) 50%,
+        var(--color-border-subtle) 75%
+    ) !important; /* Force override component backgrounds */
+    background-size: 200% 100% !important;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: var(--radius-sm);
+    color: transparent !important;
+    pointer-events: none;
+    min-height: 1em; /* Ensure visibility for text elements */
+    border: none !important; /* Remove borders from buttons */
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
 
 /* --- Glass Panel --- */
 .glass-panel {
@@ -226,7 +262,7 @@ button:active {
     justify-content: center;
     background: var(--color-action-subtle);
     border: 1px solid var(--color-border-subtle);
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
 }
 .icon-btn:hover {
     background: var(--color-border);
@@ -255,7 +291,7 @@ button:active {
     padding: var(--space-md) var(--space-xl);
     border-radius: var(--radius-md);
     font-weight: 600;
-    font-size: 1rem;
+    font-size: var(--text-base);
     box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3); /* Keep generic shadow for brand */
     letter-spacing: 0.5px;
 }
@@ -340,15 +376,14 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 60px;
+    height: var(--layout-header-height);
     padding: 0 var(--space-lg);
 }
 
 #top-bar h1 {
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
     font-weight: 700;
     letter-spacing: -0.5px;
-    /* Use background clip for gradient text */
     background: linear-gradient(135deg, var(--color-text-primary), var(--color-text-secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -382,13 +417,14 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 
 #info-panel h2 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
     font-weight: 700;
 }
 
 .info-type {
     font-style: italic;
-    color: var(--color-text-tertiary); /* Use token */
+    color: var(--color-text-tertiary);
+    font-size: var(--text-sm);
 }
 
 .info-desc {
@@ -403,7 +439,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     margin-top: var(--space-md);
     padding-top: var(--space-md);
     border-top: 1px solid var(--color-border);
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
 }
 
@@ -425,7 +461,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     top: var(--space-md);
     left: var(--space-md);
     bottom: var(--space-md);
-    width: 320px;
+    width: var(--layout-sidebar-width);
     z-index: var(--z-floating);
     display: flex;
     flex-direction: column;
@@ -461,7 +497,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     border-radius: var(--radius-sm);
     color: var(--color-text-primary);
     font-family: inherit;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     transition: border-color var(--duration-fast), background var(--duration-fast);
     flex-shrink: 0;
 }
@@ -489,7 +525,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     width: 100%;
     padding: var(--space-sm) var(--space-xs);
     border-radius: var(--radius-sm);
-    font-size: 0.95rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     display: flex;
     align-items: center;
@@ -502,7 +538,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 }
 .nav-type {
     margin-left: auto;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     padding: 2px 6px;
     border: 1px solid var(--color-border);
     border-radius: 4px;
@@ -553,17 +589,17 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     transform: translateX(-50%) translateY(0);
 }
 
-/* --- Loading Screen --- */
+/* --- Loading Screen (Updated for Perceived Performance) --- */
 #loading-screen {
     position: fixed;
     inset: 0;
-    background: var(--color-bg);
+    background: var(--color-bg); /* Opaque black covers canvas */
     color: var(--color-text-primary);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: var(--z-loader);
+    z-index: var(--z-loader); /* 50: Behind UI (100) but above Canvas (1) */
     transition: opacity 1s ease;
 }
 
@@ -640,7 +676,7 @@ dialog::backdrop {
 /* --- Planet Labels --- */
 .planet-label {
     color: var(--color-text-primary);
-    font-size: 12px;
+    font-size: var(--text-xs);
     font-weight: 500;
     text-shadow: 0 2px 4px var(--color-shadow);
     background: var(--color-overlay-bg);
@@ -658,7 +694,7 @@ dialog::backdrop {
     position: absolute;
     bottom: var(--space-sm);
     right: var(--space-sm);
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--color-text-tertiary);
     z-index: var(--z-ui);
     pointer-events: none;
@@ -756,7 +792,7 @@ dialog::backdrop {
 }
 
 .cmd-icon {
-    font-size: 1.2rem;
+    font-size: var(--text-lg);
     opacity: 0.5;
     color: var(--color-text-secondary);
 }
@@ -765,7 +801,7 @@ dialog::backdrop {
     flex: 1;
     background: transparent;
     border: none;
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
     color: var(--color-text-primary);
     font-family: inherit;
     outline: none;
@@ -805,7 +841,7 @@ dialog::backdrop {
 }
 
 .cmd-item-icon {
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
 }
 
 .cmd-item-text {
@@ -814,7 +850,7 @@ dialog::backdrop {
 }
 
 .cmd-item-meta {
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
     padding: 2px 6px;
     border: 1px solid var(--color-border);
     border-radius: 4px;
@@ -835,7 +871,7 @@ dialog::backdrop {
     padding: var(--space-xs) var(--space-md);
     background: var(--color-surface-solid);
     border-top: 1px solid var(--color-border-subtle);
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--color-text-tertiary);
 }
 

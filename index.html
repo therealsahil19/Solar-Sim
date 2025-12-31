@@ -55,14 +55,21 @@
                 <button id="btn-close-nav" class="icon-btn-small" aria-label="Close Navigation">✕</button>
             </header>
             <input type="search" id="nav-search" placeholder="Find planet..." aria-label="Search Planets">
-            <nav id="nav-list" role="tree"></nav>
+        <nav id="nav-list" role="tree">
+            <!-- Skeleton State (Optimistic UI) -->
+            <div class="nav-btn skeleton" style="width: 100%; height: 32px; margin-bottom: 8px;"></div>
+            <div class="nav-btn skeleton" style="width: 85%; height: 32px; margin-bottom: 8px;"></div>
+            <div class="nav-btn skeleton" style="width: 90%; height: 32px; margin-bottom: 8px;"></div>
+            <div class="nav-btn skeleton" style="width: 75%; height: 32px; margin-bottom: 8px;"></div>
+            <div class="nav-btn skeleton" style="width: 80%; height: 32px; margin-bottom: 8px;"></div>
+        </nav>
         </aside>
 
         <!-- Right Side: Info Panel -->
         <aside id="info-panel" class="glass-panel" aria-live="polite">
             <h2 id="info-name">Planet Name</h2>
-            <div id="info-type" style="font-style: italic; color: var(--color-text-muted);">Type</div>
-            <p id="info-desc" style="margin-top: var(--space-sm);">Description goes here.</p>
+            <div id="info-type" class="info-type">Type</div>
+            <p id="info-desc" class="info-desc">Description goes here.</p>
             <div class="stats-grid">
                 <div id="info-radius">Radius: -</div>
                 <div id="info-distance">Orbit: -</div>
