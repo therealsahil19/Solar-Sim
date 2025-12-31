@@ -52,9 +52,10 @@ This project implements several optimization strategies (internally referred to 
 4.  **Render Loop Splitting**:
     -   The loop is split into a **Pre-Render** phase (updating object rotations) and a **Post-Render** phase (updating trails). This allows the trail logic to read the most recent GPU-computed matrices without stalling the CPU.
 
-5.  **GPU Animation (InstancedMesh)**:
-    -   The Asteroid Belt uses `THREE.InstancedMesh` to render thousands of asteroids in a single draw call.
-    -   Orbits are animated entirely on the GPU via Vertex Shader injection (`onBeforeCompile`), requiring zero CPU overhead for position updates.
+5.  **GPU Animation & Instancing**:
+    -   **InstancedMesh (`InstanceRegistry`)**: Manages thousands of instances (like moons or asteroids) with O(1) draw calls per geometry.
+    -   **Asteroid Belt**: Uses `THREE.InstancedMesh` with Vertex Shader injection to animate orbits entirely on the GPU.
+    -   **Trails (`TrailManager`)**: Renders thousands of orbit trails using a single `THREE.LineSegments` geometry, massively reducing draw calls.
 
 ## Security ("Sentinel")
 
@@ -78,6 +79,8 @@ The project is organized into a modular architecture:
 │   ├── procedural.js   # "Factory" - creates 3D objects (planets, stars)
 │   ├── input.js        # "Controller" - handles user input and UI events
 │   ├── debris.js       # "Generator" - creates GPU-accelerated asteroid belt
+│   ├── instancing.js   # "Optimizer" - manages InstancedMesh groups
+│   ├── trails.js       # "Optimizer" - manages unified orbit trail geometry
 │   ├── components/
 │   │   └── CommandPalette.js # Class-based UI component
 │   └── style.css       # Design System tokens and styles
@@ -101,13 +104,33 @@ The project is organized into a modular architecture:
     -   **Event Handling**: Centralizes `OrbitControls`, Raycasting (Mouse Clicks), and Keyboard Listeners.
     -   **UI Updates**: Manages the DOM overlays (Info Panel, Toasts) based on interaction.
 
-4.  **`src/debris.js`**:
-    -   **Specialized Generator**: Handles the creation of the asteroid belt using `InstancedMesh`.
-    -   **Shader Injection**: Modifies the default Three.js vertex shader to handle orbital mechanics on the GPU.
+4.  **`src/instancing.js`**:
+    -   **Instance Registry**: Centralizes `THREE.InstancedMesh` management.
+    -   **Batching**: Groups objects by geometry and material to reduce draw calls from O(N) to O(G*M).
+
+5.  **`src/trails.js`**:
+    -   **Trail Manager**: Manages a single `THREE.LineSegments` mesh for all orbit trails.
+    -   **Performance**: Avoids creating thousands of individual `THREE.Line` objects.
 
 ## Configuration (`system.json`)
 
 The simulation is data-driven. `system.json` defines the hierarchy of celestial bodies.
+
+### Configuration Properties
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `name` | String | The display name of the celestial body. |
+| `type` | String | The classification (e.g., "Planet", "Moon", "Star"). |
+| `color` | String | Hex color code (e.g., "#2233FF") used for Solid/LD mode. |
+| `texture` | String | Path to the texture image (e.g., "textures/earth.jpg"). |
+| `size` | Number | Radius of the object relative to Earth (Earth = 1.0). |
+| `distance` | Number | Distance from the parent object (orbit radius). |
+| `speed` | Number | Orbital speed around the parent. |
+| `rotationSpeed` | Number | Speed of rotation around its own axis. |
+| `hasRing` | Boolean | (Optional) If true, generates a procedural ring around the planet. |
+| `description` | String | Text shown in the Info Panel when selected. |
+| `moons` | Array | (Optional) Recursive list of satellite objects (same schema). |
 
 **Example Schema:**
 ```json
