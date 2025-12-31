@@ -27,6 +27,33 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
     -   **Speed Control**: Slider to adjust the time scale of the simulation.
     -   **Onboarding**: Loading screen and initial hint overlay.
 
+## Performance & Optimizations ("Bolt")
+
+This project implements several optimization strategies (internally referred to as "Bolt") to ensure high performance (60 FPS) even on lower-end devices:
+
+1.  **Throttling**:
+    -   **UI Updates**: Dynamic text updates (like "Distance to Sun") are throttled to run only every 10 frames to minimize DOM manipulation overhead.
+    -   **Nearest Neighbor Search**: The logic for the ship to face the nearest planet runs every 10 frames, caching the result in between.
+    -   **Trail Updates**: Vertex updates for orbit trails are throttled to every 2 frames.
+
+2.  **Caching**:
+    -   **Material Cache**: Solid color materials are cached and reused to reduce the number of shader programs and draw calls.
+    -   **Matrix Caching**: The render loop uses `matrixWorld` from the previous frame for position calculations instead of forcing synchronous `updateWorldMatrix()` calls.
+
+3.  **Memory Management**:
+    -   **Shared Geometry**: All orbit lines share a single unit-circle geometry, scaled per instance.
+    -   **Typed Arrays**: Trail updates use `Float32Array.prototype.copyWithin` for highly efficient memory shifting (O(N)) instead of manual array iteration.
+
+4.  **Render Loop Splitting**:
+    -   The loop is split into a **Pre-Render** phase (updating object rotations) and a **Post-Render** phase (updating trails). This allows the trail logic to read the most recent GPU-computed matrices without stalling the CPU.
+
+## Security ("Sentinel")
+
+The application enforces strict security measures:
+
+-   **Content Security Policy (CSP)**: A strict CSP in `index.html` restricts script sources to `self` and trusted CDNs (unpkg), blocking inline scripts and unauthorized connections.
+-   **Subresource Integrity (SRI)**: All external Three.js scripts loaded from CDNs use `integrity` hashes to ensure the code hasn't been tampered with.
+
 ## Project Structure
 
 The project is organized into a modular architecture:
@@ -40,7 +67,8 @@ The project is organized into a modular architecture:
 ├── src/
 │   ├── main.js         # The "Conductor" - initializes scene and loop
 │   ├── procedural.js   # "Factory" - creates 3D objects (planets, stars)
-│   └── input.js        # "Controller" - handles user input and UI events
+│   ├── input.js        # "Controller" - handles user input and UI events
+│   └── style.css       # Design System tokens and styles
 └── README.md           # This documentation
 ```
 
@@ -141,6 +169,13 @@ The application is designed to be accessible:
     -   `aria-valuenow` for loading bars and sliders.
 -   **Keyboard Navigation**: All core actions are mapped to keyboard shortcuts.
 -   **Visuals**: High contrast UI text and support for disabling complex textures/labels for clarity.
+
+## Development
+
+This project maintains internal documentation for specific domains in the `.jules/` directory:
+-   `bolt.md`: Performance logs and optimization details.
+-   `sentinel.md`: Security vulnerability tracking and fixes.
+-   `palette.md`: Design system and UI/UX decisions.
 
 ---
 

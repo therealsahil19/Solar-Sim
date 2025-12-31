@@ -227,14 +227,6 @@ async function init() {
     }
 
     // 6. Setup Controls & Input
-    controls = setupControls(camera, labelRenderer.domElement); // Use labelRenderer dom for input to capture over labels
-    // Wait, orbit controls usually attaches to the canvas.
-    // However, the label renderer is on top. If we attach to renderer.domElement, label renderer might block.
-    // But we set labelRenderer pointerEvents to none. So clicks pass through to canvas.
-    // So sticking with renderer.domElement is safer for OrbitControls unless we want controls on top layer.
-    // Actually, OrbitControls works best on the element receiving events.
-    // If pointer-events: none is on labelRenderer, the events go to canvas.
-    // So setupControls(camera, renderer.domElement) is correct.
     controls = setupControls(camera, renderer.domElement);
     window.controls = controls; // Expose to window
 
@@ -479,7 +471,6 @@ function animate() {
         }
     }
 
-    // 4. Update Ship Orientation
     // 2. Camera Logic
     if (isShipView && playerShip) {
         // Chase Cam
@@ -492,7 +483,7 @@ function animate() {
     } else if (focusTarget) {
         // Focus Mode (Follow)
         const targetPos = new THREE.Vector3();
-        // Use optimized matrix read
+        // Bolt Optimization: Use optimized matrix read
         targetPos.setFromMatrixPosition(focusTarget.matrixWorld);
 
         // Smoothly lerp target for better feel, or just snap
@@ -502,8 +493,8 @@ function animate() {
 
     // 3. Update Ship Orientation (Face nearest object)
     if (playerShip && animatedObjects.length > 0) {
-        // Throttle the search for the nearest object to reduce matrix updates
-        // Bolt Optimization: Frequency tuned to 10 frames (approx 6/sec) for responsiveness
+        // Bolt Optimization: Throttle the search for the nearest object to reduce matrix updates
+        // Frequency tuned to 10 frames (approx 6/sec) for responsiveness
         if (frameCount % 10 === 0) {
             let closestDist = Infinity;
             let closestObj = null;
@@ -511,7 +502,7 @@ function animate() {
 
             animatedObjects.forEach(obj => {
                 if (obj.mesh) {
-                    // Optimized: use matrixWorld instead of forcing update
+                    // Bolt Optimization: use matrixWorld instead of forcing update
                     tempVec.setFromMatrixPosition(obj.mesh.matrixWorld);
 
                     const dist = shipPos.distanceToSquared(tempVec);
@@ -525,7 +516,7 @@ function animate() {
         }
 
         if (closestObjectCache) {
-            // Optimized: use matrixWorld
+            // Bolt Optimization: use matrixWorld
             tempVec.setFromMatrixPosition(closestObjectCache.matrixWorld);
             playerShip.lookAt(tempVec);
         }
@@ -535,12 +526,12 @@ function animate() {
     frameCount++;
 
     // 4. Update Dynamic UI (Info Panel)
-    // Throttle UI updates to avoid DOM thrashing (every 10 frames).
+    // Bolt Optimization: Throttle UI updates to avoid DOM thrashing (every 10 frames).
     // Updating the DOM every frame is expensive and unnecessary for human perception.
     if (selectedObject && frameCount % 10 === 0) {
         const distEl = document.getElementById('info-dist-sun');
         if (distEl) {
-             // Optimized: use matrixWorld
+             // Bolt Optimization: use matrixWorld
             tempVec.setFromMatrixPosition(selectedObject.matrixWorld);
             const dist = tempVec.distanceTo(sunPos);
             // Assuming 1 unit = 1 million km or similar relative scale
@@ -554,7 +545,7 @@ function animate() {
     if (renderer && scene && camera) {
         renderer.render(scene, camera);
 
-        // Optimization: Skip label rendering if labels are hidden and cleanup is done
+        // Bolt Optimization: Skip label rendering if labels are hidden and cleanup is done
         if (showLabels || labelsNeedUpdate) {
             labelRenderer.render(scene, camera);
             if (!showLabels) labelsNeedUpdate = false;
@@ -572,7 +563,7 @@ function animate() {
             const target = trail.userData.target;
             if (!target) return;
 
-            // Optimized: Read from cached matrix
+            // Bolt Optimization: Read from cached matrix
             tempVec.setFromMatrixPosition(target.matrixWorld);
             const positions = trail.userData.positions;
 
