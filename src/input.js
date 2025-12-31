@@ -45,6 +45,8 @@ export function setupControls(camera, domElement) {
  * @param {Function} callbacks.onSetFocus - Function to focus/follow a specific mesh.
  * @param {Function} callbacks.onUpdateTimeScale - Function to update simulation speed.
  * @param {Function} callbacks.onObjectSelected - Function to notify main state of selection.
+ * @param {Function} callbacks.onToggleLabels - Function to toggle visibility of labels.
+ * @param {Function} callbacks.onToggleOrbits - Function to toggle visibility of orbits.
  * @returns {Object} Helper functions for external use (e.g., updating UI).
  */
 export function setupInteraction(context, callbacks) {
@@ -148,6 +150,10 @@ export function setupInteraction(context, callbacks) {
 
         if (key === 'c') {
             callbacks.onToggleCamera();
+        } else if (key === 'l') {
+            callbacks.onToggleLabels();
+        } else if (key === 'o') {
+            callbacks.onToggleOrbits();
         } else if (key === 't') {
             const btn = document.getElementById('btn-texture');
             callbacks.onToggleTexture(btn);
