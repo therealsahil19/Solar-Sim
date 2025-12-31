@@ -239,12 +239,21 @@ export function createSystem(data, textureLoader, useTextures) {
         orbitLine = createOrbitLine(data.distance);
     }
 
-    // 3. Body Group
+    // 3. Body Group (Position & Rotation Container - UNSCALED)
+    // This group holds the position relative to the pivot.
+    // We attach children (moons) here so they inherit position but NOT scale.
     const bodyGroup = new THREE.Group();
     bodyGroup.position.x = data.distance;
     orbitPivot.add(bodyGroup);
 
-    // 4. Mesh
+    // 4. Visual Mesh Group (Scaled)
+    // This inner group holds the visual mesh and is scaled to the planet size.
+    // Children should NOT be added here unless they are surface details.
+    const visualGroup = new THREE.Group();
+    visualGroup.scale.set(data.size, data.size, data.size);
+    bodyGroup.add(visualGroup);
+
+    // 5. Mesh
     const geometry = baseSphereGeometry;
 
     // Bolt Optimization: Use cached material
@@ -267,8 +276,8 @@ export function createSystem(data, textureLoader, useTextures) {
     // NOTE: Scale must be applied to the Pivot or handled in the matrix.
     // Since we pass pivot.matrixWorld to instance, scaling the pivot works!
 
-    // We need to scale the "bodyGroup" (which is the pivot for the mesh)
-    bodyGroup.scale.set(data.size, data.size, data.size);
+    // We used to scale bodyGroup, now we scale visualGroup.
+    // bodyGroup remains scale (1,1,1).
 
     const userData = {
         name: data.name,
@@ -288,26 +297,28 @@ export function createSystem(data, textureLoader, useTextures) {
     if (textureLoader.instanceRegistry) {
         // Use current material based on useTextures
         const mat = useTextures ? texturedMaterial : solidMaterial;
-        textureLoader.instanceRegistry.addInstance(bodyGroup, geometry, mat, userData);
+        // IMPORTANT: The instance pivot is now `visualGroup` because it has the scale!
+        // The registry will read `visualGroup.matrixWorld` which includes the scale.
+        textureLoader.instanceRegistry.addInstance(visualGroup, geometry, mat, userData);
 
         // We create a dummy object for interaction targets if needed,
         // but the InstancedMesh itself will be the interaction target.
-        // The Pivot (bodyGroup) holds the userData.
+        // The Pivot (visualGroup) holds the userData.
     } else {
         // Fallback for Sun or if registry missing
         mesh = new THREE.Mesh(geometry, useTextures ? texturedMaterial : solidMaterial);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        // Scale is already on bodyGroup, but Mesh default scale is 1, so it inherits.
+        // Scale is already on visualGroup, but Mesh default scale is 1, so it inherits.
 
         mesh.userData = userData;
-        bodyGroup.add(mesh);
+        visualGroup.add(mesh);
     }
 
     // --- Feature: Rings ---
     if (data.hasRing) {
-        const inner = data.size * 1.4;
-        const outer = data.size * 2.2;
+        const inner = 1.4; // Relative to unit sphere (since visualGroup is scaled)
+        const outer = 2.2;
         const ringGeo = new THREE.RingGeometry(inner, outer, 64);
         const ringMat = new THREE.MeshStandardMaterial({
             color: 0xcfb096,
@@ -321,15 +332,21 @@ export function createSystem(data, textureLoader, useTextures) {
         ring.castShadow = true;
         ring.receiveShadow = true;
         ring.rotation.x = Math.PI / 2;
-        bodyGroup.add(ring);
+        visualGroup.add(ring);
     }
 
     // --- Feature: Labels ---
+    // Labels should NOT be scaled, so they remain on bodyGroup?
+    // But they need to be positioned above the planet surface.
+    // Surface is at Y = data.size (since radius is size).
     const labelDiv = document.createElement('div');
     labelDiv.className = 'planet-label';
     labelDiv.textContent = data.name;
     const label = new CSS2DObject(labelDiv);
-    label.position.set(0, data.size + 0.5, 0); // Offset above planet
+
+    // Position label relative to bodyGroup center.
+    // The surface is at `data.size`. So we put it slightly above.
+    label.position.set(0, data.size + 0.5, 0);
     bodyGroup.add(label);
 
     // --- Feature: Trails (Planets Only) ---
@@ -337,10 +354,9 @@ export function createSystem(data, textureLoader, useTextures) {
     let trail = null;
     // We register trails if a manager is present.
     // Hack: check textureLoader.trailManager
-    if (data.distance > 0 && textureLoader.trailManager) { // Enable for all moving objects for stress test? No, sticking to "Planets Only" logic for now unless needed.
-        // Actually, let's enable for Moons too if they have distance, to test scale.
-        // Original logic: data.type === 'Planet'
+    if (data.distance > 0 && textureLoader.trailManager) {
         if (data.type === 'Planet' || data.type === 'Moon') {
+             // Trail should follow the center (bodyGroup), not the scaled visual
              textureLoader.trailManager.register(bodyGroup, data.color);
         }
     } else if (data.type === 'Planet' && data.distance > 0) {
@@ -379,7 +395,7 @@ export function createSystem(data, textureLoader, useTextures) {
     // Since we scale bodyGroup, we can also rotate bodyGroup for self-rotation!
     const animated = [{
         pivot: orbitPivot, // Orbital rotation
-        mesh: bodyGroup,   // Self rotation (applied to the group now, which is the instance pivot)
+        mesh: visualGroup, // Self rotation (applied to visualGroup)
         speed: data.speed || 0,
         rotationSpeed: data.rotationSpeed || 0
     }];

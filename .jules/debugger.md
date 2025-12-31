@@ -23,3 +23,20 @@ A race condition between `THREE.LoadingManager.onLoad` and the asynchronous init
     *   In `manager.onLoad`: Set `assetsLoaded = true`. If `interactionHelpers` exists, call `openModal()`.
     *   In `init` (post-await): If `assetsLoaded` is true, call `openModal()`.
 3.  **Safety:** Updated `openModal` in `input.js` to check `!welcomeModal.open` before calling `showModal()` to prevent `InvalidStateError` in case both checks pass close together.
+
+## 2026-01-16 - [Recursive Satellite Scaling Logic Error]
+
+**Symptom:**
+Moons or sub-satellites appeared at incorrect (vastly inflated) distances from their parent planet if the parent planet had a size (scale) other than 1. For example, a moon defined at distance 5 from a parent of size 10 would appear at distance 50.
+
+**Root Cause:**
+In `src/procedural.js`, the `createSystem` function used a single `bodyGroup` container for both the visual scaling of the planet mesh and as the attachment point for children (moons).
+1. `bodyGroup.scale.set(size, size, size)` was applied to size the planet.
+2. `bodyGroup.add(childPivot)` attached the moon's coordinate system to this scaled group.
+3. Consequently, the child's local position (distance) was multiplied by the parent's scale matrix.
+
+**Fix Pattern:**
+Decoupled the scene graph hierarchy in `createSystem` by introducing a `visualGroup`.
+1. `bodyGroup` (Position Container): Remains unscaled (scale 1,1,1). Used for attaching children (moons) and Labels.
+2. `visualGroup` (Visual Container): Child of `bodyGroup`. Scaled to `size`. Holds the planet mesh and rings.
+3. This ensures satellites inherit the parent's position but are unaffected by its visual scale.
