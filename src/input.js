@@ -360,7 +360,7 @@ export function setupInteraction(context, callbacks) {
 
         if (!navList || !sidebar) return;
 
-        // Clear existing
+        // Clear Skeleton State (important for Palette upgrade)
         navList.innerHTML = '';
 
         // 1. Manual Entry: Sun
