@@ -47,7 +47,10 @@ export function setupControls(camera, domElement) {
  * @param {Function} callbacks.onObjectSelected - Function to notify main state of selection.
  * @param {Function} callbacks.onToggleLabels - Function to toggle visibility of labels.
  * @param {Function} callbacks.onToggleOrbits - Function to toggle visibility of orbits.
- * @returns {Object} Helper functions for external use (e.g., updating UI).
+ * @returns {Object} Helper functions for external use:
+ *  - `updateSelectionUI(mesh)`: Manually triggers the selection UI update for a mesh.
+ *  - `openModal()`: Opens the welcome/help modal.
+ *  - `closeModal()`: Closes the welcome/help modal.
  */
 export function setupInteraction(context, callbacks) {
     const { camera, rendererDomElement, interactionTargets } = context;

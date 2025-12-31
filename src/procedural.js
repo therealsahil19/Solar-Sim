@@ -5,6 +5,11 @@
  * This module follows a functional "Factory" pattern. It exports pure functions
  * that accept configuration/dependencies and return Three.js objects (Meshes, Groups, Points).
  * It does not maintain global state or modify the scene directly.
+ *
+ * It handles:
+ * 1. Efficient material reuse via a caching mechanism.
+ * 2. Shared geometry instantiation to reduce memory footprint.
+ * 3. Procedural generation of stars, planets, and moons.
  */
 
 import * as THREE from 'three';
@@ -31,6 +36,7 @@ const materialCache = {};
 
 /**
  * Clears the material cache to prevent memory leaks during scene resets.
+ * Should be called when the scene is destroyed or reset.
  */
 export function clearMaterialCache() {
     Object.values(materialCache).forEach(mat => mat.dispose());
@@ -39,6 +45,7 @@ export function clearMaterialCache() {
 
 /**
  * Retrieves or creates a cached solid material for a given color.
+ * Use this to avoid creating duplicate materials for objects with the same color.
  * @param {string|number|THREE.Color} color - The color of the material.
  * @returns {THREE.MeshStandardMaterial} The cached material.
  */
