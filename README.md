@@ -23,8 +23,9 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
     -   **Dynamic Labels**: Text labels that overlay the 3D scene using `CSS2DRenderer`.
     -   **Glow Effects**: Procedural sun glow generated via offscreen canvas.
     -   **Shadows**: Dynamic point light shadows for depth.
+    -   **Theming**: Multiple visual themes (Default, Blueprint, OLED) switchable via the Command Palette.
 -   **UI & UX**:
-    -   **Navigation Sidebar**: A collapsible sidebar listing all celestial bodies (hierarchically) for quick "fast travel" to any object.
+    -   **Navigation Sidebar**: A collapsible sidebar listing all celestial bodies (hierarchically) for quick "fast travel" to any object, with search functionality.
     -   **Info Panel**: Detailed information overlay for selected celestial bodies, including dynamic distance calculations.
     -   **Responsive Design**: The interface (Glassmorphism panels, CSS Grid/Flexbox) adapts gracefully to mobile and desktop screens.
     -   **Toast Notifications**: Quick feedback for actions (e.g., "Textures: OFF", "View Reset").
@@ -82,7 +83,9 @@ The project is organized into a modular architecture:
 │   ├── instancing.js   # "Optimizer" - manages InstancedMesh groups
 │   ├── trails.js       # "Optimizer" - manages unified orbit trail geometry
 │   ├── components/
-│   │   └── CommandPalette.js # Class-based UI component
+│   │   └── CommandPalette.js # Class-based UI component for "Cmd+K" menu
+│   ├── managers/
+│   │   └── ThemeManager.js   # Manages visual themes and persistence
 │   └── style.css       # Design System tokens and styles
 └── README.md           # This documentation
 ```
@@ -103,6 +106,7 @@ The project is organized into a modular architecture:
     -   **Dependency Injection**: Receives scene context to attach controls without global state dependency.
     -   **Event Handling**: Centralizes `OrbitControls`, Raycasting (Mouse Clicks), and Keyboard Listeners.
     -   **UI Updates**: Manages the DOM overlays (Info Panel, Toasts) based on interaction.
+    -   **Component Initialization**: Initializes the `CommandPalette` and `ThemeManager`.
 
 4.  **`src/instancing.js`**:
     -   **Instance Registry**: Centralizes `THREE.InstancedMesh` management.
@@ -111,6 +115,13 @@ The project is organized into a modular architecture:
 5.  **`src/trails.js`**:
     -   **Trail Manager**: Manages a single `THREE.LineSegments` mesh for all orbit trails.
     -   **Performance**: Avoids creating thousands of individual `THREE.Line` objects.
+
+6.  **`src/components/CommandPalette.js`**:
+    -   **Component**: A reusable UI component that provides a searchable command menu.
+    -   **Accessibility**: Implements WAI-ARIA Combobox pattern.
+
+7.  **`src/managers/ThemeManager.js`**:
+    -   **State Management**: Handles theme switching and persistence via localStorage.
 
 ## Configuration (`system.json`)
 

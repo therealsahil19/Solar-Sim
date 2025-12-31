@@ -16,6 +16,7 @@ export class CommandPalette {
      * @param {Function} callbacks.onResetCamera - () => void
      * @param {Function} callbacks.onTogglePause - () => void
      * @param {Function} callbacks.openModal - () => void
+     * @param {Function} callbacks.onToggleTheme - () => void
      */
     constructor(planetData, callbacks) {
         this.callbacks = callbacks;
@@ -36,6 +37,8 @@ export class CommandPalette {
 
     /**
      * Flattens the recursive planet data into a linear list.
+     * @param {Array} data - Hierarchy of planet/moon objects.
+     * @returns {Array} List of searchable items.
      */
     flattenData(data) {
         if (!data) return [];
@@ -62,6 +65,10 @@ export class CommandPalette {
         return items;
     }
 
+    /**
+     * Defines the static command actions available in the palette.
+     * @returns {Array} List of command objects.
+     */
     getStaticCommands() {
         return [
             { name: 'Switch Theme', type: 'Command', category: 'Appearance', handler: () => this.callbacks.onToggleTheme() },
@@ -75,6 +82,9 @@ export class CommandPalette {
         ];
     }
 
+    /**
+     * Initializes the DOM elements for the command palette.
+     */
     initDOM() {
         // Overlay
         this.overlay = document.createElement('div');
@@ -129,6 +139,9 @@ export class CommandPalette {
         document.body.appendChild(this.overlay);
     }
 
+    /**
+     * Binds event listeners for input, keyboard navigation, and toggling.
+     */
     bindEvents() {
         // Input Filter
         this.input.addEventListener('input', (e) => this.filter(e.target.value));
@@ -163,11 +176,17 @@ export class CommandPalette {
         });
     }
 
+    /**
+     * Toggles the open/close state of the palette.
+     */
     toggle() {
         if (this.isOpen) this.close();
         else this.open();
     }
 
+    /**
+     * Opens the command palette and focuses the input.
+     */
     open() {
         this.isOpen = true;
         this.overlay.hidden = false;
@@ -179,6 +198,9 @@ export class CommandPalette {
         this.input.focus();
     }
 
+    /**
+     * Closes the command palette and restores focus.
+     */
     close() {
         this.isOpen = false;
         this.overlay.classList.remove('visible');
@@ -195,6 +217,10 @@ export class CommandPalette {
         }
     }
 
+    /**
+     * Filters the item list based on the search query.
+     * @param {string} query - The search string.
+     */
     filter(query) {
         const q = query.toLowerCase().trim();
 
@@ -223,6 +249,9 @@ export class CommandPalette {
         this.selectIndex(0);
     }
 
+    /**
+     * Renders the filtered list of items to the DOM.
+     */
     renderList() {
         this.list.innerHTML = '';
 
@@ -267,6 +296,11 @@ export class CommandPalette {
         });
     }
 
+    /**
+     * Selects an item at the given index.
+     * @param {number} index - The index to select.
+     * @param {boolean} [autoScroll=true] - Whether to scroll the selected item into view.
+     */
     selectIndex(index, autoScroll = true) {
         if (this.filteredItems.length === 0) return;
 
@@ -293,6 +327,9 @@ export class CommandPalette {
         });
     }
 
+    /**
+     * Executes the handler for the currently selected item.
+     */
     executeCurrent() {
         const item = this.filteredItems[this.selectedIndex];
         if (item) {
