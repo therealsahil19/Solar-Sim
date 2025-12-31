@@ -162,7 +162,7 @@
 <body>
     <div id="loading-screen">
         <h2>Loading Solar System...</h2>
-        <div id="loading-bar-container"><div id="loading-bar"></div></div>
+        <div id="loading-bar-container"><div id="loading-bar" role="progressbar" aria-label="Loading assets" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div></div>
     </div>
 
     <div id="ui-layer">
@@ -211,7 +211,7 @@
         <button id="btn-follow">Follow</button>
     </div>
 
-    <div id="toast"></div>
+    <div id="toast" role="status" aria-live="polite"></div>
     <div id="onboarding-hint">Drag to rotate • Scroll to zoom • Press C for ship view • Click a planet for info</div>
 
     <div style="position: absolute; bottom: 1rem; right: 1rem; color: rgba(255,255,255,0.6); font-size: 0.8rem; pointer-events: none;">
