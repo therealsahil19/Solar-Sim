@@ -71,6 +71,7 @@ let isPaused = false;
 
 /** @type {boolean} Global state for labels */
 let showLabels = true;
+let labelsNeedUpdate = true; // Optimization: Only render labels when visible or state changes
 
 /** @type {boolean} Global state for orbits/trails */
 let showOrbits = true;
@@ -360,6 +361,9 @@ function toggleTextures(btnElement) {
  */
 function toggleLabels() {
     showLabels = !showLabels;
+    // Ensure we render at least one more frame to update visibility (hide/show)
+    labelsNeedUpdate = true;
+
     const btn = document.getElementById('btn-labels');
     if (btn) {
         btn.setAttribute('aria-pressed', showLabels);
@@ -540,16 +544,18 @@ function animate() {
             closestObjectCache = closestObj;
         }
 
-        frameCount++;
-
         if (closestObjectCache) {
             closestObjectCache.getWorldPosition(tempVec);
             playerShip.lookAt(tempVec);
         }
     }
 
+    // Always increment frameCount to ensure UI throttling works even if ship logic is skipped
+    frameCount++;
+
     // 4. Update Dynamic UI (Info Panel)
-    if (selectedObject) {
+    // Throttle UI updates to avoid DOM thrashing (every 10 frames)
+    if (selectedObject && frameCount % 10 === 0) {
         const distEl = document.getElementById('info-dist-sun');
         if (distEl) {
             selectedObject.getWorldPosition(tempVec);
@@ -564,7 +570,12 @@ function animate() {
     if (controls) controls.update();
     if (renderer && scene && camera) {
         renderer.render(scene, camera);
-        labelRenderer.render(scene, camera);
+
+        // Optimization: Skip label rendering if labels are hidden and cleanup is done
+        if (showLabels || labelsNeedUpdate) {
+            labelRenderer.render(scene, camera);
+            if (!showLabels) labelsNeedUpdate = false;
+        }
     }
 }
 
