@@ -118,7 +118,7 @@ async function init() {
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap; // Bolt Optimization: PCF is faster than PCFSoft
     renderer.domElement.setAttribute('role', 'application');
     renderer.domElement.setAttribute('aria-label', '3D Solar System Simulation');
     document.body.appendChild(renderer.domElement);
@@ -134,8 +134,9 @@ async function init() {
     // 2. Lighting
     const pointLight = new THREE.PointLight(0xffffff, 1.5, 0, 0);
     pointLight.castShadow = true;
-    pointLight.shadow.mapSize.width = 2048;
-    pointLight.shadow.mapSize.height = 2048;
+    // Bolt Optimization: Reduce shadow map size for performance
+    pointLight.shadow.mapSize.width = 1024;
+    pointLight.shadow.mapSize.height = 1024;
     pointLight.shadow.bias = -0.0001;
     scene.add(pointLight);
 
@@ -508,6 +509,7 @@ function animate() {
     // 3. Update Ship Orientation (Face nearest object)
     if (playerShip && animatedObjects.length > 0) {
         // Throttle the search for the nearest object to reduce matrix updates
+        // Bolt Optimization: Frequency tuned to 10 frames (approx 6/sec) for responsiveness
         if (frameCount % 10 === 0) {
             let closestDist = Infinity;
             let closestObj = null;
@@ -570,7 +572,8 @@ function animate() {
     // This allows us to read the updated matrices from the render pass
     // without forcing a synchronous updateWorldMatrix() call.
     // The trails will be 1 frame behind visually, which is imperceptible at high FPS.
-    if (!isPaused && showOrbits) {
+    // Bolt Optimization: Throttle trail updates to every 2 frames
+    if (!isPaused && showOrbits && frameCount % 2 === 0) {
         activeTrails.forEach(trail => {
             const target = trail.userData.target;
             if (!target) return;

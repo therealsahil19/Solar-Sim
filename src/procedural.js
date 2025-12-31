@@ -26,6 +26,37 @@ const baseOrbitMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, opacity
 
 const baseSphereGeometry = new THREE.SphereGeometry(1, 64, 64);
 
+// Material Cache to reduce shader programs and draw calls
+const materialCache = {};
+
+/**
+ * Clears the material cache to prevent memory leaks during scene resets.
+ */
+export function clearMaterialCache() {
+    Object.values(materialCache).forEach(mat => mat.dispose());
+    for (const key in materialCache) delete materialCache[key];
+}
+
+/**
+ * Retrieves or creates a cached solid material for a given color.
+ * @param {string|number|THREE.Color} color - The color of the material.
+ * @returns {THREE.MeshStandardMaterial} The cached material.
+ */
+function getSolidMaterial(color) {
+    // Ensure the key is a primitive string to avoid "[object Object]" collisions
+    let key;
+    if (color && typeof color === 'object' && color.isColor) {
+        key = '#' + color.getHexString();
+    } else {
+        key = String(color);
+    }
+
+    if (!materialCache[key]) {
+        materialCache[key] = new THREE.MeshStandardMaterial({ color: color });
+    }
+    return materialCache[key];
+}
+
 /**
  * Creates a procedural starfield background using points.
  * @returns {THREE.Points} The starfield particle system.
@@ -208,7 +239,9 @@ export function createSystem(data, textureLoader, useTextures) {
 
     // 4. Mesh
     const geometry = baseSphereGeometry;
-    const solidMaterial = new THREE.MeshStandardMaterial({ color: data.color });
+
+    // Bolt Optimization: Use cached material
+    const solidMaterial = getSolidMaterial(data.color);
 
     let texturedMaterial;
     if (data.texture) {
