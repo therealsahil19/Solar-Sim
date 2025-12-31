@@ -305,6 +305,9 @@ export function createSystem(data, textureLoader, useTextures) {
     const labels = [label];
 
     // 5. Recursion (Moons)
+    // Recursively call createSystem for any moons. This allows for infinite nesting
+    // (e.g., moons of moons), although physically rare.
+    // The child system is attached to the parent's bodyGroup, so it moves with the parent.
     if (data.moons && data.moons.length > 0) {
         data.moons.forEach(moonData => {
             const result = createSystem(moonData, textureLoader, useTextures);
