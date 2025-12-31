@@ -261,19 +261,48 @@ export function createSystem(data, textureLoader, useTextures) {
         texturedMaterial = solidMaterial;
     }
 
-    const mesh = new THREE.Mesh(geometry, useTextures ? texturedMaterial : solidMaterial);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.scale.set(data.size, data.size, data.size);
-    mesh.userData.name = data.name;
-    mesh.userData.type = data.type;
-    mesh.userData.size = data.size;
-    mesh.userData.description = data.description || "";
-    mesh.userData.distance = data.distance;
-    mesh.userData.solidMaterial = solidMaterial;
-    mesh.userData.texturedMaterial = texturedMaterial;
+    // Bolt Support: Instancing
+    // If an instanceRegistry is provided, we register instead of creating a Mesh.
+    // However, primary planets often need specific traits. For simplicity, we instance everything.
+    // NOTE: Scale must be applied to the Pivot or handled in the matrix.
+    // Since we pass pivot.matrixWorld to instance, scaling the pivot works!
 
-    bodyGroup.add(mesh);
+    // We need to scale the "bodyGroup" (which is the pivot for the mesh)
+    bodyGroup.scale.set(data.size, data.size, data.size);
+
+    const userData = {
+        name: data.name,
+        type: data.type,
+        size: data.size,
+        description: data.description || "",
+        distance: data.distance,
+        solidMaterial: solidMaterial,
+        texturedMaterial: texturedMaterial,
+        useTextures: useTextures
+    };
+
+    let mesh = null;
+
+    // Check if we have a registry (passed via data.instanceRegistry hack or we add a param)
+    // We will update createSystem signature in main.js
+    if (textureLoader.instanceRegistry) {
+        // Use current material based on useTextures
+        const mat = useTextures ? texturedMaterial : solidMaterial;
+        textureLoader.instanceRegistry.addInstance(bodyGroup, geometry, mat, userData);
+
+        // We create a dummy object for interaction targets if needed,
+        // but the InstancedMesh itself will be the interaction target.
+        // The Pivot (bodyGroup) holds the userData.
+    } else {
+        // Fallback for Sun or if registry missing
+        mesh = new THREE.Mesh(geometry, useTextures ? texturedMaterial : solidMaterial);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        // Scale is already on bodyGroup, but Mesh default scale is 1, so it inherits.
+
+        mesh.userData = userData;
+        bodyGroup.add(mesh);
+    }
 
     // --- Feature: Rings ---
     if (data.hasRing) {
@@ -304,9 +333,18 @@ export function createSystem(data, textureLoader, useTextures) {
     bodyGroup.add(label);
 
     // --- Feature: Trails (Planets Only) ---
+    // Bolt Support: Unified Trails
     let trail = null;
-    if (data.type === 'Planet' && data.distance > 0) {
-        // Trail settings
+    // We register trails if a manager is present.
+    // Hack: check textureLoader.trailManager
+    if (data.distance > 0 && textureLoader.trailManager) { // Enable for all moving objects for stress test? No, sticking to "Planets Only" logic for now unless needed.
+        // Actually, let's enable for Moons too if they have distance, to test scale.
+        // Original logic: data.type === 'Planet'
+        if (data.type === 'Planet' || data.type === 'Moon') {
+             textureLoader.trailManager.register(bodyGroup, data.color);
+        }
+    } else if (data.type === 'Planet' && data.distance > 0) {
+        // Fallback to legacy trails if no manager
         const trailLength = 100; // Number of points
         const trailGeo = new THREE.BufferGeometry();
         const positions = new Float32Array(trailLength * 3);
@@ -331,10 +369,17 @@ export function createSystem(data, textureLoader, useTextures) {
 
 
     // Collection arrays
-    const interactables = [mesh];
+    const interactables = [];
+    if (mesh) interactables.push(mesh);
+
+    // For animated, we still need to update rotations
+    // If mesh is null (instanced), we still rotate the Pivot (bodyGroup) for self-rotation?
+    // Actually, bodyGroup handles position.
+    // Self-rotation usually happens on the mesh.
+    // Since we scale bodyGroup, we can also rotate bodyGroup for self-rotation!
     const animated = [{
-        pivot: orbitPivot,
-        mesh: mesh,
+        pivot: orbitPivot, // Orbital rotation
+        mesh: bodyGroup,   // Self rotation (applied to the group now, which is the instance pivot)
         speed: data.speed || 0,
         rotationSpeed: data.rotationSpeed || 0
     }];
