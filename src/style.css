@@ -370,3 +370,108 @@ dialog::backdrop {
         z-index: 30;
     }
 }
+
+/* Navigation Sidebar */
+#nav-sidebar {
+    grid-area: main; /* Physically located here but fixed positioned */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100%;
+    z-index: var(--z-modal); /* Above almost everything */
+    padding: var(--space-md);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+
+    /* Animation: Slide in from left */
+    transform: translateX(-105%);
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+#nav-sidebar[aria-hidden="false"] {
+    transform: translateX(0);
+}
+
+#nav-sidebar header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border-faint);
+}
+
+#nav-sidebar h2 {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+}
+
+#nav-list {
+    flex: 1;
+    overflow-y: auto;
+    /* Custom Scrollbar for webkit */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+}
+
+#nav-list::-webkit-scrollbar {
+    width: 6px;
+}
+#nav-list::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: var(--radius-full);
+}
+
+/* Tree View Styles */
+.nav-ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-li {
+    margin-bottom: 2px;
+}
+
+.nav-btn {
+    width: 100%;
+    background: transparent;
+    border: none;
+    text-align: left;
+    color: var(--color-text-secondary);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-primary);
+}
+
+.nav-btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+}
+
+/* Indent for moons/children */
+.nav-sublist {
+    padding-left: 20px;
+    border-left: 1px solid var(--color-border-faint);
+    margin-left: 10px;
+}
+
+/* Type badge (Planet, Moon, etc) */
+.nav-type {
+    font-size: 0.7em;
+    opacity: 0.6;
+    margin-left: auto;
+    border: 1px solid var(--color-border-faint);
+    padding: 1px 4px;
+    border-radius: 4px;
+}

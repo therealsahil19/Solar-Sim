@@ -187,9 +187,10 @@ async function init() {
     window.playerShip = playerShip; // Expose to window
 
     // 5. Load System Data & Generate Planets
+    let planetData = null; // Declare in outer scope of init
     try {
         const response = await fetch('system.json');
-        const planetData = await response.json();
+        planetData = await response.json();
 
         planetData.forEach(planetConfig => {
             const systemNode = createSystem(planetConfig, textureLoader, useTextures);
@@ -235,7 +236,8 @@ async function init() {
         scene,
         rendererDomElement: renderer.domElement,
         interactionTargets,
-        state: { useTextures } // Passing state reference if needed
+        state: { useTextures }, // Passing state reference if needed
+        planetData // Architect: Pass raw data for navigation builder
     };
 
     const callbacks = {
