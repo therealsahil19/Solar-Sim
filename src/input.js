@@ -16,6 +16,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CommandPalette } from './components/CommandPalette.js';
+import { ThemeManager } from './managers/ThemeManager.js';
 
 /**
  * Sets up the OrbitControls for the camera.
@@ -218,13 +219,26 @@ export function setupInteraction(context, callbacks) {
         });
     }
 
+    // --- Initialize Theme Manager ---
+    const themeManager = new ThemeManager();
+
     // --- Initialize Command Palette ---
     // We pass an augmented callbacks object
     if (context.planetData) {
         const paletteCallbacks = {
             ...callbacks,
             onSelectByName: selectByName,
-            openModal: openModal
+            openModal: openModal,
+            onToggleTheme: () => {
+                const next = themeManager.cycleTheme();
+                // Optional: Toast for theme switch
+                const toast = document.getElementById('toast');
+                if (toast) {
+                    toast.textContent = `Theme: ${next.toUpperCase()}`;
+                    toast.classList.add('visible');
+                    setTimeout(() => toast.classList.remove('visible'), 2000);
+                }
+            }
         };
         new CommandPalette(context.planetData, paletteCallbacks);
     }

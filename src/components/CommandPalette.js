@@ -64,6 +64,7 @@ export class CommandPalette {
 
     getStaticCommands() {
         return [
+            { name: 'Switch Theme', type: 'Command', category: 'Appearance', handler: () => this.callbacks.onToggleTheme() },
             { name: 'Toggle Orbits', type: 'Command', category: 'Actions', handler: this.callbacks.onToggleOrbits },
             { name: 'Toggle Labels', type: 'Command', category: 'Actions', handler: this.callbacks.onToggleLabels },
             { name: 'Toggle Textures (HD/LD)', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleTexture(null) },

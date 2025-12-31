@@ -1,6 +1,6 @@
 /*
    🎨 PALETTE DESIGN SYSTEM
-   Version: 2.0.0 "Unleashed"
+   Version: 2.1.0 "Unleashed" - Theming Engine & Semantic Tokens
 */
 
 /* ==========================================================================
@@ -10,7 +10,10 @@
     /* --- Primitives: Color Palette --- */
     --palette-black: #000000;
     --palette-white: #ffffff;
+    --palette-off-white: #f8f9fa;
 
+    /* Grays (Dark Mode base) */
+    --palette-gray-950: #0a0a0a;
     --palette-gray-900: #111111;
     --palette-gray-800: #1a1a1a;
     --palette-gray-700: #333333;
@@ -18,17 +21,23 @@
     --palette-gray-300: #aaaaaa;
     --palette-gray-100: #e5e5e5;
 
+    /* Blueprint (Light Mode base) */
+    --palette-blueprint-bg: #f0f4f8;
+    --palette-blueprint-surface: #ffffff;
+    --palette-blueprint-text: #0f172a;
+    --palette-blueprint-border: #cbd5e1;
+    --palette-blueprint-accent: #3b82f6;
+
     /* Brand: Cosmic Blue */
     --palette-brand-light: #64b5f6;
     --palette-brand-main: #2196f3;
     --palette-brand-dark: #1976d2;
-    --palette-brand-alpha: rgba(33, 150, 243, 0.2);
 
-    /* --- Semantic: Colors --- */
+    /* --- Semantic: Colors (Default / Cosmic Theme) --- */
     --color-bg: var(--palette-black);
 
     /* Surfaces */
-    --color-surface-glass: rgba(10, 10, 16, 0.75); /* High transparency for glass effect */
+    --color-surface-glass: rgba(10, 10, 16, 0.75);
     --color-surface-floating: rgba(0, 0, 0, 0.85);
     --color-surface-solid: var(--palette-gray-900);
 
@@ -36,6 +45,7 @@
     --color-text-primary: var(--palette-white);
     --color-text-secondary: var(--palette-gray-300);
     --color-text-tertiary: var(--palette-gray-500);
+    --color-text-muted: var(--palette-gray-700);
 
     /* Action / Interactive */
     --color-action: var(--palette-brand-main);
@@ -44,9 +54,15 @@
     --color-action-subtle: rgba(255, 255, 255, 0.1);
     --color-focus: var(--palette-brand-light);
 
-    /* Borders */
+    /* Borders & Shadows */
     --color-border: rgba(255, 255, 255, 0.15);
     --color-border-subtle: rgba(255, 255, 255, 0.08);
+    --color-shadow: rgba(0, 0, 0, 0.5);
+    --color-overlay-bg: rgba(0, 0, 0, 0.6);
+
+    /* Inputs */
+    --color-input-bg: rgba(255, 255, 255, 0.05);
+    --color-input-bg-focus: rgba(255, 255, 255, 0.1);
 
     /* --- Motion Tokens --- */
     --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -84,6 +100,44 @@
     --font-mono: 'SF Mono', 'Roboto Mono', Menlo, monospace;
 }
 
+/* --- Theme: Blueprint (Light / Technical) --- */
+[data-theme="blueprint"] {
+    --color-bg: var(--palette-blueprint-bg);
+
+    --color-surface-glass: rgba(255, 255, 255, 0.85);
+    --color-surface-floating: rgba(255, 255, 255, 0.95);
+    --color-surface-solid: var(--palette-blueprint-surface);
+
+    --color-text-primary: var(--palette-blueprint-text);
+    --color-text-secondary: #475569;
+    --color-text-tertiary: #94a3b8;
+    --color-text-muted: #cbd5e1;
+
+    --color-action: var(--palette-blueprint-accent);
+    --color-action-hover: #60a5fa;
+    --color-action-active: #2563eb;
+    --color-action-subtle: rgba(59, 130, 246, 0.1); /* Blue tint */
+    --color-focus: #2563eb;
+
+    --color-border: var(--palette-blueprint-border);
+    --color-border-subtle: #e2e8f0;
+    --color-shadow: rgba(148, 163, 184, 0.2);
+    --color-overlay-bg: rgba(240, 244, 248, 0.6);
+
+    --color-input-bg: rgba(0, 0, 0, 0.03);
+    --color-input-bg-focus: rgba(0, 0, 0, 0.06);
+}
+
+/* --- Theme: OLED (Pitch Black) --- */
+[data-theme="oled"] {
+    --color-bg: #000000;
+    --color-surface-glass: rgba(0, 0, 0, 0.9);
+    --color-surface-floating: #000000;
+    --color-border: #333333;
+    --color-border-subtle: #222222;
+    --color-shadow: rgba(0, 0, 0, 1);
+}
+
 /* ==========================================================================
    2. GLOBAL RESET & BASE
    ========================================================================== */
@@ -101,6 +155,7 @@ body {
     -webkit-font-smoothing: antialiased;
     font-size: 16px;
     line-height: 1.5;
+    transition: background-color var(--duration-normal), color var(--duration-normal);
 }
 
 button {
@@ -124,10 +179,10 @@ canvas {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--color-action-subtle);
     border-radius: var(--radius-full);
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border); }
 
 /* ==========================================================================
    3. COMPONENTS
@@ -141,10 +196,11 @@ canvas {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        0 8px 32px var(--color-shadow),
+        inset 0 1px 0 var(--color-border-subtle);
     color: var(--color-text-primary);
     pointer-events: auto;
+    transition: background var(--duration-normal), border-color var(--duration-normal), box-shadow var(--duration-normal);
 }
 
 /* --- Buttons --- */
@@ -153,7 +209,8 @@ button {
     transition:
         transform var(--duration-fast) var(--ease-smooth),
         background-color var(--duration-fast) var(--ease-smooth),
-        opacity var(--duration-fast) var(--ease-smooth);
+        opacity var(--duration-fast) var(--ease-smooth),
+        color var(--duration-fast) var(--ease-smooth);
 }
 button:active {
     transform: scale(0.96);
@@ -172,7 +229,7 @@ button:active {
     font-size: 1.25rem;
 }
 .icon-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--color-border);
     border-color: var(--color-border);
 }
 
@@ -194,26 +251,26 @@ button:active {
 /* Primary Button (Call to Action) */
 .btn-primary {
     background: var(--color-action);
-    color: white;
+    color: white; /* Always white for contrast on brand color */
     padding: var(--space-md) var(--space-xl);
     border-radius: var(--radius-md);
     font-weight: 600;
     font-size: 1rem;
-    box-shadow: 0 4px 15px var(--palette-brand-alpha);
+    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3); /* Keep generic shadow for brand */
     letter-spacing: 0.5px;
 }
 .btn-primary:hover {
     background: var(--color-action-hover);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px var(--palette-brand-alpha);
+    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
 }
 
 /* Toggle State (aria-pressed) */
 button[aria-pressed="true"] {
-    background: var(--palette-brand-alpha);
+    background: var(--color-action-subtle);
     border-color: var(--color-action);
-    color: var(--color-action-hover);
-    box-shadow: 0 0 10px rgba(33, 150, 243, 0.1);
+    color: var(--color-action);
+    box-shadow: 0 0 10px var(--color-action-subtle);
 }
 
 /* Focus States (A11y) */
@@ -235,7 +292,7 @@ input[type="range"]:focus {
 input[type="range"]::-webkit-slider-runnable-track {
     width: 100%;
     height: 4px;
-    background: var(--palette-gray-700);
+    background: var(--color-text-tertiary);
     border-radius: var(--radius-full);
 }
 input[type="range"]::-webkit-slider-thumb {
@@ -246,7 +303,7 @@ input[type="range"]::-webkit-slider-thumb {
     cursor: pointer;
     -webkit-appearance: none;
     margin-top: -6px; /* center on track */
-    box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+    box-shadow: 0 0 0 4px var(--color-action-subtle);
     transition: transform var(--duration-fast);
 }
 input[type="range"]:hover::-webkit-slider-thumb {
@@ -291,7 +348,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     font-size: 1.25rem;
     font-weight: 700;
     letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #fff, #ccc);
+    /* Use background clip for gradient text */
+    background: linear-gradient(135deg, var(--color-text-primary), var(--color-text-secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -307,7 +365,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     gap: var(--space-xs);
 
     /* Animation: Slide In/Out */
-    /* Hidden State (Class-based) */
     opacity: 0;
     visibility: hidden;
     transform: translateX(20px);
@@ -327,6 +384,16 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     margin: 0;
     font-size: 1.5rem;
     font-weight: 700;
+}
+
+.info-type {
+    font-style: italic;
+    color: var(--color-text-tertiary); /* Use token */
+}
+
+.info-desc {
+    margin-top: var(--space-sm);
+    color: var(--color-text-secondary);
 }
 
 .stats-grid {
@@ -389,7 +456,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     width: 100%;
     padding: var(--space-sm);
     margin-bottom: var(--space-md);
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--color-input-bg);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-sm);
     color: var(--color-text-primary);
@@ -402,7 +469,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 #nav-search:focus {
     outline: none;
     border-color: var(--color-focus);
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--color-input-bg-focus);
 }
 
 #nav-search::placeholder {
@@ -427,7 +494,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    transition: background var(--duration-fast);
+    transition: background var(--duration-fast), color var(--duration-fast);
 }
 .nav-btn:hover {
     background: var(--color-action-subtle);
@@ -473,7 +540,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     border-radius: var(--radius-full);
     border: 1px solid var(--color-border);
     font-weight: 500;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px var(--color-shadow);
     z-index: var(--z-toast);
     opacity: 0;
     pointer-events: none;
@@ -490,7 +557,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 #loading-screen {
     position: fixed;
     inset: 0;
-    background: var(--palette-black);
+    background: var(--color-bg);
+    color: var(--color-text-primary);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -502,7 +570,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 #loading-bar-container {
     width: 240px;
     height: 4px;
-    background: var(--palette-gray-800);
+    background: var(--color-border-subtle);
     border-radius: var(--radius-full);
     margin-top: var(--space-lg);
     overflow: hidden;
@@ -529,7 +597,7 @@ dialog {
 }
 dialog:not([open]) { display: none; }
 dialog::backdrop {
-    background: rgba(0, 0, 0, 0.8);
+    background: var(--color-overlay-bg);
     backdrop-filter: blur(8px);
 }
 
@@ -541,7 +609,8 @@ dialog::backdrop {
     width: 90%;
     max-width: 600px;
     text-align: center;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    box-shadow: 0 20px 50px var(--color-shadow);
+    color: var(--color-text-primary);
     animation: modal-enter var(--duration-normal) var(--ease-out-back);
 }
 
@@ -559,13 +628,13 @@ dialog::backdrop {
 }
 
 .key-badge {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
+    background: var(--color-action-subtle);
+    border: 1px solid var(--color-border-subtle);
     padding: 2px 8px;
     border-radius: 4px;
     font-family: var(--font-mono);
     font-size: 0.85em;
-    color: var(--palette-brand-light);
+    color: var(--color-action);
 }
 
 /* --- Planet Labels --- */
@@ -573,11 +642,11 @@ dialog::backdrop {
     color: var(--color-text-primary);
     font-size: 12px;
     font-weight: 500;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-    background: rgba(0, 0, 0, 0.4);
+    text-shadow: 0 2px 4px var(--color-shadow);
+    background: var(--color-overlay-bg);
     padding: 2px 8px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--color-border);
     white-space: nowrap;
     margin-top: -30px;
     pointer-events: none;
@@ -651,7 +720,7 @@ dialog::backdrop {
     position: fixed;
     inset: 0;
     z-index: var(--z-modal);
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--color-overlay-bg);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: flex-start; /* Start from top area */
@@ -672,7 +741,7 @@ dialog::backdrop {
     flex-direction: column;
     padding: 0; /* Override default glass-panel padding */
     overflow: hidden; /* For rounded corners */
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    box-shadow: 0 20px 60px var(--color-shadow);
     border: 1px solid var(--color-border);
     animation: slide-up-fade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -683,11 +752,13 @@ dialog::backdrop {
     padding: var(--space-md);
     border-bottom: 1px solid var(--color-border);
     gap: var(--space-sm);
+    background: var(--color-surface-glass);
 }
 
 .cmd-icon {
     font-size: 1.2rem;
     opacity: 0.5;
+    color: var(--color-text-secondary);
 }
 
 .cmd-panel input {
@@ -709,6 +780,7 @@ dialog::backdrop {
     padding: var(--space-xs);
     overflow-y: auto;
     max-height: 300px;
+    background: var(--color-surface-floating);
 }
 
 .cmd-item {
@@ -747,6 +819,7 @@ dialog::backdrop {
     border: 1px solid var(--color-border);
     border-radius: 4px;
     opacity: 0.6;
+    color: var(--color-text-tertiary);
 }
 
 .cmd-empty {
@@ -760,14 +833,14 @@ dialog::backdrop {
     justify-content: flex-end;
     gap: var(--space-md);
     padding: var(--space-xs) var(--space-md);
-    background: rgba(0,0,0,0.2);
+    background: var(--color-surface-solid);
     border-top: 1px solid var(--color-border-subtle);
     font-size: 0.75rem;
     color: var(--color-text-tertiary);
 }
 
 .cmd-footer kbd {
-    background: rgba(255,255,255,0.1);
+    background: var(--color-action-subtle);
     border-radius: 3px;
     padding: 1px 4px;
     font-family: var(--font-mono);

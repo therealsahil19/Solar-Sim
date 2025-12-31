@@ -13,3 +13,18 @@
 **Standard:**
 *   **WCAG 2.1 AA:** Ensure contrast ratios > 4.5:1 for all text.
 *   **Motion:** "Motion conveys Meaning" - use entrance/exit animations to orient the user.
+
+## 2024-05-24 - [System Upgrade: Dynamic Theming Engine]
+**Problem:** The application was hardcoded to a single "Space/Dark" theme. Users had no option for high-contrast or light mode (useful for educational classroom settings with glare). CSS contained scattered hardcoded RGBA values.
+**Solution:**
+1.  **Semantic Token Expansion:** All hardcoded colors (backgrounds, overlays, shadows) were replaced with semantic variables (e.g., `--color-overlay-bg`, `--color-shadow`).
+2.  **Theme Manager:** Implemented `src/managers/ThemeManager.js` to handle state switching (persisted via `localStorage`) and toggle `data-theme` attributes.
+3.  **Theme Definitions:**
+    *   **Default:** The classic cosmic dark mode.
+    *   **Blueprint:** A high-contrast, technical light mode (Light blue-gray background, dark blue text).
+    *   **OLED:** A pitch-black mode for energy saving on OLED screens.
+4.  **Interaction:** Added "Switch Theme" command to the Command Palette.
+
+**Standard:**
+*   **WCAG 2.1 AA:** "Blueprint" mode ensures high contrast for text.
+*   **Systemic Design:** Zero hardcoded colors in CSS.
