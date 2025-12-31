@@ -7,6 +7,7 @@
  * 2. Raycasting for mouse clicks on 3D objects.
  * 3. Keyboard shortcuts (e.g., 'C' for camera toggle).
  * 4. UI event listeners (Buttons).
+ * 5. Command Palette initialization.
  *
  * It uses dependency injection to access the Scene, Camera, and other context
  * without relying on global variables.
@@ -14,6 +15,7 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CommandPalette } from './components/CommandPalette.js';
 
 /**
  * Sets up the OrbitControls for the camera.
@@ -103,6 +105,22 @@ export function setupInteraction(context, callbacks) {
         }
     }
 
+    // --- Navigation Helpers ---
+    function findMeshByName(name) {
+        return interactionTargets.find(obj => obj.userData.name === name);
+    }
+
+    function selectByName(name) {
+        const mesh = findMeshByName(name);
+        if (mesh) {
+            callbacks.onSetFocus(mesh);
+            callbacks.onObjectSelected(mesh);
+            updateSelectionUI(mesh);
+        } else {
+            console.warn(`Mesh not found for: ${name}`);
+        }
+    }
+
     // Click & Double-Click Logic
     let lastClickTime = 0;
     const doubleClickDelay = 300; // ms
@@ -140,16 +158,56 @@ export function setupInteraction(context, callbacks) {
                     callbacks.onSetFocus(mesh);
                 }
             }
-        } else {
-             // Optional: Deselect logic if desired
-             // const infoPanel = document.getElementById('info-panel');
-             // if (infoPanel) infoPanel.style.display = 'none';
         }
     });
+
+    // Modal Interaction (Palette's Onboarding)
+    const welcomeModal = document.getElementById('welcome-modal');
+    const btnHelp = document.getElementById('btn-help');
+    const btnStart = document.getElementById('btn-start');
+
+    function openModal() {
+        if (welcomeModal) {
+            welcomeModal.showModal(); // Built-in dialog method handles focus trap
+        }
+    }
+
+    function closeModal() {
+        if (welcomeModal) {
+            welcomeModal.close();
+        }
+    }
+
+    if (btnHelp) {
+        btnHelp.addEventListener('click', () => {
+            openModal();
+        });
+    }
+
+    if (btnStart) {
+        btnStart.addEventListener('click', () => {
+            closeModal();
+        });
+    }
+
+    // --- Initialize Command Palette ---
+    // We pass an augmented callbacks object
+    if (context.planetData) {
+        const paletteCallbacks = {
+            ...callbacks,
+            onSelectByName: selectByName,
+            openModal: openModal
+        };
+        new CommandPalette(context.planetData, paletteCallbacks);
+    }
 
     // Keyboard Listener
     window.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();
+
+        // Ignore if typing in an input (Command Palette handles its own, this is for other inputs)
+        // Command Palette overlay prevents this listener from firing on map interaction if it traps focus?
+        // Actually, window listener fires anyway. We check activeElement.
         if (document.activeElement.tagName === 'INPUT') return;
 
         if (key === 'c') {
@@ -209,42 +267,7 @@ export function setupInteraction(context, callbacks) {
         });
     }
 
-    // Modal Interaction (Palette's Onboarding)
-    const welcomeModal = document.getElementById('welcome-modal');
-    const btnHelp = document.getElementById('btn-help');
-    const btnStart = document.getElementById('btn-start');
-
-    function openModal() {
-        if (welcomeModal) {
-            welcomeModal.showModal(); // Built-in dialog method handles focus trap
-        }
-    }
-
-    function closeModal() {
-        if (welcomeModal) {
-            welcomeModal.close();
-        }
-    }
-
-    if (btnHelp) {
-        btnHelp.addEventListener('click', () => {
-            openModal();
-        });
-    }
-
-    if (btnStart) {
-        btnStart.addEventListener('click', () => {
-            closeModal();
-        });
-    }
-
     // --- Navigation Sidebar Logic ---
-
-    // Find a mesh in interactionTargets by name
-    function findMeshByName(name) {
-        return interactionTargets.find(obj => obj.userData.name === name);
-    }
-
     // Recursively build the list
     function buildNavTree(container, items) {
         const ul = document.createElement('ul');
@@ -267,17 +290,7 @@ export function setupInteraction(context, callbacks) {
 
             // Click Handler
             btn.addEventListener('click', () => {
-                const mesh = findMeshByName(itemData.name);
-                if (mesh) {
-                    callbacks.onSetFocus(mesh);
-                    // Also select it to update info panel
-                    callbacks.onObjectSelected(mesh);
-                    updateSelectionUI(mesh);
-                    // Close sidebar on mobile/small screens or generally?
-                    // Let's keep it open for "fast travel", user can close manually.
-                } else {
-                    console.warn(`Mesh not found for: ${itemData.name}`);
-                }
+                selectByName(itemData.name);
             });
 
             li.appendChild(btn);
@@ -342,19 +355,6 @@ export function setupInteraction(context, callbacks) {
                 const term = e.target.value.toLowerCase().trim();
                 const items = navList.querySelectorAll('.nav-li');
 
-                items.forEach(li => {
-                    const btn = li.querySelector('.nav-btn');
-                    // We only check the direct button text for this list item
-                    // But wait, if a child matches, we should show the parent too?
-                    // Simple approach: Check textContent.
-
-                    // Better approach for nested structures:
-                    // 1. Reset all to hidden
-                    // 2. Iterate and mark matches
-                    // 3. Walk up the tree and mark parents as visible
-                });
-
-                // Let's use a cleaner approach:
                 // Hide everything first if term exists
                 if (!term) {
                     items.forEach(li => li.style.display = '');
