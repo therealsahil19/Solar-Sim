@@ -381,6 +381,40 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     margin-bottom: var(--space-md);
     border-bottom: 1px solid var(--color-border);
     padding-bottom: var(--space-sm);
+    flex-shrink: 0;
+}
+
+/* Search Input */
+#nav-search {
+    width: 100%;
+    padding: var(--space-sm);
+    margin-bottom: var(--space-md);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: border-color var(--duration-fast), background var(--duration-fast);
+    flex-shrink: 0;
+}
+
+#nav-search:focus {
+    outline: none;
+    border-color: var(--color-focus);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#nav-search::placeholder {
+    color: var(--color-text-tertiary);
+}
+
+/* Nav List Container - Scrollable */
+#nav-list {
+    overflow-y: auto;
+    flex-grow: 1;
+    margin-right: -8px; /* Offset scrollbar padding */
+    padding-right: 8px;
 }
 
 /* Nav List Items */

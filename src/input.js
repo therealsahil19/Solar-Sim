@@ -334,6 +334,65 @@ export function setupInteraction(context, callbacks) {
         if (btnCloseNav) {
             btnCloseNav.addEventListener('click', () => toggleSidebar(false));
         }
+
+        // Search Logic
+        const navSearch = document.getElementById('nav-search');
+        if (navSearch) {
+            navSearch.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase().trim();
+                const items = navList.querySelectorAll('.nav-li');
+
+                items.forEach(li => {
+                    const btn = li.querySelector('.nav-btn');
+                    // We only check the direct button text for this list item
+                    // But wait, if a child matches, we should show the parent too?
+                    // Simple approach: Check textContent.
+
+                    // Better approach for nested structures:
+                    // 1. Reset all to hidden
+                    // 2. Iterate and mark matches
+                    // 3. Walk up the tree and mark parents as visible
+                });
+
+                // Let's use a cleaner approach:
+                // Hide everything first if term exists
+                if (!term) {
+                    items.forEach(li => li.style.display = '');
+                    return;
+                }
+
+                // First pass: Mark matches
+                items.forEach(li => {
+                    const btn = li.querySelector('.nav-btn');
+                    const text = btn.textContent.toLowerCase();
+                    const isMatch = text.includes(term);
+                    li.dataset.matches = isMatch ? 'true' : 'false';
+                    li.style.display = 'none'; // Default to hidden
+                });
+
+                // Second pass: Show matches and their parents
+                items.forEach(li => {
+                    if (li.dataset.matches === 'true') {
+                        // Show self
+                        li.style.display = '';
+
+                        // Show parents (walk up)
+                        let parent = li.parentElement;
+                        while (parent && parent !== navList) {
+                            if (parent.classList.contains('nav-sublist')) {
+                                parent.style.display = ''; // Ensure sublist container is visible
+                                // The sublist is inside a .nav-li
+                                const parentLi = parent.parentElement;
+                                if (parentLi && parentLi.classList.contains('nav-li')) {
+                                    parentLi.style.display = '';
+                                }
+                            }
+                            parent = parent.parentElement;
+                        }
+                    }
+                });
+            });
+        }
     }
 
     // Call init immediately if data is present in context
