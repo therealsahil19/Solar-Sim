@@ -238,6 +238,109 @@ export function setupInteraction(context, callbacks) {
         });
     }
 
+    // --- Navigation Sidebar Logic ---
+
+    // Find a mesh in interactionTargets by name
+    function findMeshByName(name) {
+        return interactionTargets.find(obj => obj.userData.name === name);
+    }
+
+    // Recursively build the list
+    function buildNavTree(container, items) {
+        const ul = document.createElement('ul');
+        ul.className = 'nav-ul';
+
+        items.forEach(itemData => {
+            const li = document.createElement('li');
+            li.className = 'nav-li';
+
+            const btn = document.createElement('button');
+            btn.className = 'nav-btn';
+
+            // Icon based on type
+            let icon = '🌑'; // Default
+            if (itemData.type === 'Planet') icon = '🪐';
+            if (itemData.type === 'Star') icon = '☀️';
+            if (itemData.type === 'Moon') icon = '🌑';
+
+            btn.innerHTML = `<span>${icon} ${itemData.name}</span> <span class="nav-type">${itemData.type}</span>`;
+
+            // Click Handler
+            btn.addEventListener('click', () => {
+                const mesh = findMeshByName(itemData.name);
+                if (mesh) {
+                    callbacks.onSetFocus(mesh);
+                    // Also select it to update info panel
+                    callbacks.onObjectSelected(mesh);
+                    updateSelectionUI(mesh);
+                    // Close sidebar on mobile/small screens or generally?
+                    // Let's keep it open for "fast travel", user can close manually.
+                } else {
+                    console.warn(`Mesh not found for: ${itemData.name}`);
+                }
+            });
+
+            li.appendChild(btn);
+
+            // Recursion for Moons
+            if (itemData.moons && itemData.moons.length > 0) {
+                const subContainer = document.createElement('div');
+                subContainer.className = 'nav-sublist';
+                buildNavTree(subContainer, itemData.moons);
+                li.appendChild(subContainer);
+            }
+
+            ul.appendChild(li);
+        });
+
+        container.appendChild(ul);
+    }
+
+    // Initialize Navigation
+    function initNavigation(planetData) {
+        const navList = document.getElementById('nav-list');
+        const btnPlanets = document.getElementById('btn-planets');
+        const sidebar = document.getElementById('nav-sidebar');
+        const btnCloseNav = document.getElementById('btn-close-nav');
+
+        if (!navList || !sidebar) return;
+
+        // Clear existing
+        navList.innerHTML = '';
+
+        // 1. Manual Entry: Sun
+        // Use a dummy data object for the Sun since it's not in system.json
+        const sunData = [{ name: 'Sun', type: 'Star', moons: [] }];
+        buildNavTree(navList, sunData);
+
+        // 2. System Data
+        if (planetData) {
+            buildNavTree(navList, planetData);
+        }
+
+        // Toggle Logic
+        function toggleSidebar(show) {
+            // 'show' is boolean: true=show (aria-hidden=false), false=hide (aria-hidden=true)
+            // If show is undefined, toggle current state
+            const isHidden = sidebar.getAttribute('aria-hidden') === 'true';
+            const shouldShow = show !== undefined ? show : isHidden;
+
+            sidebar.setAttribute('aria-hidden', String(!shouldShow));
+        }
+
+        if (btnPlanets) {
+            btnPlanets.addEventListener('click', () => toggleSidebar(true));
+        }
+        if (btnCloseNav) {
+            btnCloseNav.addEventListener('click', () => toggleSidebar(false));
+        }
+    }
+
+    // Call init immediately if data is present in context
+    if (context.planetData) {
+        initNavigation(context.planetData);
+    }
+
     return {
         updateSelectionUI,
         openModal,
