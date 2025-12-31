@@ -143,6 +143,7 @@ async function init() {
         if (loadingBar) {
             const width = (itemsLoaded / itemsTotal) * 100;
             loadingBar.style.width = width + '%';
+            loadingBar.setAttribute('aria-valuenow', Math.round(width));
         }
     };
     manager.onLoad = function ( ) {
@@ -256,10 +257,6 @@ async function init() {
     };
 
     interactionHelpers = setupInteraction(context, callbacks);
-
-    // Bind new UI buttons
-    document.getElementById('btn-labels').addEventListener('click', toggleLabels);
-    document.getElementById('btn-orbits').addEventListener('click', toggleOrbits);
 
     // 7. Start Loop
     animate();

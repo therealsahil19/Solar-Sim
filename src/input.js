@@ -186,6 +186,12 @@ export function setupInteraction(context, callbacks) {
     const btnPause = document.getElementById('btn-pause');
     if (btnPause) btnPause.addEventListener('click', () => callbacks.onTogglePause(btnPause));
 
+    const btnLabels = document.getElementById('btn-labels');
+    if (btnLabels) btnLabels.addEventListener('click', callbacks.onToggleLabels);
+
+    const btnOrbits = document.getElementById('btn-orbits');
+    if (btnOrbits) btnOrbits.addEventListener('click', callbacks.onToggleOrbits);
+
     const sliderSpeed = document.getElementById('slider-speed');
     const speedValue = document.getElementById('speed-value');
     if (sliderSpeed) {
