@@ -482,30 +482,6 @@ function animate() {
         if (starfield) {
             starfield.rotation.y += 0.0003;
         }
-
-        // 3. Update Trails
-        if (showOrbits) {
-            activeTrails.forEach(trail => {
-                const target = trail.userData.target;
-                if (!target) return;
-
-                target.getWorldPosition(tempVec);
-                const positions = trail.userData.positions;
-
-                // Shift positions: This is a simple O(N) shift.
-                // For a small buffer (100 points) and few planets (8), this is fine.
-                // For larger buffers, a ring buffer pointer is better.
-                // Let's implement shifting for simplicity of rendering (always 0 to N).
-                // Optimization: Use copyWithin for native memory block copy
-                positions.copyWithin(3, 0, positions.length - 3);
-
-                positions[0] = tempVec.x;
-                positions[1] = tempVec.y;
-                positions[2] = tempVec.z;
-
-                trail.geometry.attributes.position.needsUpdate = true;
-            });
-        }
     }
 
     // 4. Update Ship Orientation
@@ -521,7 +497,8 @@ function animate() {
     } else if (focusTarget) {
         // Focus Mode (Follow)
         const targetPos = new THREE.Vector3();
-        focusTarget.getWorldPosition(targetPos);
+        // Use optimized matrix read
+        targetPos.setFromMatrixPosition(focusTarget.matrixWorld);
 
         // Smoothly lerp target for better feel, or just snap
         // Snapping ensures no jitter at high speeds
@@ -538,9 +515,9 @@ function animate() {
 
             animatedObjects.forEach(obj => {
                 if (obj.mesh) {
-                    // Only calculate world position for distance check if strictly necessary
-                    // Note: getWorldPosition updates the matrixWorld.
-                    obj.mesh.getWorldPosition(tempVec);
+                    // Optimized: use matrixWorld instead of forcing update
+                    tempVec.setFromMatrixPosition(obj.mesh.matrixWorld);
+
                     const dist = shipPos.distanceToSquared(tempVec);
                     if (dist < closestDist) {
                         closestDist = dist;
@@ -552,7 +529,8 @@ function animate() {
         }
 
         if (closestObjectCache) {
-            closestObjectCache.getWorldPosition(tempVec);
+            // Optimized: use matrixWorld
+            tempVec.setFromMatrixPosition(closestObjectCache.matrixWorld);
             playerShip.lookAt(tempVec);
         }
     }
@@ -565,7 +543,8 @@ function animate() {
     if (selectedObject && frameCount % 10 === 0) {
         const distEl = document.getElementById('info-dist-sun');
         if (distEl) {
-            selectedObject.getWorldPosition(tempVec);
+             // Optimized: use matrixWorld
+            tempVec.setFromMatrixPosition(selectedObject.matrixWorld);
             const dist = tempVec.distanceTo(sunPos);
             // Assuming 1 unit = 1 million km or similar relative scale
             // Just displaying the raw unit for now or formatting it
@@ -583,6 +562,31 @@ function animate() {
             labelRenderer.render(scene, camera);
             if (!showLabels) labelsNeedUpdate = false;
         }
+    }
+
+    // 6. Post-Render Updates (Trails)
+    // Bolt Optimization: Update trails AFTER render.
+    // This allows us to read the updated matrices from the render pass
+    // without forcing a synchronous updateWorldMatrix() call.
+    // The trails will be 1 frame behind visually, which is imperceptible at high FPS.
+    if (!isPaused && showOrbits) {
+        activeTrails.forEach(trail => {
+            const target = trail.userData.target;
+            if (!target) return;
+
+            // Optimized: Read from cached matrix
+            tempVec.setFromMatrixPosition(target.matrixWorld);
+            const positions = trail.userData.positions;
+
+            // Shift positions: This is a simple O(N) shift.
+            positions.copyWithin(3, 0, positions.length - 3);
+
+            positions[0] = tempVec.x;
+            positions[1] = tempVec.y;
+            positions[2] = tempVec.z;
+
+            trail.geometry.attributes.position.needsUpdate = true;
+        });
     }
 }
 
