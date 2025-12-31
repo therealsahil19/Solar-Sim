@@ -10,11 +10,13 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
     -   **Recursive Satellites**: Supports theoretically infinite nesting of moons (moons of moons).
     -   **Starfield**: Procedurally generated background stars.
     -   **Player Ship**: Procedurally generated spacecraft geometry (Cone + Cylinders).
+    -   **Asteroid Belt**: A massive, GPU-animated asteroid belt with thousands of instances.
 -   **Interactive Controls**:
     -   **Orbit Controls**: Pan, zoom, and rotate around the scene with the mouse.
     -   **Focus Mode**: Double-click any planet (or use the Sidebar/Keys) to smoothly animate the camera to follow it.
     -   **Ship View**: Toggle a "Chase Camera" mode behind a procedural player ship that auto-orients to the nearest celestial body.
     -   **Raycasting**: Click on planets to view details (Name, Type, Size, Distance) via the Info Panel.
+    -   **Command Palette**: A power-user interface (`Cmd+K` or `Ctrl+K`) for quick navigation and actions.
 -   **Dynamic Visuals**:
     -   **Orbit Trails**: Planets leave fading trail lines as they orbit (optimized with typed arrays).
     -   **Texture Toggling**: Switch between High-Res Textures (HD) and Solid Colors (LD) for performance on low-end devices.
@@ -50,6 +52,10 @@ This project implements several optimization strategies (internally referred to 
 4.  **Render Loop Splitting**:
     -   The loop is split into a **Pre-Render** phase (updating object rotations) and a **Post-Render** phase (updating trails). This allows the trail logic to read the most recent GPU-computed matrices without stalling the CPU.
 
+5.  **GPU Animation (InstancedMesh)**:
+    -   The Asteroid Belt uses `THREE.InstancedMesh` to render thousands of asteroids in a single draw call.
+    -   Orbits are animated entirely on the GPU via Vertex Shader injection (`onBeforeCompile`), requiring zero CPU overhead for position updates.
+
 ## Security ("Sentinel")
 
 The application enforces strict security measures:
@@ -71,6 +77,9 @@ The project is organized into a modular architecture:
 │   ├── main.js         # The "Conductor" - initializes scene and loop
 │   ├── procedural.js   # "Factory" - creates 3D objects (planets, stars)
 │   ├── input.js        # "Controller" - handles user input and UI events
+│   ├── debris.js       # "Generator" - creates GPU-accelerated asteroid belt
+│   ├── components/
+│   │   └── CommandPalette.js # Class-based UI component
 │   └── style.css       # Design System tokens and styles
 └── README.md           # This documentation
 ```
@@ -91,6 +100,10 @@ The project is organized into a modular architecture:
     -   **Dependency Injection**: Receives scene context to attach controls without global state dependency.
     -   **Event Handling**: Centralizes `OrbitControls`, Raycasting (Mouse Clicks), and Keyboard Listeners.
     -   **UI Updates**: Manages the DOM overlays (Info Panel, Toasts) based on interaction.
+
+4.  **`src/debris.js`**:
+    -   **Specialized Generator**: Handles the creation of the asteroid belt using `InstancedMesh`.
+    -   **Shader Injection**: Modifies the default Three.js vertex shader to handle orbital mechanics on the GPU.
 
 ## Configuration (`system.json`)
 
@@ -148,6 +161,7 @@ Open your browser to: `http://localhost:8000`
 
 | Key | Action |
 | :--- | :--- |
+| **Cmd/Ctrl+K** | Open Command Palette |
 | **Left Click** | Select Object / Rotate Camera |
 | **Right Click** | Pan Camera |
 | **Scroll** | Zoom In/Out |
@@ -171,6 +185,7 @@ The application is designed to be accessible:
     -   `aria-live="polite"` for Toast notifications.
     -   `aria-valuenow` for loading bars and sliders.
     -   `aria-hidden` for managing sidebar visibility.
+    -   **Command Palette**: Implements `role="combobox"` and `aria-activedescendant` for full screen reader and keyboard support.
 -   **Keyboard Navigation**: All core actions are mapped to keyboard shortcuts.
 -   **Visuals**: High contrast UI text and support for disabling complex textures/labels for clarity.
 
