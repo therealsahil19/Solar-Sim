@@ -1,55 +1,45 @@
 /**
  * @file ThemeManager.js
- * @description Manages application themes (Default, Blueprint, OLED).
- * Handles switching, persistence via localStorage, and DOM updates.
+ * @description Manages the visual theme of the application (colors, fonts, etc.)
+ * Persists the user's choice in localStorage.
  */
 
 export class ThemeManager {
     constructor() {
         this.themes = ['default', 'blueprint', 'oled'];
-        this.currentTheme = 'default';
-        this.STORAGE_KEY = 'palette-theme';
+        this.currentThemeIndex = 0;
 
-        this.init();
-    }
-
-    init() {
-        // Load from storage or default
-        const saved = localStorage.getItem(this.STORAGE_KEY);
-        if (saved && this.themes.includes(saved)) {
-            this.setTheme(saved);
-        } else {
-            // Check system preference?
-            // For now default is "default" (Dark Cosmic)
-            this.setTheme('default');
-        }
+        // Load initial theme
+        this.loadPreference();
     }
 
     setTheme(themeName) {
         if (!this.themes.includes(themeName)) return;
 
-        this.currentTheme = themeName;
-        localStorage.setItem(this.STORAGE_KEY, themeName);
+        document.documentElement.setAttribute('data-theme', themeName);
+        localStorage.setItem('theme', themeName);
 
-        // Update DOM
-        const root = document.documentElement;
-        if (themeName === 'default') {
-            root.removeAttribute('data-theme');
-        } else {
-            root.setAttribute('data-theme', themeName);
-        }
-
-        console.log(`[Palette] Theme set to: ${themeName}`);
+        this.currentThemeIndex = this.themes.indexOf(themeName);
     }
 
     cycleTheme() {
-        const idx = this.themes.indexOf(this.currentTheme);
-        const next = this.themes[(idx + 1) % this.themes.length];
-        this.setTheme(next);
-        return next;
+        this.currentThemeIndex = (this.currentThemeIndex + 1) % this.themes.length;
+        const nextTheme = this.themes[this.currentThemeIndex];
+        this.setTheme(nextTheme);
+        return nextTheme;
+    }
+
+    loadPreference() {
+        const stored = localStorage.getItem('theme');
+        if (stored && this.themes.includes(stored)) {
+            this.setTheme(stored);
+        } else {
+            // Default
+            this.setTheme('default');
+        }
     }
 
     getTheme() {
-        return this.currentTheme;
+        return this.themes[this.currentThemeIndex];
     }
 }
