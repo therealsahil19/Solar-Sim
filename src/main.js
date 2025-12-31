@@ -250,7 +250,9 @@ async function init() {
         onResetCamera: resetCamera,
         onSetFocus: setFocusTarget,
         onUpdateTimeScale: updateTimeScale,
-        onObjectSelected: handleObjectSelection
+        onObjectSelected: handleObjectSelection,
+        onToggleLabels: toggleLabels,
+        onToggleOrbits: toggleOrbits
     };
 
     interactionHelpers = setupInteraction(context, callbacks);
