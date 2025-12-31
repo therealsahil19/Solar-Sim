@@ -102,6 +102,8 @@ export function createSun(textureLoader, useTextures) {
     const solidMaterial = new THREE.MeshBasicMaterial({ color: 0xffffaa });
 
     const sun = new THREE.Mesh(geometry, useTextures ? texturedMaterial : solidMaterial);
+    sun.castShadow = false;
+    sun.receiveShadow = false;
 
     sun.userData.name = "Sun";
     sun.userData.type = "Star";
@@ -220,6 +222,8 @@ export function createSystem(data, textureLoader, useTextures) {
     }
 
     const mesh = new THREE.Mesh(geometry, useTextures ? texturedMaterial : solidMaterial);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     mesh.scale.set(data.size, data.size, data.size);
     mesh.userData.name = data.name;
     mesh.userData.type = data.type;
@@ -236,13 +240,17 @@ export function createSystem(data, textureLoader, useTextures) {
         const inner = data.size * 1.4;
         const outer = data.size * 2.2;
         const ringGeo = new THREE.RingGeometry(inner, outer, 64);
-        const ringMat = new THREE.MeshBasicMaterial({
+        const ringMat = new THREE.MeshStandardMaterial({
             color: 0xcfb096,
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.6
+            opacity: 0.6,
+            roughness: 0.8,
+            metalness: 0.2
         });
         const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.castShadow = true;
+        ring.receiveShadow = true;
         ring.rotation.x = Math.PI / 2;
         bodyGroup.add(ring);
     }
