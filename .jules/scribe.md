@@ -27,3 +27,14 @@
     - `src/debris.js`: Added technical explanation for Vertex Shader injection (Coordinate Space Transformation).
     - `src/components/CommandPalette.js`: Detailed JSDoc return types for `flattenData` and ARIA notes for `initDOM`.
     - `src/managers/ThemeManager.js`: Added `@example` usage.
+
+### 2024-05-23 - The User Interface & Onboarding
+- **Focus:** `src/components/NavigationSidebar.js`, `src/components/InfoPanel.js`, `download_textures.py`, `CONTRIBUTING.md`.
+- **Standard:**
+    - "Class Documentation": Explicitly document constructor parameters and architectural role (e.g., "Decoupled from 3D scene").
+    - "A11y Notes": Highlight Accessibility features in JSDoc (Focus Management, ARIA).
+- **Changes:**
+    - **NavigationSidebar**: Added detailed JSDoc for the class and its recursive `buildLevel` method. Explained the Client-side search logic.
+    - **InfoPanel**: Documented the data binding process between `three.js` userData and the DOM.
+    - **download_textures.py**: Added module-level docstring and usage instructions.
+    - **CONTRIBUTING.md**: Created a new comprehensive guide for contributors, covering setup, structure, and standards.
