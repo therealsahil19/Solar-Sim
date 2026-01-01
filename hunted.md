@@ -11,9 +11,9 @@
 | 007| [FIXED] | 🟢 LOW   | `src/debris.js:68` | Memory Leak: Undisposed Custom Materials |
 | 008| [FIXED] | 🟡 MED   | `download_textures.py:27` | Silent Failure on Asset Download |
 | 009| [FIXED] | 🟢 LOW   | `src/instancing.js:33` | Persistent State Pollution in InstanceRegistry |
-| 010| [OPEN] | 🟡 MED   | `src/input.js:145` | Logic Flaw: Cross-Object Double Click Detection |
-| 011| [OPEN] | 🟡 MED   | `src/managers/ThemeManager.js:20` | Crash Risk: Unsafe LocalStorage Access |
-| 012| [OPEN] | 🟢 LOW   | `src/input.js:124` | Memory Leak: Undisposed Event Listeners |
+| 010| [FIXED] | 🟡 MED   | `src/input.js:145` | Logic Flaw: Cross-Object Double Click Detection |
+| 011| [FIXED] | 🟡 MED   | `src/managers/ThemeManager.js:20` | Crash Risk: Unsafe LocalStorage Access |
+| 012| [FIXED] | 🟢 LOW   | `src/input.js:124` | Memory Leak: Undisposed Event Listeners |
 
 ## Details
 

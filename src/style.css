@@ -857,16 +857,16 @@ dialog::backdrop {
         flex-direction: column-reverse;
         align-items: center;
         width: 100%;
-        padding-bottom: var(--space-sm);
+        padding-bottom: var(--space-xs);
         /* Mobile: reduce gap */
-        gap: var(--space-sm);
+        gap: var(--space-xs);
     }
 
     .dock-group {
         width: 100%;
         justify-content: space-around;
-        height: auto;
-        padding: var(--space-xs) var(--space-sm); /* Reduce padding */
+        height: 56px; /* Explicit smaller height for mobile */
+        padding: 4px var(--space-sm); /* Reduce padding further */
     }
 
     /* Mobile: Compact icons to fit */

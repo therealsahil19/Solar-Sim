@@ -2,10 +2,10 @@
 
 | Screenshot | Viewport | Severity | Issue Type | Description |
 |------------|----------|----------|------------|-------------|
-| `mobile.png` | Mobile | 🟡 MED | Layout | Bottom dock consumes excessive vertical space (~25%); feels crowded. |
+| `mobile.png` | Mobile | 🟡 MED | Layout | [FIXED] Bottom dock consumes excessive vertical space (~25%); feels crowded. |
 | `all.png` | All | 🟢 LOW | Artifacts | Stray white pixel/square visible in bottom right corner near footer. |
 | `mobile.png` | Mobile | 🟡 MED | Overlap | Planet labels (Mercury, Venus, Earth) overlap significantly. |
-| `all.png` | All | 🟢 LOW | Consistency | "HD" button uses text label while other buttons use SVG icons. |
+| `all.png` | All | 🟢 LOW | Consistency | [FIXED] "HD" button uses text label while other buttons use SVG icons. |
 
 ## Details
 
