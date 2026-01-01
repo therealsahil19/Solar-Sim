@@ -544,6 +544,8 @@ function animate() {
         if (instanceRegistry) {
             // FIX: Ensure scene graph matrices are up-to-date before copying to InstancedMesh
             // This prevents "one-frame lag" where instances render with the previous frame's transform.
+            // FIX: Ensure world matrices are up-to-date before updating instances.
+            // This prevents "One Frame Lag" where instances render at the previous frame's location.
             scene.updateMatrixWorld();
             instanceRegistry.update();
         }
