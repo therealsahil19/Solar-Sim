@@ -33,8 +33,13 @@ export function setupControls(camera, domElement) {
 }
 
 /**
- * Sets up user interaction (Raycasting, Keyboard, UI).
- * @param {Object} context - The context object containing references.
+ * Initializes all user interaction handlers.
+ *
+ * **Architecture Pattern**: Dependency Injection.
+ * Instead of importing globals, this module receives all necessary dependencies (`context`)
+ * and action handlers (`callbacks`) as arguments. This decouples the Input logic from the Core logic.
+ *
+ * @param {Object} context - The context object containing references to the Scene and state.
  * @param {THREE.Camera} context.camera - The active camera for raycasting.
  * @param {THREE.Scene} context.scene - The scene (unused in this function but usually part of context).
  * @param {HTMLElement} context.rendererDomElement - The canvas element.
@@ -42,7 +47,7 @@ export function setupControls(camera, domElement) {
  * @param {Object} context.state - Global state object (e.g., { useTextures: boolean }).
  * @param {InstanceRegistry} context.instanceRegistry - Registry for instanced meshes.
  * @param {Array} context.planetData - The hierarchical system configuration data.
- * @param {Object} callbacks - Callback functions for actions.
+ * @param {Object} callbacks - Object containing functions to trigger state changes in `main.js`.
  * @param {Function} callbacks.onToggleCamera - Function to toggle camera mode.
  * @param {Function} callbacks.onToggleTexture - Function to toggle textures (accepts button element).
  * @param {Function} callbacks.onTogglePause - Function to toggle pause state (accepts button element).
@@ -53,10 +58,11 @@ export function setupControls(camera, domElement) {
  * @param {Function} callbacks.onObjectSelected - Function to notify main state of selection.
  * @param {Function} callbacks.onToggleLabels - Function to toggle visibility of labels.
  * @param {Function} callbacks.onToggleOrbits - Function to toggle visibility of orbits.
- * @returns {Object} Helper functions for external use:
+ * @returns {Object} Helper functions for external use (e.g., by `main.js` or `CommandPalette`):
  *  - `updateSelectionUI(mesh)`: Manually triggers the selection UI update for a mesh.
  *  - `openModal()`: Opens the welcome/help modal.
  *  - `closeModal()`: Closes the welcome/help modal.
+ *  - `dispose()`: Cleans up event listeners.
  */
 export function setupInteraction(context, callbacks) {
     const { camera, rendererDomElement, interactionTargets, instanceRegistry } = context;
@@ -64,8 +70,11 @@ export function setupInteraction(context, callbacks) {
     const mouse = new THREE.Vector2();
 
     /**
-     * Updates the user interface (Toast & Info Panel) with details about the selected object.
-     * @param {THREE.Object3D} mesh - The selected mesh containing userData.
+     * Updates the Side Panel and Toast with details about the selected object.
+     *
+     * @param {THREE.Object3D} mesh - The selected mesh containing metadata in `userData`.
+     * Required properties: `name`, `type`, `description`.
+     * Optional properties: `size`, `distance`.
      */
     function updateSelectionUI(mesh) {
         if (!mesh) return;
@@ -112,16 +121,18 @@ export function setupInteraction(context, callbacks) {
     // --- Navigation Helpers ---
 
     /**
-     * Finds a mesh by its name in either the interaction targets or the instance registry.
-     * @param {string} name - The name of the object to find.
-     * @returns {THREE.Object3D|null} The found object or null.
+     * Finds a mesh by its name.
+     * Handles both standard `THREE.Mesh` objects and instanced objects via `InstanceRegistry`.
+     *
+     * @param {string} name - The case-sensitive name of the object.
+     * @returns {THREE.Object3D|null} The found object (or pivot for instances), or null.
      */
     function findMeshByName(name) {
         // 1. Search in standard interaction targets (Sun, Non-instanced objects)
         const found = interactionTargets.find(obj => obj.userData.name === name);
         if (found) return found;
 
-        // 2. Search in Instance Registry
+        // 2. Search in Instance Registry (for Moons/Asteroids that are instances)
         if (context.instanceRegistry) {
             return context.instanceRegistry.findInstanceByName(name);
         }
@@ -130,7 +141,9 @@ export function setupInteraction(context, callbacks) {
     }
 
     /**
-     * Selects an object by name and focuses on it.
+     * High-level helper to Select and Focus an object by name.
+     * Used by the Navigation Sidebar and Command Palette.
+     *
      * @param {string} name - The name of the object.
      */
     function selectByName(name) {
@@ -330,11 +343,13 @@ export function setupInteraction(context, callbacks) {
     }
 
     // --- Navigation Sidebar Logic ---
-    // Recursively build the list
+
     /**
-     * Recursively builds the navigation tree in the DOM.
-     * @param {HTMLElement} container - The DOM container for the list.
-     * @param {Array} items - The list of planet objects.
+     * Recursively builds the navigation tree DOM structure.
+     * This creates a nested `<ul>` hierarchy mirroring the solar system structure.
+     *
+     * @param {HTMLElement} container - The DOM container for the current level.
+     * @param {Array} items - The list of planet/moon data objects for this level.
      */
     function buildNavTree(container, items) {
         const ul = document.createElement('ul');
@@ -353,7 +368,7 @@ export function setupInteraction(context, callbacks) {
             if (itemData.type === 'Star') icon = '☀️';
             if (itemData.type === 'Moon') icon = '🌑';
 
-            // Secure DOM creation
+            // Secure DOM creation (Prevent XSS)
             const spanName = document.createElement('span');
             spanName.textContent = `${icon} ${itemData.name}`;
 
@@ -387,8 +402,10 @@ export function setupInteraction(context, callbacks) {
     }
 
     /**
-     * Initializes the navigation sidebar.
-     * @param {Array} planetData - The planet data to populate the sidebar with.
+     * Initializes the Sidebar Navigation.
+     * Populates the list, sets up the Search filter, and binds toggle buttons.
+     *
+     * @param {Array} planetData - The full hierarchical system configuration data.
      */
     function initNavigation(planetData) {
         const navList = document.getElementById('nav-list');

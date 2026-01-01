@@ -334,8 +334,14 @@ export async function init() {
 // ============================================================================
 
 /**
- * Toggles the camera view between 'Overview' (OrbitControls centered on origin)
- * and 'Chase' (locked behind PlayerShip).
+ * Toggles the camera view between 'Overview' and 'Chase' modes.
+ * - **Overview**: Standard OrbitControls centered on the system origin (Sun).
+ * - **Chase**: Locks the camera relative to the PlayerShip, disabling standard orbit controls.
+ *
+ * Side Effects:
+ * - Updates `isShipView` state.
+ * - Modifies DOM button (`aria-pressed`).
+ * - Resets `focusTarget` to null when entering Chase mode.
  */
 function toggleCameraView() {
     isShipView = !isShipView;
@@ -362,7 +368,13 @@ function toggleCameraView() {
 }
 
 /**
- * Resets the camera to the default Sun view.
+ * Resets the camera to the default position looking at the Sun.
+ * useful for "escaping" from deep zoom or chase mode.
+ *
+ * Side Effects:
+ * - Clears `isShipView` and `focusTarget`.
+ * - Resets camera position to (0, 40, 80).
+ * - Displays a "View Reset" toast.
  */
 function resetCamera() {
     isShipView = false;
@@ -377,27 +389,36 @@ function resetCamera() {
 }
 
 /**
- * Sets the camera focus target to a specific object.
- * @param {THREE.Object3D} mesh - The object to follow.
+ * Sets the camera to smoothly follow a specific 3D object.
+ * The `animate` loop detects `focusTarget` and updates the controls target every frame.
+ *
+ * @param {THREE.Object3D} mesh - The object to follow (must have `userData.name`).
  */
 function setFocusTarget(mesh) {
     focusTarget = mesh;
-    isShipView = false; // Disable ship view
+    isShipView = false; // Disable ship view to allow focus
     showToast(`Following ${mesh.userData.name}`);
 }
 
 /**
- * Updates the global time scale.
- * @param {number} scale - The new time scale.
+ * Updates the global simulation speed.
+ * Controls how fast `uTime` advances for shaders and orbital rotation.
+ *
+ * @param {number} scale - The new time scale multiplier (e.g., 1.0 = normal, 2.0 = 2x speed).
  */
 function updateTimeScale(scale) {
     timeScale = scale;
 }
 
 /**
- * Toggles between High Definition (Textured) and Low Definition (Solid Color) materials.
- * Updates the button text and displays a toast notification.
- * @param {HTMLElement} [btnElement] - The button element to update the text of (optional).
+ * Switches the entire simulation between High Definition (Textured) and Low Definition (Solid Color) modes.
+ * This affects all planetary bodies and instanced meshes.
+ *
+ * **Performance Note**:
+ * Switching to "LD" uses cached `MeshStandardMaterial`s (shared by color), reducing shader complexity
+ * and memory usage, although geometry remains the same.
+ *
+ * @param {HTMLElement} [btnElement] - The DOM button triggering the event (for updating text/aria).
  */
 function toggleTextures(btnElement) {
     useTextures = !useTextures;
@@ -408,7 +429,7 @@ function toggleTextures(btnElement) {
         btnElement.setAttribute('aria-pressed', useTextures);
     }
 
-    // Update Materials
+    // Update Materials for Standard Meshes (Sun, etc.)
     interactionTargets.forEach(mesh => {
         if (useTextures && mesh.userData.texturedMaterial) {
             mesh.material = mesh.userData.texturedMaterial;
@@ -417,7 +438,7 @@ function toggleTextures(btnElement) {
         }
     });
 
-    // Bolt Support: Update Instanced Meshes (Moons, etc.)
+    // Update Materials for Instanced Meshes (Moons, Asteroids)
     if (instanceRegistry) {
         instanceRegistry.groups.forEach(group => {
             if (group.mesh && group.instances.length > 0) {
@@ -434,13 +455,15 @@ function toggleTextures(btnElement) {
         });
     }
 
-    // Toast
     showToast(`Textures: ${useTextures ? "ON" : "OFF"}`);
 }
 
 /**
- * Toggles the visibility of planet text labels.
- * Updates the button opacity to reflect state.
+ * Toggles the visibility of `CSS2DObject` labels for all planets.
+ *
+ * **Optimization**:
+ * Sets `labelsNeedUpdate` to true to ensure the renderer clears/draws one final frame
+ * before disabling the `labelRenderer` loop in `animate`.
  */
 function toggleLabels() {
     showLabels = !showLabels;
@@ -460,8 +483,7 @@ function toggleLabels() {
 }
 
 /**
- * Toggles the visibility of orbit lines and trails.
- * Updates the button opacity to reflect state.
+ * Toggles the visibility of orbital paths (lines) and dynamic trails.
  */
 function toggleOrbits() {
     showOrbits = !showOrbits;
@@ -477,8 +499,11 @@ function toggleOrbits() {
 }
 
 /**
- * Toggles the pause state.
- * @param {HTMLElement} [btnElement] - The button element to update.
+ * Pauses or Resumes the simulation loop.
+ * - **Paused**: Orbits and rotations stop. Camera controls remain active.
+ * - **Resumed**: Physics resume at current `timeScale`.
+ *
+ * @param {HTMLElement} [btnElement] - The DOM button to update (icon/aria-label).
  */
 function togglePause(btnElement) {
     isPaused = !isPaused;
@@ -493,8 +518,9 @@ function togglePause(btnElement) {
 }
 
 /**
- * Focuses the camera on a specific planet by index (Keyboard Shortcut).
- * @param {number} index - The index of the planet in the planets array.
+ * Keyboard shortcut handler to focus on primary planets (Keys 1-9).
+ *
+ * @param {number} index - The 0-based index of the planet in the `planets` registry.
  */
 function focusPlanet(index) {
     if (index < 0 || index >= planets.length) return;
@@ -511,18 +537,22 @@ function focusPlanet(index) {
 }
 
 /**
- * Handles object selection (updates UI state).
+ * Updates the global `selectedObject` state used by the animation loop to display dynamic info.
+ * This is called when a user clicks an object or selects it via Command Palette.
+ *
  * @param {THREE.Object3D} mesh - The selected object.
  */
 function handleObjectSelection(mesh) {
     selectedObject = mesh;
     // Note: The UI population happens in input.js currently,
-    // but main.js holds the reference for dynamic updates in animate().
+    // but main.js holds the reference for dynamic updates (like distance) in animate().
 }
 
 /**
- * Helper to show toast messages.
- * @param {string} message - The message to display.
+ * Displays a temporary "Toast" notification at the bottom of the screen.
+ * Used for feedback like "Textures: ON" or "Paused".
+ *
+ * @param {string} message - The text to display.
  */
 function showToast(message) {
     const toast = document.getElementById('toast');
@@ -534,48 +564,60 @@ function showToast(message) {
     }
 }
 
+// Re-used vectors to avoid garbage collection in the render loop
 const tempVec = new THREE.Vector3();
 const sunPos = new THREE.Vector3(0, 0, 0);
 
 /**
- * The main animation loop.
- * Updates object rotations, ship orientation, and renders the scene.
- * Recursively calls `requestAnimationFrame`.
+ * The Main Animation Loop ("The Heartbeat").
+ *
+ * This function runs ~60 times per second and orchestrates:
+ * 1. **Physics/Motion**: Updates rotations and orbital positions.
+ * 2. **Camera Logic**: Handles Chase Mode and Focus Mode smoothing.
+ * 3. **Ship AI**: Orients the player ship towards the nearest planet.
+ * 4. **Rendering**: Draws the Scene and Labels.
+ * 5. **Post-Processing**: Updates orbit trails (Post-Render).
+ *
+ * **Optimization ("Bolt")**:
+ * - Uses `frameCount` to throttle expensive operations (UI updates, Neighbors search).
+ * - Splits Logic into Pre-Render (Motion) and Post-Render (Trails) to leverage GPU-computed matrices.
  */
 function animate() {
     requestAnimationFrame(animate);
 
     if (!isPaused) {
-        // 1. Update Rotations
+        // --- 1. Physics & Motion ---
+
+        // Rotate individual objects
         animatedObjects.forEach(obj => {
             if (obj.pivot) obj.pivot.rotation.y += obj.speed * timeScale;
             if (obj.mesh) obj.mesh.rotation.y += obj.rotationSpeed * timeScale;
         });
 
-        // Bolt Support: Update Instances
+        // Update Instanced Meshes (Moons, Debris)
         if (instanceRegistry) {
-            // FIX: Ensure world matrices are up-to-date before updating instances.
-            // This prevents "One Frame Lag" where instances render at the previous frame's location.
+            // FORCE UPDATE: We must update world matrices BEFORE instanceRegistry reads them.
+            // Otherwise, instances will lag one frame behind the orbital pivot.
             scene.updateMatrixWorld();
             instanceRegistry.update();
         }
 
-        // Bolt Optimization: Update Asteroid Belt via Uniform (GPU)
+        // Update GPU Asteroid Belt
+        // The vertex shader uses 'uTime' to calculate position, so we just increment the uniform.
         if (asteroidBelt && asteroidBelt.userData.timeUniform) {
-            // Update time based on global time scale
-            // We use a separate accumulator if timeScale varies, but for now simple increment works
             asteroidBelt.userData.timeUniform.value += 0.001 * timeScale;
         }
 
-        // 2. Starfield Rotation
+        // Rotate Starfield slowly
         if (starfield) {
             starfield.rotation.y += 0.0003;
         }
     }
 
-    // 2. Camera Logic
+    // --- 2. Camera Logic ---
+
     if (isShipView && playerShip) {
-        // Chase Cam
+        // Mode: Chase Camera (Locked behind ship)
         controls.target.copy(playerShip.position);
         camera.position.set(
             playerShip.position.x + 5,
@@ -583,20 +625,18 @@ function animate() {
             playerShip.position.z + 5
         );
     } else if (focusTarget) {
-        // Focus Mode (Follow)
+        // Mode: Focus/Follow (Smoothly tracks a planet)
         const targetPos = new THREE.Vector3();
-        // Bolt Optimization: Use optimized matrix read
+        // Optimization: Read directly from matrixWorld to avoid re-calculation
         targetPos.setFromMatrixPosition(focusTarget.matrixWorld);
-
-        // Smoothly lerp target for better feel, or just snap
-        // Snapping ensures no jitter at high speeds
         controls.target.copy(targetPos);
     }
 
-    // 3. Update Ship Orientation (Face nearest object)
+    // --- 3. Player Ship "AI" (Face Nearest) ---
+
     if (playerShip && animatedObjects.length > 0) {
-        // Bolt Optimization: Throttle the search for the nearest object to reduce matrix updates
-        // Frequency tuned to 10 frames (approx 6/sec) for responsiveness
+        // Throttling: Searching for the nearest object is O(N).
+        // We only do this every 10 frames to save CPU cycles.
         if (frameCount % 10 === 0) {
             let closestDist = Infinity;
             let closestObj = null;
@@ -604,9 +644,7 @@ function animate() {
 
             animatedObjects.forEach(obj => {
                 if (obj.mesh) {
-                    // Bolt Optimization: use matrixWorld instead of forcing update
                     tempVec.setFromMatrixPosition(obj.mesh.matrixWorld);
-
                     const dist = shipPos.distanceToSquared(tempVec);
                     if (dist < closestDist) {
                         closestDist = dist;
@@ -617,68 +655,66 @@ function animate() {
             closestObjectCache = closestObj;
         }
 
+        // Apply cached rotation target
         if (closestObjectCache) {
-            // Bolt Optimization: use matrixWorld
             tempVec.setFromMatrixPosition(closestObjectCache.matrixWorld);
             playerShip.lookAt(tempVec);
         }
     }
 
-    // Always increment frameCount to ensure UI throttling works even if ship logic is skipped
+    // Increment global frame counter
     frameCount++;
 
-    // 4. Update Dynamic UI (Info Panel)
-    // Bolt Optimization: Throttle UI updates to avoid DOM thrashing (every 10 frames).
-    // Updating the DOM every frame is expensive and unnecessary for human perception.
+    // --- 4. Dynamic UI Updates ---
+
+    // Throttling: DOM updates are slow. Limit "Distance" text updates to every 10 frames.
     if (selectedObject && frameCount % 10 === 0) {
         const distEl = document.getElementById('info-dist-sun');
         if (distEl) {
-             // Bolt Optimization: use matrixWorld
             tempVec.setFromMatrixPosition(selectedObject.matrixWorld);
             const dist = tempVec.distanceTo(sunPos);
-            // Assuming 1 unit = 1 million km or similar relative scale
-            // Just displaying the raw unit for now or formatting it
+            // Display formatted distance
             distEl.textContent = `Dist to Sun: ${dist.toFixed(1)} units`;
         }
     }
 
-    // 5. Render
+    // --- 5. Render Phase ---
+
     if (controls) controls.update();
     if (renderer && scene && camera) {
         renderer.render(scene, camera);
 
-        // Bolt Optimization: Skip label rendering if labels are hidden and cleanup is done
+        // Optimization: CSS2DRenderer is heavy. Skip if labels are hidden.
+        // `labelsNeedUpdate` ensures we render one last cleared frame when toggling off.
         if (showLabels || labelsNeedUpdate) {
             labelRenderer.render(scene, camera);
             if (!showLabels) labelsNeedUpdate = false;
         }
     }
 
-    // 6. Post-Render Updates (Trails)
-    // Bolt Optimization: Update trails AFTER render.
-    // This allows for reading the updated matrices from the render pass
-    // without forcing a synchronous updateWorldMatrix() call.
-    // The trails will be 1 frame behind visually, which is imperceptible at high FPS.
-    // Bolt Optimization: Throttle trail updates to every 2 frames
+    // --- 6. Post-Render Updates (Trails) ---
+
+    // Optimization: Update trails AFTER rendering.
+    // This allows us to read the *current frame's* matrixWorld values (computed by renderer)
+    // without forcing a synchronous `scene.updateMatrixWorld()` call which stalls the pipeline.
+    // Result: Trails are effectively 1 frame "behind", but perfectly performant.
+    // Throttling: Update trails every 2 frames to halve the CPU load for trail logic.
     if (!isPaused && showOrbits && frameCount % 2 === 0) {
-        // Bolt Support: Update Unified Manager
+        // Bolt: Unified Trail System
         if (trailManager) {
             trailManager.update();
         }
 
-        // Legacy trails (if any)
+        // Legacy Trail System (Backup)
         activeTrails.forEach(trail => {
             const target = trail.userData.target;
             if (!target) return;
 
-            // Bolt Optimization: Read from cached matrix
             tempVec.setFromMatrixPosition(target.matrixWorld);
             const positions = trail.userData.positions;
 
-            // Shift positions: This is a simple O(N) shift.
-            // copyWithin is a high-performance typed array method that moves memory blocks
-            // much faster than a manual loop. We shift data right by 3 floats (1 vector)
-            // to make room for the new position at index 0.
+            // Fast Array Shift: copyWithin() moves memory blocks efficiently (O(1) relative to loop)
+            // Shift data right by 1 vector (3 floats)
             positions.copyWithin(3, 0, positions.length - 3);
 
             positions[0] = tempVec.x;
