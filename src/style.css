@@ -1,6 +1,6 @@
 /*
    🎨 PALETTE DESIGN SYSTEM
-   Version: 3.0.0 "Unleashed" - Systemic Typography & Motion
+   Version: 3.1.0 "Unleashed" - Component Architecture & Tokens
 */
 
 /* ==========================================================================
@@ -101,9 +101,11 @@
     --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
 
-    /* --- Layout Tokens --- */
+    /* --- Layout Tokens (NEW) --- */
     --layout-sidebar-width: 340px;
+    --layout-info-width: 320px;
     --layout-header-height: 64px;
+    --layout-dock-height: 80px;
 
     /* --- Z-Indices --- */
     --z-bg: 0;
@@ -432,8 +434,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     background: var(--color-surface-glass);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--color-border);
-
-    /* Make it float */
     border-radius: var(--radius-lg);
     pointer-events: auto;
 }
@@ -451,7 +451,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 #info-panel {
     grid-area: info;
     align-self: start;
-    width: 320px;
+    width: var(--layout-info-width);
     padding: var(--space-xl);
     display: flex;
     flex-direction: column;
@@ -656,8 +656,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     display: flex;
     align-items: center;
     gap: var(--space-lg);
-    height: 80px;
-    border-radius: var(--radius-full); /* Capsule shape */
+    height: var(--layout-dock-height);
+    border-radius: var(--radius-full);
     background: var(--color-surface-glass);
     backdrop-filter: blur(20px);
     border: 1px solid var(--color-border);
@@ -808,7 +808,6 @@ dialog::backdrop {
     pointer-events: none;
     user-select: none;
     transition: opacity 0.2s;
-    /* Attempt to reduce z-fighting visually */
     mix-blend-mode: screen;
 }
 
@@ -847,10 +846,9 @@ dialog::backdrop {
         width: auto;
         max-height: 40vh;
         overflow-y: auto;
-        /* Mobile: Position at bottom, below header */
         position: absolute;
         top: 80px; left: 10px; right: 10px;
-        z-index: 101; /* Above other UI if needed */
+        z-index: 101;
     }
 
     #bottom-dock {
@@ -858,18 +856,16 @@ dialog::backdrop {
         align-items: center;
         width: 100%;
         padding-bottom: var(--space-xs);
-        /* Mobile: reduce gap */
         gap: var(--space-xs);
     }
 
     .dock-group {
         width: 100%;
         justify-content: space-around;
-        height: 56px; /* Explicit smaller height for mobile */
-        padding: 4px var(--space-sm); /* Reduce padding further */
+        height: 56px;
+        padding: 4px var(--space-sm);
     }
 
-    /* Mobile: Compact icons to fit */
     .icon-btn {
         width: 36px;
         height: 36px;
@@ -896,7 +892,7 @@ dialog::backdrop {
 /* Tablet / Narrow Desktop */
 @media (min-width: 769px) and (max-width: 1024px) {
     #bottom-dock {
-        flex-wrap: wrap; /* Allow wrapping */
+        flex-wrap: wrap;
         justify-content: center;
     }
 }
@@ -911,7 +907,7 @@ dialog::backdrop {
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
     display: flex;
-    align-items: flex-start; /* Start from top area */
+    align-items: flex-start;
     justify-content: center;
     padding-top: 20vh;
     animation: fade-in 0.2s ease-out;
