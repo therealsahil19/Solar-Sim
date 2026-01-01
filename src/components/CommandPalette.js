@@ -36,9 +36,11 @@ export class CommandPalette {
     }
 
     /**
-     * Flattens the recursive planet data into a linear list.
-     * @param {Array} data - Hierarchy of planet/moon objects.
-     * @returns {Array} List of searchable items.
+     * Flattens the recursive planet data into a linear list of searchable items.
+     * Traverses the `moons` array of each node to build a flat index.
+     *
+     * @param {Array<Object>} data - Hierarchy of planet/moon objects from system.json.
+     * @returns {Array<{name: string, type: string, category: string, handler: Function}>} Flattened list for the fuzzy search.
      */
     flattenData(data) {
         if (!data) return [];
@@ -84,6 +86,8 @@ export class CommandPalette {
 
     /**
      * Initializes the DOM elements for the command palette.
+     * Constructs the dialog overlay, input field, and list container.
+     * Applies WAI-ARIA attributes (`role="dialog"`, `aria-modal`) for accessibility.
      */
     initDOM() {
         // Overlay

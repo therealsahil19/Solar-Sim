@@ -33,6 +33,7 @@ export class ThemeManager {
     /**
      * Cycles to the next available theme in the list.
      * @returns {string} The name of the new active theme.
+     * @example cycleTheme() // returns 'blueprint'
      */
     cycleTheme() {
         this.currentThemeIndex = (this.currentThemeIndex + 1) % this.themes.length;
