@@ -11,6 +11,9 @@
 | 007| [FIXED] | 🟢 LOW   | `src/debris.js:68` | Memory Leak: Undisposed Custom Materials |
 | 008| [FIXED] | 🟡 MED   | `download_textures.py:27` | Silent Failure on Asset Download |
 | 009| [FIXED] | 🟢 LOW   | `src/instancing.js:33` | Persistent State Pollution in InstanceRegistry |
+| 010| [OPEN] | 🟡 MED   | `src/input.js:145` | Logic Flaw: Cross-Object Double Click Detection |
+| 011| [OPEN] | 🟡 MED   | `src/managers/ThemeManager.js:20` | Crash Risk: Unsafe LocalStorage Access |
+| 012| [OPEN] | 🟢 LOW   | `src/input.js:124` | Memory Leak: Undisposed Event Listeners |
 
 ## Details
 
@@ -77,3 +80,41 @@ Updated `download_textures.py` to track failed downloads and exit with a non-zer
 
 ### 009 - State Pollution: Instance Registry
 Refactored `InstanceRegistry.addInstance` to use `Object.assign` instead of overwriting `userData` entirely. Added a `dispose()` method to `InstanceRegistry` that cleans up the injected properties (`isInstance`, `instanceId`, `instanceKey`) from the pivot objects and removes the mesh from the scene.
+
+### 010 - Logic Flaw: Cross-Object Double Click Detection
+The double-click detection logic in `src/input.js` relies on a global `lastClickTime` variable without verifying if the second click is on the same object as the first.
+
+```javascript
+// src/input.js:145
+const currentTime = Date.now();
+const isDoubleClick = (currentTime - lastClickTime) < doubleClickDelay;
+lastClickTime = currentTime;
+```
+
+**Scenario:**
+1. User clicks "Earth".
+2. User quickly moves mouse and clicks "Mars" (within 300ms).
+3. Result: The application registers a Double Click on "Mars", triggering the Focus action, even though the user intended two separate selections.
+
+### 011 - Crash Risk: Unsafe LocalStorage Access
+In `src/managers/ThemeManager.js`, `localStorage` is accessed directly in the constructor and methods. If the user has disabled cookies/storage (e.g., "Block all cookies" or Incognito mode in some browsers), this throws a `SecurityError` (DOMException), causing the application initialization to crash immediately.
+
+```javascript
+// src/managers/ThemeManager.js:20
+localStorage.setItem('theme', themeName);
+```
+
+### 012 - Memory Leak: Undisposed Event Listeners
+Several event listeners are attached to the `window` or DOM elements but are not properly cleaned up in the `dispose` methods or lack a disposal mechanism entirely.
+
+1.  `src/input.js`: The `pointerup` listener on `rendererDomElement` is never removed.
+2.  `src/input.js`: Event listeners attached to UI buttons (`btnCamera`, `btnTexture`, etc.) are not tracked or removed.
+3.  `src/main.js`: An anonymous `resize` event listener is attached to `window` and cannot be removed.
+
+```javascript
+// src/input.js:124
+rendererDomElement.addEventListener('pointerup', (event) => { ... });
+
+// src/main.js:464
+window.addEventListener('resize', () => { ... });
+```
