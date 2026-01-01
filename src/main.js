@@ -542,6 +542,9 @@ function animate() {
 
         // Bolt Support: Update Instances
         if (instanceRegistry) {
+            // FIX: Ensure world matrices are up-to-date before updating instances.
+            // This prevents "One Frame Lag" where instances render at the previous frame's location.
+            scene.updateMatrixWorld();
             instanceRegistry.update();
         }
 
