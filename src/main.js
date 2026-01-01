@@ -156,6 +156,7 @@ export async function init() {
 
     // State to track if assets have finished loading at least once
     let assetsLoaded = false;
+    let initFailed = false;
 
     manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
         if (loadingBar) {
@@ -165,10 +166,15 @@ export async function init() {
         }
     };
     manager.onLoad = function ( ) {
+        if (initFailed) return; // Prevent hiding if an error occurred
+
         assetsLoaded = true;
         if (loadingScreen) {
             loadingScreen.style.opacity = '0';
             setTimeout(() => {
+                // Double-check just in case error happened during timeout
+                if (initFailed) return;
+
                 loadingScreen.style.display = 'none';
                 loadingScreen.setAttribute('aria-hidden', 'true'); // A11y
 
@@ -218,6 +224,10 @@ export async function init() {
         const configUrl = urlParams.get('config') || 'system.json';
 
         const response = await fetch(configUrl);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         planetData = await response.json();
 
         planetData.forEach(planetConfig => {
@@ -275,6 +285,8 @@ export async function init() {
 
     } catch (error) {
         console.error("Failed to load system data:", error);
+        initFailed = true; // Signal to manager not to hide screen
+        throw error; // Re-throw to global handler
     }
 
     // 6. Setup Controls & Input
@@ -695,6 +707,10 @@ if (!window.__SKIP_INIT__) {
         // Fallback UI
         const loading = document.getElementById('loading-screen');
         if (loading) {
+            // Ensure visibility overrides any fade-out
+            loading.style.display = 'block';
+            loading.style.opacity = '1';
+            loading.setAttribute('aria-hidden', 'false');
             loading.innerHTML = `<div style="color:red; text-align:center; padding-top:20%">
                 <h1>Failed to Start</h1>
                 <p>An error occurred while initializing the application.</p>
