@@ -168,12 +168,25 @@ export class CommandPalette {
         });
 
         // Global Toggle
-        window.addEventListener('keydown', (e) => {
+        this._globalKeyDownHandler = (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
                 this.toggle();
             }
-        });
+        };
+        window.addEventListener('keydown', this._globalKeyDownHandler);
+    }
+
+    /**
+     * Destroys the command palette and removes event listeners.
+     */
+    destroy() {
+        if (this._globalKeyDownHandler) {
+            window.removeEventListener('keydown', this._globalKeyDownHandler);
+        }
+        if (this.overlay && this.overlay.parentNode) {
+            this.overlay.parentNode.removeChild(this.overlay);
+        }
     }
 
     /**
