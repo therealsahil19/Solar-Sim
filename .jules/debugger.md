@@ -40,3 +40,19 @@ Decoupled the scene graph hierarchy in `createSystem` by introducing a `visualGr
 1. `bodyGroup` (Position Container): Remains unscaled (scale 1,1,1). Used for attaching children (moons) and Labels.
 2. `visualGroup` (Visual Container): Child of `bodyGroup`. Scaled to `size`. Holds the planet mesh and rings.
 3. This ensures satellites inherit the parent's position but are unaffected by its visual scale.
+
+## 2026-02-04 - [Stale Matrix Lag on Instanced Meshes]
+
+**Symptom:**
+Visual elements attached to planets (like Text Labels and Orbit Trails) appeared to "drift" or detach from the planet body during movement. The planet mesh itself rendered one frame *behind* its actual logical position.
+
+**Root Cause:**
+In `src/main.js`, the animation loop performed updates in this order:
+1.  Update Rotations (modifying `rotation` of pivots).
+2.  `instanceRegistry.update()` (copying `matrixWorld` of pivots to `InstancedMesh`).
+3.  `renderer.render()` (updating scene graph matrices).
+
+Since `instanceRegistry.update()` read the `matrixWorld` *before* the scene graph update (which happens in render), it copied the *previous* frame's matrix.
+
+**Fix Pattern:**
+Inserted `scene.updateMatrixWorld()` in the animation loop immediately before `instanceRegistry.update()`. This ensures the scene graph matrices reflect the latest rotations before they are copied to the instancing buffers.

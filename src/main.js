@@ -542,6 +542,9 @@ function animate() {
 
         // Bolt Support: Update Instances
         if (instanceRegistry) {
+            // FIX: Ensure scene graph matrices are up-to-date before copying to InstancedMesh
+            // This prevents "one-frame lag" where instances render with the previous frame's transform.
+            scene.updateMatrixWorld();
             instanceRegistry.update();
         }
 
