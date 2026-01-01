@@ -190,4 +190,14 @@ export class TrailManager {
         this.trails = [];
         // Geometry remains allocated
     }
+
+    /**
+     * Disposes of the trail system and its resources.
+     */
+    dispose() {
+        this.scene.remove(this.mesh);
+        this.geometry.dispose();
+        this.material.dispose();
+        this.trails = [];
+    }
 }

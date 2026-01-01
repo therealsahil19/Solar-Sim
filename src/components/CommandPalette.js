@@ -249,8 +249,8 @@ export class CommandPalette {
 
         // Sort: Exact matches first
         this.filteredItems.sort((a, b) => {
-            const aName = a.name.toLowerCase();
-            const bName = b.name.toLowerCase();
+            const aName = (a.name || '').toLowerCase();
+            const bName = (b.name || '').toLowerCase();
             const aStarts = aName.startsWith(q);
             const bStarts = bName.startsWith(q);
             if (aStarts && !bStarts) return -1;

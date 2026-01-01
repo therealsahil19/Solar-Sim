@@ -735,14 +735,15 @@ function animate() {
 }
 
 // Handle Resize
-window.addEventListener('resize', () => {
+const onWindowResize = () => {
     if (camera && renderer && labelRenderer) {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
         labelRenderer.setSize(window.innerWidth, window.innerHeight);
     }
-});
+};
+window.addEventListener('resize', onWindowResize);
 
 // Kickoff
 if (!window.__SKIP_INIT__) {

@@ -2,7 +2,7 @@
 
 | Screenshot | Viewport | Severity | Issue Type | Description |
 |------------|----------|----------|------------|-------------|
-| `audit_mobile.png` | Mobile   | 🔴 HIGH  | Overlap    | Footer credits text overlaps with the bottom dock container, making it unreadable and visually broken. |
+| `audit_mobile.png` | Mobile   | 🔴 HIGH  | Overlap    | [FIXED] Footer credits text overlaps with the bottom dock container. (Hidden on mobile) |
 | `audit_mobile.png` | Mobile   | 🟡 MED   | Overlap    | Planet labels (Mercury, Venus, Earth) overlap significantly, becoming illegible. |
 | `audit_tablet.png` | Tablet   | 🟡 MED   | Layout     | Bottom dock wrapping to two rows consumes excessive vertical space (~20% of height). |
 | `audit_desktop.png`| Desktop  | 🟢 LOW   | Spacing    | Inner planet labels overlap slightly even on wide screens. |
