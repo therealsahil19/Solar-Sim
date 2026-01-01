@@ -55,7 +55,7 @@ export class TrailManager {
 
         scene.add(this.mesh);
 
-        this.trails = []; // { target: Object3D, color: Color, history: Array<Vector3>, index: number }
+        this.trails = []; // { target: Object3D, color: Color, history: Array<Vector3>, head: number, index: number }
         this.nextTrailIndex = 0;
     }
 
@@ -74,24 +74,26 @@ export class TrailManager {
         const col = new THREE.Color(color);
 
         // Initialize history with target's current position
-        const history = [];
+        // Pre-allocate Vector3 objects to avoid garbage collection
+        const history = new Array(this.pointsPerTrail);
         const startPos = new THREE.Vector3().setFromMatrixPosition(target.matrixWorld);
 
         for (let i = 0; i < this.pointsPerTrail; i++) {
-            history.push(startPos.clone());
+            history[i] = startPos.clone();
         }
 
         this.trails.push({
             target,
             baseColor: col,
             history,
+            head: 0, // Points to the most recent element index
             index
         });
 
         // Initialize colors for this trail segment
         // We can fade opacity by modifying color (darker) or alpha if using shader.
         // With LineBasicMaterial vertexColors, we can simulate fade with black/darker color.
-        this.updateTrailGeometry(index, history, col);
+        this.updateTrailGeometry(index, history, 0, col);
     }
 
     /**
@@ -99,15 +101,21 @@ export class TrailManager {
      */
     update() {
         // Update history for all trails
+        // Re-use a single temp vector for reading world position to avoid GC,
+        // but we copy into the history buffer's Vector3s.
         const tempVec = new THREE.Vector3();
 
         this.trails.forEach(trail => {
-            // Shift history
-            trail.history.pop();
-            tempVec.setFromMatrixPosition(trail.target.matrixWorld);
-            trail.history.unshift(tempVec.clone()); // Need clone? Yes.
+            // Update Ring Buffer
+            // 1. Increment head (cyclic)
+            trail.head = (trail.head + 1) % this.pointsPerTrail;
 
-            this.updateTrailGeometry(trail.index, trail.history, trail.baseColor);
+            // 2. Overwrite the Vector3 at the new head position with current world position
+            // Note: We don't create a new Vector3, we copy values into the existing one.
+            tempVec.setFromMatrixPosition(trail.target.matrixWorld);
+            trail.history[trail.head].copy(tempVec);
+
+            this.updateTrailGeometry(trail.index, trail.history, trail.head, trail.baseColor);
         });
 
         this.geometry.attributes.position.needsUpdate = true;
@@ -117,18 +125,35 @@ export class TrailManager {
     /**
      * Updates the geometry buffers for a specific trail.
      * @param {number} trailIndex - Index of the trail in the system.
-     * @param {Array<THREE.Vector3>} history - Array of positions.
+     * @param {Array<THREE.Vector3>} history - Array of positions (ring buffer).
+     * @param {number} head - Index of the newest element in history.
      * @param {THREE.Color} color - Base color of the trail.
      */
-    updateTrailGeometry(trailIndex, history, color) {
+    updateTrailGeometry(trailIndex, history, head, color) {
         // Map trail to buffer position
         // Trail i occupies vertices: i * segments * 2 to (i+1) * segments * 2
 
         const baseVertex = trailIndex * this.segmentsPerTrail * 2;
+        const historyLen = this.pointsPerTrail;
 
         for (let i = 0; i < this.segmentsPerTrail; i++) {
-            const p1 = history[i];
-            const p2 = history[i+1];
+            // Logic:
+            // p1 is i steps back from head
+            // p2 is i+1 steps back from head
+
+            // Wait, if i=0.
+            // p1 = newest (head)
+            // p2 = second newest (head - 1)
+            // This forms the first segment connected to the object.
+
+            // Ring buffer index mapping:
+            // index(k) = (head - k + len) % len
+
+            let i1 = (head - i + historyLen) % historyLen;
+            let i2 = (head - (i + 1) + historyLen) % historyLen;
+
+            const p1 = history[i1];
+            const p2 = history[i2];
 
             // Fade factor
             const fade1 = 1.0 - (i / this.segmentsPerTrail);
