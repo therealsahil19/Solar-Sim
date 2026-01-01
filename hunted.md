@@ -61,3 +61,50 @@ While this is a Single Page Application (SPA) where the "page" lifespan matches 
 // src/components/CommandPalette.js:160
 window.addEventListener('keydown', (e) => { ... });
 ```
+| 006| [OPEN] | 🟡 MED   | `src/trails.js:98` | O(N) Array shifting in high-frequency loop |
+| 007| [OPEN] | 🟢 LOW   | `src/debris.js:68` | Memory Leak: Undisposed Custom Materials |
+| 008| [OPEN] | 🟡 MED   | `download_textures.py:27` | Silent Failure on Asset Download |
+| 009| [OPEN] | 🟢 LOW   | `src/instancing.js:33` | Persistent State Pollution in InstanceRegistry |
+
+### 006 - Performance: Fake Cyclic Buffer
+The `TrailManager` documentation claims to use a "cyclic buffer," but the implementation uses `Array.prototype.unshift()` and `pop()` inside the `update()` loop.
+- **Impact:** `unshift` shifts every element in the array ((N)$). With 5000 trails and 100 points, this results in ~500,000 array operations *per frame*, significantly degrading CPU performance.
+- **Fix Pattern:** Use a true cyclic buffer with a start index pointer (modulo arithmetic) to avoid shifting data.
+
+```javascript
+// src/trails.js:98
+trail.history.pop();
+// ...
+trail.history.unshift(tempVec.clone()); // O(N) operation
+```
+
+### 007 - Memory Leak: Undisposed Custom Materials
+The `createAsteroidBelt` function creates `MeshDepthMaterial` and `MeshDistanceMaterial` for shadow rendering and attaches them to the mesh.
+- **Impact:** If the asteroid belt mesh is removed from the scene, these materials are not automatically disposed, leading to a GPU memory leak over time if the scene is reset repeatedly.
+
+```javascript
+// src/debris.js:68
+mesh.customDepthMaterial = customDepthMaterial;
+mesh.customDistanceMaterial = customDistanceMaterial;
+```
+
+### 008 - Silent Failure: Asset Download
+The `download_textures.py` script catches all exceptions during download, prints an error message, and continues execution. The script exits with status code 0 even if all downloads fail.
+- **Impact:** CI/CD pipelines or deployment scripts will assume success. The application will launch but fail to load assets (404 errors), causing a broken user experience.
+- **Fix Pattern:** Accumulate errors and exit with non-zero status code if any download fails.
+
+```python
+# download_textures.py:27
+except Exception as e:
+    print(f"Failed to download {filename}: {e}")
+    # No exit(1) or error tracking
+```
+
+### 009 - State Pollution: Instance Registry
+The `InstanceRegistry.addInstance` method modifies the passed `pivot` object's `userData` to store internal state (`isInstance`, `instanceId`).
+- **Impact:** This mutation is permanent. If the `InstanceRegistry` is destroyed but the `pivot` objects are reused (e.g., in a scene reset where objects are cached), they carry "zombie" state that might conflict with future registrations.
+
+```javascript
+// src/instancing.js:33
+pivot.userData = { ...userData, isInstance: true, instanceId: index, instanceKey: key };
+```
