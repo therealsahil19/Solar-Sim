@@ -83,7 +83,9 @@
 
             <!-- Time Controls -->
             <div id="time-controls" class="glass-panel dock-group">
-                <button id="btn-pause" title="Pause/Play (Space)" aria-label="Pause Simulation">⏸</button>
+                <button id="btn-pause" title="Pause/Play (Space)" aria-label="Pause Simulation">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
                 <div style="display: flex; flex-direction: column; width: 100px;">
                     <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 2px;">
                         <label for="slider-speed">Speed</label>
@@ -97,19 +99,19 @@
             <!-- View Controls -->
             <div id="view-controls" class="glass-panel dock-group" role="toolbar" aria-label="Camera and View Controls">
                 <button id="btn-camera" class="icon-btn" aria-label="Toggle Camera View" aria-pressed="false" title="Toggle Ship View (C)" aria-keyshortcuts="c">
-                    🎥
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
                 </button>
                 <button id="btn-reset" class="icon-btn" aria-label="Reset View" title="Reset View (Esc)" aria-keyshortcuts="Escape">
-                    ↺
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
                 </button>
                 <button id="btn-texture" class="icon-btn texture-toggle" aria-label="Toggle Textures" aria-pressed="true" title="Toggle Textures (T)" aria-keyshortcuts="t">
                     HD
                 </button>
                 <button id="btn-labels" class="icon-btn" aria-label="Toggle Labels" aria-pressed="true" title="Toggle Labels (L)" aria-keyshortcuts="l">
-                    🏷️
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/></svg>
                 </button>
                 <button id="btn-orbits" class="icon-btn" aria-label="Toggle Orbits" aria-pressed="true" title="Toggle Orbits (O)" aria-keyshortcuts="o">
-                    ⚪
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
             </div>
 

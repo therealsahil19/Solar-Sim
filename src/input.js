@@ -321,6 +321,10 @@ export function setupInteraction(context, callbacks) {
     if (btnReset) btnReset.addEventListener('click', callbacks.onResetCamera);
 
     const btnPause = document.getElementById('btn-pause');
+    // NOTE: SVG Icon content is handled in main.js togglePause via direct innerHTML replacement or specific icon toggle.
+    // However, main.js implementation of togglePause replaces textContent with "▶" or "⏸".
+    // We should fix that to toggle SVG or just leave it if we want text fallback.
+    // The previous main.js used textContent. We should probably update main.js to handle SVG toggling.
     if (btnPause) btnPause.addEventListener('click', () => callbacks.onTogglePause(btnPause));
 
     const btnLabels = document.getElementById('btn-labels');

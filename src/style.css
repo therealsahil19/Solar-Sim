@@ -795,19 +795,21 @@ dialog::backdrop {
 .planet-label {
     color: var(--color-text-primary);
     font-family: var(--font-sans);
-    font-size: var(--text-xs);
+    font-size: 10px; /* Reduced from text-xs (12px) to mitigate overlap */
     font-weight: 600;
     text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    padding: 4px 10px;
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(0, 0, 0, 0.5); /* Slightly more transparent */
+    backdrop-filter: blur(2px);
+    padding: 2px 6px; /* Reduced padding */
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.15);
     white-space: nowrap;
-    margin-top: -40px;
+    margin-top: -30px; /* Adjusted offset */
     pointer-events: none;
     user-select: none;
     transition: opacity 0.2s;
+    /* Attempt to reduce z-fighting visually */
+    mix-blend-mode: screen;
 }
 
 /* --- Footer --- */
@@ -856,13 +858,27 @@ dialog::backdrop {
         align-items: center;
         width: 100%;
         padding-bottom: var(--space-sm);
+        /* Mobile: reduce gap */
+        gap: var(--space-sm);
     }
 
     .dock-group {
         width: 100%;
         justify-content: space-around;
         height: auto;
-        padding: var(--space-md);
+        padding: var(--space-xs) var(--space-sm); /* Reduce padding */
+    }
+
+    /* Mobile: Compact icons to fit */
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        font-size: var(--text-base);
+    }
+
+    .icon-btn svg {
+        width: 18px;
+        height: 18px;
     }
 
     #nav-sidebar {
@@ -870,6 +886,14 @@ dialog::backdrop {
         top: 0; left: 0; bottom: 0;
         z-index: 999;
         transform: translateX(-100%);
+    }
+}
+
+/* Tablet / Narrow Desktop */
+@media (min-width: 769px) and (max-width: 1024px) {
+    #bottom-dock {
+        flex-wrap: wrap; /* Allow wrapping */
+        justify-content: center;
     }
 }
 
