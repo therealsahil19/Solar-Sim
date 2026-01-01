@@ -136,6 +136,14 @@ export function createAsteroidBelt(config = {}) {
     // Store uniform ref
     mesh.userData.timeUniform = timeUniform;
 
+    // Add a dispose method to clean up materials and geometry
+    mesh.dispose = () => {
+        mesh.geometry.dispose();
+        mesh.material.dispose();
+        if (mesh.customDepthMaterial) mesh.customDepthMaterial.dispose();
+        if (mesh.customDistanceMaterial) mesh.customDistanceMaterial.dispose();
+    };
+
     // Prevent frustum culling
     mesh.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), maxRadius + 5);
     mesh.frustumCulled = false;

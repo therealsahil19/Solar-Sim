@@ -49,8 +49,20 @@ export class InstanceRegistry {
 
         // We attach the instance info to the pivot so we can look it up if needed (e.g. for selection)
         // But primarily, the pivot is just a transform container.
-        // We'll store the userData on the pivot so raycasting (if we optimize that later) or UI works.
-        pivot.userData = { ...userData, isInstance: true, instanceId: index, instanceKey: key };
+
+        // FIX: Avoid overwriting userData entirely. Merge safely or use a specific property?
+        // Current usage suggests pivot.userData IS the place where app stores data.
+        // But simply assigning `{ ...userData, isInstance: true }` wipes out anything else on pivot.userData that wasn't passed in `userData`.
+        // AND it leaves `isInstance` there forever.
+
+        // We will merge into existing userData, but we should track what we added if we want to clean up.
+        // For now, the fix is to MERGE, not replace.
+
+        Object.assign(pivot.userData, userData, {
+            isInstance: true,
+            instanceId: index,
+            instanceKey: key
+        });
 
         group.instances.push({ pivot, index });
         this.dirty = true;
@@ -150,5 +162,24 @@ export class InstanceRegistry {
             }
         }
         return null;
+    }
+
+    /**
+     * Disposes the registry and cleans up pivots.
+     */
+    dispose() {
+        this.groups.forEach((group) => {
+             if (group.mesh) {
+                this.scene.remove(group.mesh);
+                group.mesh.dispose();
+            }
+            // Cleanup pivot userData pollution
+            group.instances.forEach(({ pivot }) => {
+                delete pivot.userData.isInstance;
+                delete pivot.userData.instanceId;
+                delete pivot.userData.instanceKey;
+            });
+        });
+        this.groups.clear();
     }
 }
