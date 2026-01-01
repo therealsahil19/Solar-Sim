@@ -259,13 +259,34 @@ export function createSystem(data, textureLoader, useTextures) {
     // Bolt Optimization: Use cached material
     const solidMaterial = getSolidMaterial(data.color);
 
+    // Bolt Optimization: Lazy Loading Logic
     let texturedMaterial;
+
+    // Logic: If distance > 60 (Outer Planets), postpone texture load.
+    // This dramatically reduces initial network contention for the Sun/Earth/Mars.
+    // We attach the texture path to userData for the main loop to pick up later.
+    const isLazy = data.distance > 60;
+
     if (data.texture) {
-        const texture = textureLoader.load(data.texture);
-        texturedMaterial = new THREE.MeshStandardMaterial({
-            map: texture,
-            color: 0xffffff
-        });
+        if (isLazy && textureLoader.lazyLoadQueue) {
+             // Defer
+             texturedMaterial = new THREE.MeshStandardMaterial({
+                color: data.color, // Use color as placeholder
+                map: null
+             });
+             // Mark for lazy load
+             textureLoader.lazyLoadQueue.push({
+                 material: texturedMaterial,
+                 url: data.texture
+             });
+        } else {
+            // Immediate
+            const texture = textureLoader.load(data.texture);
+            texturedMaterial = new THREE.MeshStandardMaterial({
+                map: texture,
+                color: 0xffffff
+            });
+        }
     } else {
         texturedMaterial = solidMaterial;
     }
