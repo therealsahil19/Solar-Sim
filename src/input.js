@@ -263,7 +263,7 @@ export function setupInteraction(context, callbacks) {
     }
 
     // Keyboard Listener
-    window.addEventListener('keydown', (e) => {
+    const onKeyDown = (e) => {
         const key = e.key.toLowerCase();
 
         // Ignore if typing in an input (Command Palette handles its own, this is for other inputs)
@@ -294,7 +294,8 @@ export function setupInteraction(context, callbacks) {
                 callbacks.onFocusPlanet(num - 1); // 0-indexed
             }
         }
-    });
+    };
+    window.addEventListener('keydown', onKeyDown);
 
     // UI Buttons Binding
     const btnCamera = document.getElementById('btn-camera');
@@ -352,7 +353,17 @@ export function setupInteraction(context, callbacks) {
             if (itemData.type === 'Star') icon = '☀️';
             if (itemData.type === 'Moon') icon = '🌑';
 
-            btn.innerHTML = `<span>${icon} ${itemData.name}</span> <span class="nav-type">${itemData.type}</span>`;
+            // Secure DOM creation
+            const spanName = document.createElement('span');
+            spanName.textContent = `${icon} ${itemData.name}`;
+
+            const spanType = document.createElement('span');
+            spanType.className = 'nav-type';
+            spanType.textContent = itemData.type;
+
+            btn.appendChild(spanName);
+            btn.appendChild(document.createTextNode(' ')); // Space
+            btn.appendChild(spanType);
 
             // Click Handler
             btn.addEventListener('click', () => {
@@ -472,6 +483,9 @@ export function setupInteraction(context, callbacks) {
     return {
         updateSelectionUI,
         openModal,
-        closeModal
+        closeModal,
+        dispose: () => {
+             window.removeEventListener('keydown', onKeyDown);
+        }
     };
 }

@@ -690,5 +690,16 @@ window.addEventListener('resize', () => {
 
 // Kickoff
 if (!window.__SKIP_INIT__) {
-    init();
+    init().catch(err => {
+        console.error("Initialization failed:", err);
+        // Fallback UI
+        const loading = document.getElementById('loading-screen');
+        if (loading) {
+            loading.innerHTML = `<div style="color:red; text-align:center; padding-top:20%">
+                <h1>Failed to Start</h1>
+                <p>An error occurred while initializing the application.</p>
+                <p>${err.message}</p>
+            </div>`;
+        }
+    });
 }
