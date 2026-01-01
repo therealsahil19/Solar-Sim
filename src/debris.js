@@ -47,10 +47,12 @@ export function createAsteroidBelt(config = {}) {
             uniform float time;
         ` + shader.vertexShader;
 
-        // DEBUGGER FIX:
-        // We inject logic into <project_vertex> to apply orbit offset
-        // AFTER the instanceMatrix (rotation/scale) is applied.
-        // This ensures the orbit is always flat on World XZ, regardless of asteroid rotation.
+        // Technical Note: Coordinate Space Transformation
+        // We inject the orbital logic into the <project_vertex> chunk.
+        // Critically, we apply the orbit offset AFTER the instanceMatrix (local rotation/scale)
+        // but BEFORE the modelViewMatrix. This ensures the orbital path remains flat
+        // on the World XZ plane, effectively decoupling the orbit position from the
+        // individual asteroid's tumbling rotation.
 
         const projectVertexChunk = `
             vec4 mvPosition = vec4( transformed, 1.0 );

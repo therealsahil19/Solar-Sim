@@ -50,14 +50,10 @@ export class InstanceRegistry {
         // We attach the instance info to the pivot so we can look it up if needed (e.g. for selection)
         // But primarily, the pivot is just a transform container.
 
-        // FIX: Avoid overwriting userData entirely. Merge safely or use a specific property?
-        // Current usage suggests pivot.userData IS the place where app stores data.
-        // But simply assigning `{ ...userData, isInstance: true }` wipes out anything else on pivot.userData that wasn't passed in `userData`.
-        // AND it leaves `isInstance` there forever.
-
-        // We will merge into existing userData, but we should track what we added if we want to clean up.
-        // For now, the fix is to MERGE, not replace.
-
+        // Merge metadata into the pivot's existing userData.
+        // We use Object.assign to preserve any existing properties on the pivot object
+        // while injecting the instance-specific data (isInstance, instanceId).
+        // This allows the app to treat the pivot as the "source of truth" for this object.
         Object.assign(pivot.userData, userData, {
             isInstance: true,
             instanceId: index,
