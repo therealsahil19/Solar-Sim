@@ -275,11 +275,21 @@ export class CommandPalette {
             if (item.type === 'Moon') icon = '🌑';
             if (item.type === 'Star') icon = '☀️';
 
-            li.innerHTML = `
-                <span class="cmd-item-icon">${icon}</span>
-                <span class="cmd-item-text">${item.name}</span>
-                <span class="cmd-item-meta">${item.type}</span>
-            `;
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'cmd-item-icon';
+            iconSpan.textContent = icon;
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'cmd-item-text';
+            textSpan.textContent = item.name;
+
+            const metaSpan = document.createElement('span');
+            metaSpan.className = 'cmd-item-meta';
+            metaSpan.textContent = item.type;
+
+            li.appendChild(iconSpan);
+            li.appendChild(textSpan);
+            li.appendChild(metaSpan);
 
             li.addEventListener('click', () => {
                 this.selectedIndex = index;
