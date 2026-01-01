@@ -171,7 +171,16 @@ export class InstanceRegistry {
         this.groups.forEach((group) => {
              if (group.mesh) {
                 this.scene.remove(group.mesh);
-                group.mesh.dispose();
+                // InstancedMesh does not have a dispose() method itself,
+                // we must dispose its resources manually.
+                if (group.mesh.geometry) group.mesh.geometry.dispose();
+                if (group.mesh.material) {
+                    if (Array.isArray(group.mesh.material)) {
+                        group.mesh.material.forEach(m => m.dispose());
+                    } else {
+                        group.mesh.material.dispose();
+                    }
+                }
             }
             // Cleanup pivot userData pollution
             group.instances.forEach(({ pivot }) => {

@@ -260,6 +260,7 @@ export function setupInteraction(context, callbacks) {
     const themeManager = new ThemeManager();
 
     // --- Initialize Command Palette ---
+    let commandPalette = null;
     // We pass an augmented callbacks object
     if (context.planetData) {
         const paletteCallbacks = {
@@ -277,7 +278,7 @@ export function setupInteraction(context, callbacks) {
                 }
             }
         };
-        new CommandPalette(context.planetData, paletteCallbacks);
+        commandPalette = new CommandPalette(context.planetData, paletteCallbacks);
     }
 
     // Keyboard Listener
@@ -556,6 +557,11 @@ export function setupInteraction(context, callbacks) {
              if (btnTexture) btnTexture.removeEventListener('click', onToggleTextureHandler);
              if (btnPause) btnPause.removeEventListener('click', onPauseHandler);
              if (sliderSpeed) sliderSpeed.removeEventListener('input', onSpeedHandler);
+
+             // 4. Command Palette
+             if (commandPalette && commandPalette.destroy) {
+                commandPalette.destroy();
+             }
         }
     };
 }
