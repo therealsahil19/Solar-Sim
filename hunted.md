@@ -14,6 +14,11 @@
 | 010| [FIXED] | 🟡 MED   | `src/input.js:145` | Logic Flaw: Cross-Object Double Click Detection |
 | 011| [FIXED] | 🟡 MED   | `src/managers/ThemeManager.js:20` | Crash Risk: Unsafe LocalStorage Access |
 | 012| [FIXED] | 🟢 LOW   | `src/input.js:124` | Memory Leak: Undisposed Event Listeners |
+| 013| [OPEN] | 🔴 HIGH  | `src/instancing.js:127` | Crash Risk: `InstancedMesh` has no `dispose()` method |
+| 014| [OPEN] | 🔴 HIGH  | `src/input.js:367` | Memory Leak: Orphaned `CommandPalette` with global listener |
+| 015| [OPEN] | 🟡 MED   | `src/trails.js:14` | GPU Memory Leak: `TrailManager` lacks `dispose()` |
+| 016| [OPEN] | 🟡 MED   | `src/components/CommandPalette.js:172` | Logic Bomb: Crash on missing `name` property |
+| 017| [OPEN] | 🟢 LOW   | `src/main.js:492` | Regression: Anonymous Window Resize Listener |
 
 ## Details
 
@@ -116,5 +121,40 @@ Several event listeners are attached to the `window` or DOM elements but are not
 rendererDomElement.addEventListener('pointerup', (event) => { ... });
 
 // src/main.js:464
+window.addEventListener('resize', () => { ... });
+```
+
+### 013 - Crash Risk: InstancedMesh Disposal
+The `InstanceRegistry.dispose` method attempts to call `.dispose()` on `group.mesh`. However, `group.mesh` is an instance of `THREE.InstancedMesh` (inheriting from `THREE.Mesh`), which does **not** have a `dispose()` method. This will throw a `TypeError` when the registry is disposed (e.g., on scene reset).
+
+```javascript
+// src/instancing.js:127
+group.mesh.dispose(); // TypeError: group.mesh.dispose is not a function
+```
+
+### 014 - Memory Leak: Orphaned Command Palette
+In `src/input.js`, a new `CommandPalette` instance is created, but the reference is not stored or returned. The `CommandPalette` constructor attaches a global `keydown` listener to `window`. Because the instance is lost, its `destroy()` method is never called by `setupInteraction`'s `dispose` function, causing the event listener to leak permanently.
+
+```javascript
+// src/input.js:367
+new CommandPalette(context.planetData, paletteCallbacks); // Reference lost
+```
+
+### 015 - GPU Memory Leak: TrailManager
+The `TrailManager` class allocates `THREE.BufferGeometry` and `THREE.Material` (which consume VRAM), but the class does not provide a `dispose()` method. When the application is reset or re-initialized, the old `TrailManager` is garbage collected by JS, but the WebGL resources remain allocated on the GPU.
+
+### 016 - Logic Bomb: Command Palette Filter
+The `filter` method in `CommandPalette` assumes that all items in the `items` array have a `name` property. If `system.json` (or a custom config) contains a malformed entry or an entry without a name, accessing `a.name.toLowerCase()` will throw a runtime error, crashing the UI.
+
+```javascript
+// src/components/CommandPalette.js:172
+const aName = a.name.toLowerCase(); // Unsafe access
+```
+
+### 017 - Regression: Anonymous Resize Listener
+Despite Bug 012 being marked as fixed, `src/main.js` still contains an anonymous event listener attached to `window` for handling resize events. Because the function is anonymous, it cannot be removed, leading to a memory leak if `main.js` is ever re-executed.
+
+```javascript
+// src/main.js:492
 window.addEventListener('resize', () => { ... });
 ```
