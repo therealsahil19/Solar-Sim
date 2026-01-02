@@ -77,8 +77,10 @@ export class InfoPanel {
     update(mesh) {
         if (!mesh) return;
 
+        // Bug 039 Fix: Add null check for userData to prevent TypeError
+        const d = mesh.userData || {};
+
         this.currentMesh = mesh;
-        const d = mesh.userData;
 
         // Safe text updates
         if (this.dom.name) this.dom.name.textContent = d.name || 'Unknown';

@@ -37,15 +37,15 @@
 | 033| [FIXED] | 🟡 MED   | `src/trails.js:210` | Logic Flaw: `reset()` fails to clear visual artifacts |
 | 034| [FIXED] | 🟢 LOW   | `src/main.js:277` | Zombie Code: Lazy Loading executes after Init Failure |
 | 035| [FIXED] | 🟢 LOW   | `src/main.js:438` | Physics Instability: Unclamped Delta Time |
-| 036| [OPEN] | 🟡 MED   | `src/trails.js:130` | Performance: GC Allocation in Update Loop |
-| 037| [OPEN] | 🟢 LOW   | `src/debris.js:136` | Zombie Code: Unused `staticPhysics` Parameter |
-| 038| [OPEN] | 🟢 LOW   | `src/components/Modal.js:82` | Memory Leak: `dispose()` Does Not Remove Listeners |
-| 039| [OPEN] | 🟢 LOW   | `src/components/InfoPanel.js:81` | Crash Risk: Missing null check for `userData` |
-| 040| [OPEN] | 🟡 MED   | `src/instancing.js:110` | Performance: Object3D Allocation in Update Loop |
-| 041| [OPEN] | 🟢 LOW   | `src/components/NavigationSidebar.js:42` | Silent Failure: Missing null guard for DOM elements |
-| 042| [OPEN] | 🟢 LOW   | `src/components/CommandPalette.js:249` | TypeError Risk: Accessing `.toLowerCase()` on possibly undefined |
-| 043| [OPEN] | 🟢 LOW   | `src/physics.js:116-126` | Magic Numbers: Hardcoded scale constants without documentation |
-| 044| [OPEN] | 🟢 LOW   | `src/procedural.js:337` | Zombie Code: Unused `trail` variable |
+| 036| [FIXED] | 🟡 MED   | `src/trails.js:130` | Performance: GC Allocation in Update Loop |
+| 037| [FIXED] | 🟢 LOW   | `src/debris.js:136` | Zombie Code: Unused `staticPhysics` Parameter |
+| 038| [FIXED] | 🟢 LOW   | `src/components/Modal.js:82` | Memory Leak: `dispose()` Does Not Remove Listeners |
+| 039| [FIXED] | 🟢 LOW   | `src/components/InfoPanel.js:81` | Crash Risk: Missing null check for `userData` |
+| 040| [FIXED] | 🟡 MED   | `src/instancing.js:110` | Performance: Object3D Allocation in Update Loop |
+| 041| [FIXED] | 🟢 LOW   | `src/components/NavigationSidebar.js:42` | Silent Failure: Missing null guard for DOM elements |
+| 042| [FIXED] | 🟢 LOW   | `src/components/CommandPalette.js:249` | TypeError Risk: Accessing `.toLowerCase()` on possibly undefined |
+| 043| [FIXED] | 🟢 LOW   | `src/physics.js:116-126` | Magic Numbers: Hardcoded scale constants without documentation |
+| 044| [FIXED] | 🟢 LOW   | `src/procedural.js:337` | Zombie Code: Unused `trail` variable |
 
 ## Details
 
@@ -269,16 +269,29 @@ const LIMIT_2 = 50.0;      // End of Kuiper Belt Zone
 **Severity Note:** This is marked as LOW because the values are stable for the solar system simulation. However, it would become problematic if the system needed to support different scales or configurations.
 
 ### 044 - Zombie Code: Unused `trail` Variable
-The `createSystem` function declares `let trail = null;` but never assigns or uses it. The trailing collection logic references a different pattern (registration to `textureLoader.trailManager`).
+[FIXED] Removed the unused `let trail = null;` declaration and simplified the `trails` array assignment in `src/procedural.js`.
 
-```javascript
-// src/procedural.js:337
-let trail = null;
-if (textureLoader.trailManager && ...) {
-    textureLoader.trailManager.register(pivot, data.visual.color);
-    // ❌ `trail` is never assigned here
-}
-// ...
-const trails = trail ? [trail] : []; // Always evaluates to []
-```
+### 036 - Performance: GC Allocation in Update Loop
+[FIXED] Hoisted `tempVec` to a module-level constant `_tempVec` in `src/trails.js` to eliminate per-frame garbage collection pressure.
+
+### 037 - Zombie Code: Unused `staticPhysics` Parameter
+[FIXED] Removed the unused `staticPhysics` parameter from the destructured config object in `src/debris.js`.
+
+### 038 - Memory Leak: Modal `dispose()` No-Op
+[FIXED] Implemented proper `dispose()` method in `src/components/Modal.js` that stores named handler references and removes them on cleanup.
+
+### 039 - Crash Risk: Missing null check for `userData`
+[FIXED] Added null guard for `mesh.userData` in `src/components/InfoPanel.js` using fallback to empty object.
+
+### 040 - Performance: Object3D Allocation in Update Loop
+[FIXED] Removed the unused `new THREE.Object3D()` allocation from `src/instancing.js` update loop (was never used).
+
+### 041 - Silent Failure: Missing null guard for DOM elements
+[FIXED] Added null validation for `this.dom.list` in `src/components/NavigationSidebar.js` constructor with console warning.
+
+### 042 - TypeError Risk: CommandPalette Filter
+[FIXED] Added optional chaining for `item.name` and `item.type` in `src/components/CommandPalette.js` filter method.
+
+### 043 - Magic Numbers: Hardcoded Scale Constants
+[FIXED] Extracted all magic numbers into a documented `SCALE_CONFIG` object in `src/physics.js` with JSDoc comments explaining each value.
 

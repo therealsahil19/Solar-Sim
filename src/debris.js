@@ -132,8 +132,8 @@ function createDebrisSystem(config) {
         count = 1000,
         distribution,
         isSpherical = false,
-        material: matConfig,
-        staticPhysics = false // Kept for API compatibility, but effectively ignored as everything is GPU now
+        material: matConfig
+        // Bug 037 Fix: Removed unused `staticPhysics` parameter (was dead code)
     } = config;
 
     // Geometry

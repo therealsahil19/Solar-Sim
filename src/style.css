@@ -778,6 +778,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 }
 
 /* --- Bottom Dock --- */
+/* VIS-05 Fix: Added max-width to prevent excessive spreading on wide screens */
 #bottom-dock {
     grid-area: footer;
     display: flex;
@@ -786,8 +787,11 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     gap: var(--space-md);
     pointer-events: none;
     padding-bottom: var(--space-lg);
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
+/* VIS-03 Fix: Added explicit align-items: center for vertical button alignment */
 .dock-group {
     padding: var(--space-xs) var(--space-xl);
     display: flex;
@@ -801,6 +805,11 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     pointer-events: auto;
     transition: transform var(--duration-normal) var(--ease-out-expo);
+}
+
+/* VIS-03 Fix: Ensure pause button SVG is vertically centered */
+#btn-pause svg {
+    vertical-align: middle;
 }
 
 .dock-group:hover {
@@ -958,12 +967,16 @@ dialog::backdrop {
 }
 
 /* --- Footer --- */
+/* VIS-02 Fix: Improved contrast for footer text */
 #footer-credits {
     position: absolute;
     bottom: var(--space-sm);
     right: var(--space-md);
     font-size: var(--text-xs);
-    color: var(--color-text-tertiary);
+    color: var(--color-text-secondary);
+    /* Upgraded from tertiary for better contrast */
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    /* Added shadow for visibility on starry background */
     z-index: var(--z-ui);
     pointer-events: none;
 }
@@ -1015,9 +1028,16 @@ dialog::backdrop {
         width: 100%;
         justify-content: space-around;
         height: 48px;
-        padding: 2px var(--space-sm);
+        /* VIS-04 Fix: Added more bottom padding to prevent slider touching edge */
+        padding: 2px var(--space-sm) var(--space-sm);
         margin-bottom: 4px;
         backdrop-filter: blur(12px);
+    }
+
+    /* VIS-08 Fix: Reduce planet label size on mobile for better density */
+    .planet-label {
+        font-size: 9px;
+        padding: 2px 8px;
     }
 
     .icon-btn {

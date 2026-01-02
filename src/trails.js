@@ -14,6 +14,9 @@
 
 import * as THREE from 'three';
 
+// Bug 036 Fix: Module-level temp vector to avoid GC allocation in update loop
+const _tempVec = new THREE.Vector3();
+
 /**
  * Manages the unified trail system.
  *
@@ -126,8 +129,7 @@ export class TrailManager {
      * Optimization: Uses a shared temp vector to avoid GC churn.
      */
     update() {
-        // Re-use a single temp vector for reading world position to avoid GC.
-        const tempVec = new THREE.Vector3();
+        // Bug 036 Fix: Use module-level _tempVec to avoid GC allocation per frame
 
         this.trails.forEach(trail => {
             // 1. Validate Target (ID-029)
@@ -138,8 +140,8 @@ export class TrailManager {
 
             // 3. Capture Current Position
             // We overwrite the existing Vector3 at 'head' rather than creating a new one.
-            tempVec.setFromMatrixPosition(trail.target.matrixWorld);
-            trail.history[trail.head].copy(tempVec);
+            _tempVec.setFromMatrixPosition(trail.target.matrixWorld);
+            trail.history[trail.head].copy(_tempVec);
 
             // 4. Update the Geometry Buffers
             this.updateTrailGeometry(trail.index, trail.history, trail.head, trail.baseColor);

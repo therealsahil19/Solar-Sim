@@ -111,19 +111,36 @@ export function getOrbitalPosition(orbit, time) {
  * 1. Inner System (0-30 AU): Linear. Accurate for relative spacing of planets.
  * 2. Kuiper Belt (30-50 AU): Mild Logarithmic. Compresses the gap between Neptune and Pluto.
  * 3. Oort Cloud (>50 AU): Aggressive Logarithmic. Brings the far reaches (100k AU) into viewable range.
+ *
+ * Bug 043 Fix: Extracted constants into a documented configuration object for maintainability.
  */
 
-const AU_SCALE = 40.0; // 1 AU = 40 Three.js units
-const LIMIT_1 = 30.0;  // End of Linear Zone (Neptune is ~30 AU)
-const LIMIT_2 = 50.0;  // End of Kuiper Belt Zone
+/** @type {Object} Scale configuration for the multi-zone rendering system */
+const SCALE_CONFIG = {
+    /** 1 AU (Astronomical Unit) = 40 Three.js units */
+    AU_SCALE: 40.0,
+    /** End of Linear Zone in AU (Neptune is ~30 AU) */
+    LIMIT_LINEAR: 30.0,
+    /** End of Kuiper Belt Zone in AU */
+    LIMIT_KUIPER: 50.0,
+    /** Compression strength for Kuiper Belt Zone */
+    LOG_FACTOR_KUIPER: 1.5,
+    /** Compression strength for Oort Cloud Zone */
+    LOG_FACTOR_OORT: 4.0
+};
+
+// Derived constants for backward compatibility
+const AU_SCALE = SCALE_CONFIG.AU_SCALE;
+const LIMIT_1 = SCALE_CONFIG.LIMIT_LINEAR;
+const LIMIT_2 = SCALE_CONFIG.LIMIT_KUIPER;
+const LOG_FACTOR_K = SCALE_CONFIG.LOG_FACTOR_KUIPER;
+const LOG_FACTOR_O = SCALE_CONFIG.LOG_FACTOR_OORT;
 
 // Pre-calculated constants for mathematical continuity (C0 continuity) at boundaries.
 // This ensures no "jumps" in object positions when crossing zones.
 const VISUAL_LIMIT_1 = LIMIT_1 * AU_SCALE; // 1200 units
-const LOG_FACTOR_K = 1.5; // Compression strength for Zone 2
 const VISUAL_OFFSET_K = Math.log(1 + (LIMIT_2 - LIMIT_1)) * AU_SCALE * LOG_FACTOR_K; // Width of Zone 2 in visual units
 const VISUAL_LIMIT_2 = VISUAL_LIMIT_1 + VISUAL_OFFSET_K; // ~1382.67 units
-const LOG_FACTOR_O = 4.0; // Compression strength for Zone 3 (Oort)
 
 /**
  * Transforms a physical position vector (in AU) to a render-ready position vector.

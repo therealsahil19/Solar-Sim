@@ -38,19 +38,20 @@ export class Modal {
     }
 
     bindEvents() {
-        // Close on click outside (Backdrop)
-        this.element.addEventListener('click', (event) => {
+        // Bug 038 Fix: Store named references to handlers for proper cleanup
+        this._handleBackdropClick = (event) => {
             if (event.target === this.element) {
                 this.close();
             }
-        });
+        };
 
-        // Handle ESC key explicitly if needed for custom logic,
-        // but <dialog> handles it natively. We might want to hook into the 'close' event.
-        this.element.addEventListener('close', () => {
+        this._handleClose = () => {
             if (this.options.onClose) this.options.onClose();
             document.documentElement.classList.remove('modal-open');
-        });
+        };
+
+        this.element.addEventListener('click', this._handleBackdropClick);
+        this.element.addEventListener('close', this._handleClose);
     }
 
     /**
@@ -75,11 +76,15 @@ export class Modal {
     }
 
     /**
-     * Destroys the instance (removes listeners if we added any named ones).
-     * Since we used anonymous arrow functions for click, we rely on the DOM element removal
-     * or just garbage collection if the element stays.
+     * Destroys the instance and properly removes event listeners.
+     * Bug 038 Fix: Now actually cleans up listeners.
      */
     dispose() {
-        // In a complex app, we'd remove listeners here.
+        if (this.element && this._handleBackdropClick) {
+            this.element.removeEventListener('click', this._handleBackdropClick);
+        }
+        if (this.element && this._handleClose) {
+            this.element.removeEventListener('close', this._handleClose);
+        }
     }
 }

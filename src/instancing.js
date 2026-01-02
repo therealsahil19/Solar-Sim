@@ -107,7 +107,8 @@ export class InstanceRegistry {
      * JS can handle 2000-10000 matrix copies easily.
      */
     update() {
-        const dummy = new THREE.Object3D();
+        // Bug 040 Fix: Removed unused `new THREE.Object3D()` allocation
+        // The dummy was never used - matrices are read directly from pivots
 
         this.groups.forEach(group => {
             if (!group.mesh) return;
@@ -171,7 +172,7 @@ export class InstanceRegistry {
      */
     dispose() {
         this.groups.forEach((group) => {
-             if (group.mesh) {
+            if (group.mesh) {
                 this.scene.remove(group.mesh);
                 // InstancedMesh does not have a dispose() method itself,
                 // we must dispose its resources manually.

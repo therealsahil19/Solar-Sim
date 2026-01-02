@@ -245,9 +245,10 @@ export class CommandPalette {
             // Show top items or all? Let's show all for now, maybe limited to 20
             this.filteredItems = this.items;
         } else {
+            // Bug 042 Fix: Use optional chaining to prevent TypeError on undefined name/type
             this.filteredItems = this.items.filter(item =>
-                item.name.toLowerCase().includes(q) ||
-                item.type.toLowerCase().includes(q)
+                (item.name?.toLowerCase() || '').includes(q) ||
+                (item.type?.toLowerCase() || '').includes(q)
             );
         }
 

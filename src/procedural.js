@@ -334,7 +334,7 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
 
     // 6. Trails
     // Register with manager if available
-    let trail = null;
+    // Bug 044 Fix: Removed unused `trail` variable (was never assigned)
     if (textureLoader.trailManager && (data.type === 'Planet' || data.type === 'Dwarf Planet')) {
         // Trace the PIVOT (which moves).
         textureLoader.trailManager.register(pivot, data.visual.color);
@@ -353,7 +353,7 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
 
     const orbits = orbitLine ? [orbitLine] : [];
     const labels = [label];
-    const trails = trail ? [trail] : [];
+    const trails = []; // Bug 044 Fix: Simplified - trail registration is handled by trailManager
 
     // 7. Recursion (Moons)
     if (data.moons && data.moons.length > 0) {
