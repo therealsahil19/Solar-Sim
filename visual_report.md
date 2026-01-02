@@ -1,6 +1,6 @@
 # 👁️ Visual Inspection Report
 
-**Audit Date:** January 2, 2026  
+**Audit Date:** January 3, 2026  
 **Auditor:** Optic - Visual QA Specialist  
 **Application:** Solar-Sim (Interactive 3D Solar System)
 
@@ -10,121 +10,98 @@
 
 | Screenshot | Viewport | Severity | Issue Type | Description |
 |------------|----------|----------|------------|-------------|
-| `desktop_audit.png` | Desktop | 🔴 HIGH | Clipping | Planet labels (Uranus, Neptune) clip at viewport edges during simulation rotation |
-| `desktop_audit.png` | Desktop | [FIXED] 🟡 MED | Contrast | Footer text (credits) has low contrast against starry background |
-| `desktop_audit.png` | Desktop | [FIXED] 🟢 LOW | Spacing | Wide gap between control zones (extreme left/right) on wide screens |
-| `desktop_audit.png` | Desktop | 🟢 LOW | Alignment | Header title "Solar-Sim" appears to have uneven top/bottom padding |
-| `tablet_audit.png` | Tablet | 🟢 LOW | Typography | Title text appears slightly "heavy" or blurred due to text-shadow rendering |
-| `tablet_audit.png` | Tablet | 🟢 LOW | Spacing | Excessive vertical whitespace between slider row and bottom edge |
-| `mobile_audit.png` | Mobile | [FIXED] 🟡 MED | Alignment | Pause button icon (||) is vertically offset from Speed Slider alignment |
-| `mobile_audit.png` | Mobile | [FIXED] 🟡 MED | Spacing | Speed Slider positioned too close to container edge - needs padding |
-| `mobile_audit.png` | Mobile | [FIXED] 🟢 LOW | Density | Planet labels are large relative to celestial bodies at this viewport |
-| All | All | [FIXED] | Consistency | Header icons now use consistent `icon-btn` class |
+| `desktop_vision_qa.png` | Desktop | 🔴 HIGH | Clipping | Planet labels (outer planets) may clip at viewport edges during orbital animation |
+| `desktop_vision_qa.png` | Desktop | 🟢 LOW | Alignment | Header title "Solar-Sim" has minor asymmetric padding (~2px) |
+| `tablet_vision_qa.png` | Tablet | 🟢 LOW | Typography | Title text-shadow creates slightly "heavy" rendering at tablet resolution |
+| `tablet_vision_qa.png` | Tablet | 🟢 LOW | Spacing | Moderate vertical gap between controls and bottom edge |
+| `mobile_vision_qa.png` | Mobile | 🟡 MED | Overlap | Planet labels (Earth/Mars) overlap when planets are in proximity |
+| `mobile_vision_qa.png` | Mobile | 🟢 LOW | Density | Labels appear relatively large vs planetary bodies at mobile scale |
 
 ---
 
 ## 📸 Visual Evidence
 
 ### Desktop Viewport (1920x1080)
-![Desktop audit screenshot](C:/Users/mehna/.gemini/antigravity/brain/08aed4b0-c4ea-43d5-84de-c74953c67798/desktop_audit.png)
+![Desktop audit screenshot](C:/Users/mehna/.gemini/antigravity/brain/a63c56a5-7043-4961-9dd9-45b005177941/desktop_vision_qa_1767383979667.png)
 
 ### Tablet Viewport (768x1024)
-![Tablet audit screenshot](C:/Users/mehna/.gemini/antigravity/brain/08aed4b0-c4ea-43d5-84de-c74953c67798/tablet_audit.png)
+![Tablet audit screenshot](C:/Users/mehna/.gemini/antigravity/brain/a63c56a5-7043-4961-9dd9-45b005177941/tablet_vision_qa_1767384027528.png)
 
 ### Mobile Viewport (375x667)
-![Mobile audit screenshot](C:/Users/mehna/.gemini/antigravity/brain/08aed4b0-c4ea-43d5-84de-c74953c67798/mobile_audit.png)
+![Mobile audit screenshot](C:/Users/mehna/.gemini/antigravity/brain/a63c56a5-7043-4961-9dd9-45b005177941/mobile_vision_qa_1767384063453.png)
 
 ---
 
 ## 🔍 Detailed Findings
 
-### 1. 🔴 HIGH: Planet Label Clipping at Viewport Edges (Desktop)
+### 1. 🔴 HIGH: Planet Label Edge Clipping (Desktop)
 
-**Location:** `desktop_audit.png` - Outer planet labels  
-**Observation:** As the simulation rotates, planet labels for distant bodies (Uranus, Neptune) dynamically position themselves at the edge of the rendering canvas. When the camera angle changes, these labels frequently clip against the browser viewport boundaries or get partially hidden behind the header UI.
+**Location:** `desktop_vision_qa.png` - Outer planet labels  
+**Perspective:** ZOOM OUT (Macro Structure)
 
-**Impact:** Critical usability issue - users cannot identify outer planets when viewing certain angles.
+**Observation:** During orbital animation, labels for distant planets (Uranus, Neptune, Pluto) dynamically position at the viewport periphery. When the camera angle changes or planets orbit to extreme positions, these labels clip against the browser viewport edges or can be partially obscured by UI elements.
+
+**Impact:** Critical usability issue - users lose the ability to identify outer planets at certain viewing angles.
 
 **Recommendation:** 
-1. Implement a clamping mechanism to keep labels within a 20px padding from the viewport edge
-2. Consider adding edge-detection logic in `src/main.js` to fade out labels approaching boundaries
+1. Implement viewport-edge clamping logic to keep labels within a 20px safe margin
+2. Add fade-out behavior for labels approaching viewport boundaries
+3. Consider an "off-screen indicator" arrow for planets outside the visible area
 
-**CSS Reference:** `.planet-label` at line 932-958 in `src/style.css` already has `max-width: 15vw` but lacks edge clamping logic.
-
----
-
-### 2. [FIXED] 🟡 MED: Footer Text Contrast Failure (Desktop)
-
-**Location:** `desktop_audit.png` - Bottom right corner  
-**Observation:** The footer credits text ("Solar-Sim · Built with Three.js · GitHub") uses `var(--color-text-tertiary)` which renders as a low-contrast gray (`#666666`) against the dark starry background.
-
-**Impact:** Accessibility concern - text may fail WCAG AA contrast requirements.
-
-**Resolution:** Applied recommended fix - upgraded footer color to `--color-text-secondary` and added `text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8)` in `src/style.css`.
+**CSS Reference:** `.planet-label` in `src/style.css` - lacks edge-aware positioning
 
 ---
 
-### 3. [FIXED] 🟡 MED: Pause Button Vertical Misalignment (Mobile)
+### 2. 🟡 MED: Planet Label Overlap on Mobile
 
-**Location:** `mobile_audit.png` - Bottom control bar  
-**Observation:** Upon close inspection, the Pause/Play button (||) icon is vertically offset - it sits approximately 2px higher than the horizontal center-line of the Speed Slider elements.
+**Location:** `mobile_vision_qa.png` - Inner planet labels  
+**Perspective:** NORMAL VIEW (Content & Typography)
 
-**Impact:** Visual jank that erodes the premium feel of the interface.
+**Observation:** At mobile viewport (375px), inner planet labels (Mercury, Venus, Earth, Mars) overlap when planets cluster in the same orbital region. The labels compete for visual space, reducing readability.
 
-**Resolution:** Added `#btn-pause svg { vertical-align: middle; }` in `src/style.css` to ensure proper icon centering.
+**Impact:** Reduced usability on mobile - difficult to distinguish which label belongs to which planet.
 
----
-
-### 4. [FIXED] 🟡 MED: Speed Slider Edge Proximity (Mobile)
-
-**Location:** `mobile_audit.png` - Speed control section  
-**Observation:** The Speed Slider is positioned very close to the bottom edge of its container. The slider thumb can appear to "touch" or overlap the HUD's glowing border.
-
-**Impact:** Creates visual tension and may feel cramped on touch interactions.
-
-**Resolution:** Applied recommended fix - added `padding: 2px var(--space-sm) var(--space-sm)` to `.dock-group` in mobile breakpoint.
+**Recommendation:**
+1. Implement collision detection for labels to offset overlapping positions
+2. Consider priority-based hiding (show only the "focused" or closest planet's label when clustered)
+3. Alternative: Use abbreviated labels on mobile (e.g., "Ear" instead of "Earth")
 
 ---
 
-### 5. [FIXED] 🟢 LOW: Wide Screen Control Zone Spread (Desktop/Ultrawide)
+### 3. 🟢 LOW: Header Title Padding Asymmetry (Desktop)
 
-**Location:** `desktop_audit.png` - All control elements  
-**Observation:** On wider viewports (1920px+), UI elements are pushed to extreme corners - Speed control on far left, GitHub link on far right - creating significant eye travel distance between interactive zones.
+**Location:** `desktop_vision_qa.png` - Top bar  
+**Perspective:** ZOOM IN (Fine Details)
 
-**Impact:** Minor ergonomic concern; the center simulation area remains clear which is intentional.
+**Observation:** At 400% zoom, the "Solar-Sim" title text appears to have ~2px more padding on top than bottom within its container.
 
-**Resolution:** Applied recommended fix - added `max-width: 1400px; margin: 0 auto;` to `#bottom-dock` in `src/style.css`.
+**Impact:** Minor pixel-peeping issue; not noticeable at standard viewing distance.
 
----
-
-### 6. 🟢 LOW: Header Title Padding Asymmetry (Desktop)
-
-**Location:** `desktop_audit.png` - Top bar  
-**Observation:** At 400% zoom, the "Solar-Sim" title text appears to have slightly more padding on the top than the bottom within its container (approximately 2px difference).
-
-**Impact:** Minor pixel-peeping issue; not noticeable at normal viewing distance.
-
-**CSS Reference:** `#top-bar h1` at line 572-580 in `src/style.css`
+**CSS Reference:** `#top-bar h1` in `src/style.css` - lines 572-580
 
 ---
 
-### 7. 🟢 LOW: Title Text Shadow Rendering (Tablet)
+### 4. 🟢 LOW: Title Text Shadow Rendering (Tablet)
 
-**Location:** `tablet_audit.png` - Header area  
-**Observation:** The "Solar-Sim" title uses a gradient text fill combined with strong anti-aliasing, which at certain tablet resolutions creates a slightly "heavy" or doubled appearance.
+**Location:** `tablet_vision_qa.png` - Header area  
+**Perspective:** ZOOM IN (Fine Details)
 
-**Impact:** Minor aesthetic nitpick.
+**Observation:** The "Solar-Sim" title combines a gradient text fill with anti-aliasing, which at 768px tablet resolution creates a slightly "doubled" or heavy appearance.
+
+**Impact:** Minor aesthetic nitpick visible only upon close inspection.
 
 ---
 
-### 8. [FIXED] 🟢 LOW: Label Density vs. Planet Size (Mobile)
+### 5. 🟢 LOW: Label Density vs. Planet Size (Mobile)
 
-**Location:** `mobile_audit.png` - Planet labels  
-**Observation:** At mobile viewport sizes, the planet labels (11px font) appear nearly as large as the rendered celestial bodies themselves. This creates visual clutter when multiple planets are in proximity.
+**Location:** `mobile_vision_qa.png` - Planet labels  
+**Perspective:** NORMAL VIEW (Content & Typography)
 
-**Impact:** Reduced clarity when many planets cluster on screen.
+**Observation:** At mobile viewport, planet labels (9px font per prior fix) still appear nearly as large as the rendered celestial bodies themselves. This creates visual crowding when multiple planets are visible.
 
-**Resolution:** Applied recommended fix - reduced `.planet-label` font-size to 9px and padding to 2px 8px in mobile breakpoint.
+**Impact:** Minor visual clutter; functional but not optimal.
+
+**Recommendation:** Consider further reducing label font-size to 8px on mobile, or implementing a "tap to reveal labels" interaction pattern.
 
 ---
 
@@ -132,14 +109,16 @@
 
 The following issues from prior audits have been verified as resolved:
 
-| Issue | Resolution |
-|-------|------------|
-| Neptune label edge clipping | CSS `max-width` and text-overflow: ellipsis applied |
-| Mercury/Sun label overlap | Increased background opacity to 0.85 and blur to 8px |
-| Mobile control density | Reduced dock height to 48px and icon sizes to 32px |
-| Texture icon padding | Added `-1px` left margin adjustment |
-| Header icon inconsistency | Both Menu and Help buttons now use `icon-btn` class |
-| Jagged orbit trails | Increased `pointsPerTrail` from 100 to 500 |
+| Issue | Resolution | Verified |
+|-------|------------|----------|
+| Footer text contrast failure | Upgraded to `--color-text-secondary` + text-shadow | ✅ |
+| Pause button vertical misalignment | Added `vertical-align: middle` to SVG | ✅ |
+| Speed slider edge proximity (mobile) | Added padding to `.dock-group` mobile breakpoint | ✅ |
+| Wide screen control zone spread | Added `max-width: 1400px` to `#bottom-dock` | ✅ |
+| Mobile label density | Reduced font-size to 9px in mobile breakpoint | ✅ |
+| Header icon inconsistency | Both Menu/Help buttons use `icon-btn` class | ✅ |
+| Neptune label edge clipping | CSS `max-width` and `text-overflow: ellipsis` applied | ✅ |
+| Jagged orbit trails | Increased `pointsPerTrail` from 100 to 500 | ✅ |
 
 ---
 
@@ -147,7 +126,7 @@ The following issues from prior audits have been verified as resolved:
 
 | Icon | Severity | Description |
 |------|----------|-------------|
-| 🔴 | HIGH | Unusable UI, overlapping text making it unreadable, broken layout |
+| 🔴 | HIGH | Unusable UI, overlapping text making it unreadable, broken layout on standard view |
 | 🟡 | MED | Visual jank, obvious misalignment, poor spacing, macro layout issues |
 | 🟢 | LOW | Minor aesthetic nitpicks visible only upon "zooming in" (1-2px off) |
 
@@ -157,19 +136,17 @@ The following issues from prior audits have been verified as resolved:
 
 The following recordings document the visual audit process:
 
-- **Desktop Capture:** [desktop_capture.webp](file:///C:/Users/mehna/.gemini/antigravity/brain/08aed4b0-c4ea-43d5-84de-c74953c67798/desktop_capture_1767376241326.webp)
-- **Tablet Capture:** [tablet_capture.webp](file:///C:/Users/mehna/.gemini/antigravity/brain/08aed4b0-c4ea-43d5-84de-c74953c67798/tablet_capture_1767376305342.webp)
-- **Mobile Capture:** [mobile_capture.webp](file:///C:/Users/mehna/.gemini/antigravity/brain/08aed4b0-c4ea-43d5-84de-c74953c67798/mobile_capture_1767376339554.webp)
+- **Desktop Capture:** [desktop_capture.webp](file:///C:/Users/mehna/.gemini/antigravity/brain/a63c56a5-7043-4961-9dd9-45b005177941/desktop_capture_1767383965106.webp)
+- **Tablet Capture:** [tablet_capture.webp](file:///C:/Users/mehna/.gemini/antigravity/brain/a63c56a5-7043-4961-9dd9-45b005177941/tablet_capture_1767384002031.webp)
+- **Mobile Capture:** [mobile_capture.webp](file:///C:/Users/mehna/.gemini/antigravity/brain/a63c56a5-7043-4961-9dd9-45b005177941/mobile_capture_1767384037253.webp)
 
 ---
 
 ## 📝 Appendix: Files Analyzed
 
 - `index.html` - HTML structure and layout
-- `src/style.css` - Complete styling (1250 lines)
-- `.Jules/screenshots/desktop.png` - Prior desktop capture
-- `.Jules/screenshots/tablet.png` - Prior tablet capture
-- `.Jules/screenshots/mobile.png` - Prior mobile capture
+- `src/style.css` - Complete styling (~1391 lines)
+- Fresh captures at Desktop (1920x1080), Tablet (768x1024), Mobile (375x667)
 
 ---
 
