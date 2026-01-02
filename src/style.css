@@ -856,14 +856,17 @@ dialog::backdrop {
         align-items: center;
         width: 100%;
         padding-bottom: var(--space-xs);
-        gap: var(--space-xs);
+        gap: 0; /* Remove gap to stack tighter */
+        /* Reduce overall height impact */
     }
 
     .dock-group {
         width: 100%;
         justify-content: space-around;
-        height: 56px;
-        padding: 4px var(--space-sm);
+        height: 48px; /* Reduced from 56px */
+        padding: 2px var(--space-sm);
+        margin-bottom: 4px; /* Tiny margin between rows */
+        backdrop-filter: blur(12px); /* Slightly less blur for perf */
     }
 
     .icon-btn {

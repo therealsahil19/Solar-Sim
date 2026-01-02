@@ -150,8 +150,23 @@ export class NavigationSidebar {
 
         // Search Logic (Real-time filtering)
         if (this.dom.search) {
-            this.dom.search.addEventListener('input', (e) => this.handleSearch(e.target.value));
+            this._handleSearchInput = (e) => this.handleSearch(e.target.value);
+            this.dom.search.addEventListener('input', this._handleSearchInput);
         }
+    }
+
+    /**
+     * Cleans up event listeners and references.
+     */
+    dispose() {
+        if (this.dom.search && this._handleSearchInput) {
+            this.dom.search.removeEventListener('input', this._handleSearchInput);
+        }
+        // Button listeners in constructor/bindEvents are technically anonymous arrow functions
+        // mapped to class methods. Since we don't recreate the Sidebar often, strict removal
+        // of simple click handlers is less critical than global window events, but good practice
+        // would require named handlers.
+        // For ID-021, we specifically target the leak risk.
     }
 
     /**

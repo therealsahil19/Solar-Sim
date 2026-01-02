@@ -53,6 +53,9 @@ export class TrailManager {
         this.mesh.frustumCulled = false; // Always render
         this.mesh.userData = { isTrailSystem: true };
 
+        // Initial Draw Range 0 to avoid rendering garbage
+        this.geometry.setDrawRange(0, 0);
+
         scene.add(this.mesh);
 
         this.trails = []; // { target: Object3D, color: Color, history: Array<Vector3>, head: number, index: number }
@@ -98,6 +101,10 @@ export class TrailManager {
         // We can fade opacity by modifying color (darker) or alpha if using shader.
         // With LineBasicMaterial vertexColors, we can simulate fade with black/darker color.
         this.updateTrailGeometry(index, history, 0, col);
+
+        // Update Draw Range to include this new trail
+        const totalActiveVertices = this.nextTrailIndex * this.segmentsPerTrail * 2;
+        this.geometry.setDrawRange(0, totalActiveVertices);
     }
 
     /**

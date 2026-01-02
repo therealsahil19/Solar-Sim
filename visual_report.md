@@ -6,6 +6,7 @@
 | `mobile_initial.png` | Mobile | 🟡 MED | Layout | The bottom control dock consumes a significant portion of the vertical screen space (~25%), potentially obstructing the main view. |
 | `mobile_initial.png` | Mobile | 🟢 LOW | Spacing | The 'Speed' label and slider in the mobile dock are tightly packed. |
 | `desktop_initial.png` | Desktop | 🟢 LOW | Artifacts | Visible polygon edges on orbit trails (red/blue lines) distract from the visual fidelity. |
+| `mobile_initial.png` | Mobile | 🟡 MED | Layout | [FIXED] The bottom control dock consumes a significant portion of the vertical screen space (~25%), potentially obstructing the main view. |
 
 ## Details
 
@@ -16,6 +17,7 @@ The orbit trails (red, blue lines) are rendered with visible segments, creating 
 ### 2. Mobile Dock Density
 **Severity: 🟡 MED**
 On `mobile_initial.png` (375x667), the bottom dock occupies a large amount of vertical space. The separation between the view controls (Camera, Reset, etc.) and the time controls (Play/Pause, Speed) creates a double-stacked footer that feels heavy.
+**[FIXED]** - Reduced height to 48px, removed gaps, and tightened padding in `src/style.css`.
 
 ### 3. Previously Reported Issues Status
 - **Disappearing Solar System:** FIXED. Objects are visible at distance.
