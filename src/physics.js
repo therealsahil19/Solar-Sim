@@ -1,155 +1,151 @@
 /**
  * @file physics.js
- * @description Core physics engine for the solar system simulation.
- * Handles Keplerian orbital mechanics and the Logarithmic Depth Buffer transformation.
+ * @description Orbital Mechanics & Scaling Logic.
+ *
+ * Handles Keplerian physics calculation and Multi-Zone Scaling
+ * to allow visualization of vast distances (AU scale) in a small 3D buffer.
  */
 
 import * as THREE from 'three';
 
-// --- Constants ---
-const K_FACTOR = 8.0;       // Logarithmic compression factor
-const SCENE_SCALE = 20.0;   // Visual scale multiplier
-const TWO_PI = Math.PI * 2;
-
-// --- Helper Math ---
+const DEG_TO_RAD = Math.PI / 180;
 
 /**
- * Solves Kepler's Equation M = E - e * sin(E) for E (Eccentric Anomaly).
- * Uses Newton-Raphson iteration.
- * @param {number} M - Mean Anomaly (radians)
- * @param {number} e - Eccentricity
- * @returns {number} Eccentric Anomaly (radians)
+ * Calculates the position of an object in 3D space based on Keplerian orbital elements.
+ *
+ * @param {Object} orbit - Orbital parameters.
+ * @param {number} orbit.a - Semi-major axis in AU.
+ * @param {number} orbit.e - Eccentricity (0 = circle, <1 = ellipse).
+ * @param {number} orbit.i - Inclination in degrees.
+ * @param {number} orbit.omega - Argument of Periapsis (degrees).
+ * @param {number} orbit.Omega - Longitude of Ascending Node (degrees).
+ * @param {number} orbit.M0 - Mean Anomaly at Epoch (degrees).
+ * @param {number} time - Current simulation time in Earth Years.
+ * @returns {THREE.Vector3} The position vector in AU (Physics Space).
  */
-function solveKepler(M, e) {
-    // Initial guess: E ≈ M
-    let E = M;
-    // Higher eccentricity needs a better guess or more iterations
-    if (e > 0.8) E = Math.PI;
+export function getOrbitalPosition(orbit, time) {
+    const { a, e, i, omega, Omega, M0 } = orbit;
 
-    for (let i = 0; i < 10; i++) {
-        const dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
-        E -= dE;
-        if (Math.abs(dE) < 1e-6) break;
-    }
-    return E;
-}
-
-/**
- * Calculates the 3D position of an object in Physics Space (AU).
- * @param {Object} elements - Orbital elements.
- * @param {number} elements.a - Semi-major axis (AU).
- * @param {number} elements.e - Eccentricity.
- * @param {number} elements.i - Inclination (degrees).
- * @param {number} elements.omega - Argument of Periapsis (degrees).
- * @param {number} elements.Omega - Longitude of Ascending Node (degrees).
- * @param {number} elements.M0 - Mean Anomaly at Epoch (degrees).
- * @param {number} time - Simulation time (Earth Years).
- * @returns {THREE.Vector3} Position in AU.
- */
-export function getOrbitalPosition(elements, time) {
-    const { a, e } = elements;
-
-    // Convert degrees to radians
-    const i = elements.i * (Math.PI / 180);
-    const omega = elements.omega * (Math.PI / 180);
-    const Omega = elements.Omega * (Math.PI / 180);
-    const M0 = elements.M0 * (Math.PI / 180);
-
-    // 1. Calculate Mean Motion (n)
-    // T = a^1.5 (Kepler's 3rd Law for Sol system, units: AU, Years)
-    // n = 2 * PI / T
+    // 1. Calculate Mean Anomaly (M)
+    // T (Period) = a^1.5 (Kepler's 3rd Law for Sol)
     const period = Math.pow(a, 1.5);
-    const n = TWO_PI / period;
+    const n = 360 / period; // Mean motion (deg/year)
+    const M = (M0 + n * time) * DEG_TO_RAD; // Current M in radians
 
-    // 2. Mean Anomaly at time t
-    let M = M0 + n * time;
-    M = M % TWO_PI; // Normalize
+    // 2. Solve Kepler's Equation for Eccentric Anomaly (E)
+    // M = E - e * sin(E) -> Solve for E using Newton-Raphson
+    let E = M;
+    for (let j = 0; j < 5; j++) {
+        E = M + e * Math.sin(E);
+    }
 
-    // 3. Eccentric Anomaly (E)
-    const E = solveKepler(M, e);
+    // 3. Calculate True Anomaly (nu) and Radius (r)
+    // r = a * (1 - e * cos(E))
+    const r = a * (1 - e * Math.cos(E));
 
-    // 4. True Anomaly (nu) & Radius (r)
-    // cos(nu) = (cos(E) - e) / (1 - e*cos(E))
-    // r = a * (1 - e*cos(E))
+    // cos(nu) = (cos(E) - e) / (1 - e * cos(E))
+    // sin(nu) = (sqrt(1 - e^2) * sin(E)) / (1 - e * cos(E))
+    // We can use atan2 for robust angle
+    const xv = a * (Math.cos(E) - e);
+    const yv = a * Math.sqrt(1 - e * e) * Math.sin(E);
+    const nu = Math.atan2(yv, xv);
 
-    // Alternative calculation using P and Q vectors approach,
-    // but explicit x,y in orbital plane is easier to read.
-    const x_orb = a * (Math.cos(E) - e);
-    const y_orb = a * Math.sqrt(1 - e * e) * Math.sin(E);
+    // 4. Transform to Heliocentric Coordinates (3D rotation)
+    // We apply the orbital rotations: Omega (LAN), i (Inc), omega (Arg)
+    // P = r * [cos(nu), sin(nu), 0]
+    // Then rotate P by orbital elements.
 
-    // 5. Rotate to Ecliptic Frame (3D)
-    // We apply rotations:
-    // 1. rotate around Z by omega (Argument of Periapsis)
-    // 2. rotate around X by i (Inclination)
-    // 3. rotate around Z by Omega (Longitude of Ascending Node)
+    const cosNu = Math.cos(nu);
+    const sinNu = Math.sin(nu);
+    const cosOm = Math.cos(Omega * DEG_TO_RAD);
+    const sinOm = Math.sin(Omega * DEG_TO_RAD);
+    // const cosO = Math.cos(omega * DEG_TO_RAD);
+    // const sinO = Math.sin(omega * DEG_TO_RAD);
+    const cosI = Math.cos(i * DEG_TO_RAD);
+    const sinI = Math.sin(i * DEG_TO_RAD);
 
-    // Manual Rotation Matrix application for performance optimization
+    // Simplified rotation matrix application
+    // The previous implementation had the correct breakdown for 3D orbital elements.
+    // Argument of Latitude u = omega + nu
+    const u = omega * DEG_TO_RAD + nu;
+    const cosU = Math.cos(u);
+    const sinU = Math.sin(u);
 
-    const cosOmega = Math.cos(Omega);
-    const sinOmega = Math.sin(Omega);
-    const cosomega = Math.cos(omega);
-    const sinomega = Math.sin(omega);
-    const cosi = Math.cos(i);
-    const sini = Math.sin(i);
+    // Standard Astro Coordinates:
+    // x = r * (cos(Om)cos(u) - sin(Om)sin(u)cos(i))
+    // y = r * (sin(Om)cos(u) + cos(Om)sin(u)cos(i))
+    // z = r * (sin(i)sin(u))
 
-    // x' = x_orb * cos(omega) - y_orb * sin(omega)
-    // y' = x_orb * sin(omega) + y_orb * cos(omega)
-    const x_plane = x_orb * cosomega - y_orb * sinomega;
-    const y_plane = x_orb * sinomega + y_orb * cosomega;
+    // Mapping to Three.js (Y is Up):
+    // X_three = x
+    // Y_three = z
+    // Z_three = y
 
-    // Now tilt by inclination (rotate around X axis)
-    // x'' = x_plane
-    // y'' = y_plane * cos(i)
-    // z'' = y_plane * sin(i)
-    const x_inc = x_plane;
-    const y_inc = y_plane * cosi;
-    const z_inc = y_plane * sini;
+    const x_astro = r * (cosOm * cosU - sinOm * sinU * cosI);
+    const y_astro = r * (sinOm * cosU + cosOm * sinU * cosI);
+    const z_astro = r * (sinI * sinU);
 
-    // Now rotate by Longitude of Ascending Node (around Z axis)
-    // x_final = x'' * cos(Omega) - y'' * sin(Omega)
-    // y_final = x'' * sin(Omega) + y'' * cos(Omega)
-    // z_final = z''
+    return new THREE.Vector3(x_astro, z_astro, y_astro);
+}
 
-    const x = x_inc * cosOmega - y_inc * sinOmega;
-    const y = x_inc * sinOmega + y_inc * cosOmega;
-    const z = z_inc;
 
-    // Three.js Coordinate System: Y is UP.
-    // Astronomy usually uses Z as UP (Ecliptic Pole).
-    // Mapping: Astro(x,y,z) -> Three(x, z, -y) or (x, z, y)?
-    // Let's stick to standard Three.js ground plane: XZ is the ecliptic. Y is Up.
-    // So our 'z_final' (height above ecliptic) maps to Three.js 'y'.
-    // Our 'x_final', 'y_final' map to Three.js 'x', 'z'.
+/**
+ * MULTI-ZONE SCALING (Rendering)
+ *
+ * Inner Planets (0-30 AU): Linear Scale (1 AU = 40 Units)
+ * Kuiper Belt (30-50 AU): Mild Logarithmic Scale
+ * Oort Cloud (>50 AU): Aggressive Logarithmic Scale
+ */
 
-    return new THREE.Vector3(x, z, y);
+const AU_SCALE = 40.0;
+const LIMIT_1 = 30.0;
+const LIMIT_2 = 50.0;
+
+// Pre-calculated constants for boundary continuity
+const VISUAL_LIMIT_1 = LIMIT_1 * AU_SCALE; // 1200
+const LOG_FACTOR_K = 1.5;
+const VISUAL_OFFSET_K = Math.log(1 + (LIMIT_2 - LIMIT_1)) * AU_SCALE * LOG_FACTOR_K; // Delta for Kuiper width
+const VISUAL_LIMIT_2 = VISUAL_LIMIT_1 + VISUAL_OFFSET_K; // ~1382.67
+const LOG_FACTOR_O = 4.0;
+
+export function physicsToRender(vector) {
+    const r = vector.length(); // Physical distance (AU)
+
+    if (r === 0) return new THREE.Vector3(0, 0, 0);
+
+    let r_vis;
+
+    if (r <= LIMIT_1) {
+        // Linear Region
+        r_vis = r * AU_SCALE;
+    } else if (r <= LIMIT_2) {
+        // Kuiper Belt Region (Mild Log)
+        // Base + Log(1 + delta) * Scale * Factor
+        r_vis = VISUAL_LIMIT_1 + Math.log(1 + (r - LIMIT_1)) * AU_SCALE * LOG_FACTOR_K;
+    } else {
+        // Oort Cloud Region (Aggressive Log)
+        r_vis = VISUAL_LIMIT_2 + Math.log(1 + (r - LIMIT_2)) * AU_SCALE * LOG_FACTOR_O;
+    }
+
+    // Normalize and scale
+    return vector.clone().normalize().multiplyScalar(r_vis);
 }
 
 /**
- * Transforms a Physics Space position (AU) to Render Space (Scene Units).
- * Applies a Logarithmic transformation to preserve direction but compress distance.
- *
- * Formula: d' = log(1 + d * k) * scale
- *
- * @param {THREE.Vector3} physicsPos - The position in AU.
- * @returns {THREE.Vector3} The position in Scene Units.
+ * Inverse function for raycasting/mouse picking.
+ * Given a visual distance, estimate the physical distance.
  */
-export function physicsToRender(physicsPos) {
-    const distance = physicsPos.length();
-
-    if (distance < 1e-6) return new THREE.Vector3(0, 0, 0);
-
-    // Render Distance
-    const renderDist = Math.log(1 + distance * K_FACTOR) * SCENE_SCALE;
-
-    // Normalize and Scale
-    return physicsPos.clone().normalize().multiplyScalar(renderDist);
-}
-
-/**
- * Calculates the orbital period in Earth Years given semi-major axis in AU.
- * @param {number} a - Semi-major axis (AU).
- * @returns {number} Period (Years).
- */
-export function getOrbitalPeriod(a) {
-    return Math.pow(a, 1.5);
+export function renderToPhysicsEstimate(visualDistance) {
+    if (visualDistance <= VISUAL_LIMIT_1) {
+        return visualDistance / AU_SCALE;
+    } else if (visualDistance <= VISUAL_LIMIT_2) {
+        // r_vis = V1 + log(1 + r - L1) * S * K
+        // (r_vis - V1) / (S * K) = log(1 + r - L1)
+        // exp(...) = 1 + r - L1
+        // r = exp(...) + L1 - 1
+        return Math.exp((visualDistance - VISUAL_LIMIT_1) / (AU_SCALE * LOG_FACTOR_K)) + LIMIT_1 - 1;
+    } else {
+        // r_vis = V2 + log(1 + r - L2) * S * O
+        return Math.exp((visualDistance - VISUAL_LIMIT_2) / (AU_SCALE * LOG_FACTOR_O)) + LIMIT_2 - 1;
+    }
 }
