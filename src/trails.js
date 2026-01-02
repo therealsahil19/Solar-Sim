@@ -76,6 +76,10 @@ export class TrailManager {
         // Initialize history with target's current position
         // Pre-allocate Vector3 objects to avoid garbage collection
         const history = new Array(this.pointsPerTrail);
+
+        // Force update world matrix to ensure we have the correct starting position
+        // avoiding the "white line from zero" artifact.
+        target.updateMatrixWorld(true);
         const startPos = new THREE.Vector3().setFromMatrixPosition(target.matrixWorld);
 
         for (let i = 0; i < this.pointsPerTrail; i++) {
