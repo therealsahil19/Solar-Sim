@@ -1,27 +1,39 @@
-# 👁️ Visual Inspection Report
+# 👁️ Visual Inspection Report - January 2, 2026
 
 | Screenshot | Viewport | Severity | Issue Type | Description |
 |------------|----------|----------|------------|-------------|
-| `desktop.png` | Desktop | 🟡 MED | Rendering | [FIXED] Orbit trails appear jagged/low-poly, particularly for larger orbits (Mars/Neptune). |
-| `mobile.png` | Mobile | 🟢 LOW | Density | Planet labels (Mercury/Venus) are visually close; potential for overlap in alignment scenarios. |
-| `mobile.png` | Mobile | 🟢 LOW | Spacing | Bottom dock elements are tightly packed; 'Speed' slider touch target could be small. |
-| `desktop.png` | Desktop | 🟢 LOW | Contrast | Orbit lines (blue/orange) against starfield have subtle aliasing artifacts. |
+| `desktop.png` | Desktop | 🟡 MED | Clipping | 'Neptune' label is partially clipped at the top-right viewport edge. |
+| `tablet.png` | Tablet | 🔴 HIGH | Overlap | 'Mercury' label overlaps the Sun, causing legibility issues. |
+| `mobile.png` | Mobile | 🔴 HIGH | Density | 'Earth' and 'Venus' labels are near-overlapping in portrait mode. |
+| `mobile.png` | Mobile | 🟡 MED | Alignment | 'Texture' icon in simulation toggle is approx 2px off-center within its circular container. |
+| `desktop.png` | Desktop | 🟢 LOW | Micro | Orbit lines pass directly through planet labels, creating visual noise. |
 
 ## Details
 
+### 1. Label Clipping on Ultra-wide/Outer Orbits
+**Observation:** In `desktop.png`, the label for Neptune is positioned at the very edge of the rendering canvas. 
+**Impact:** Depending on the camera angle, labels for outer planets can become partially or fully clipped by the browser chrome.
+**Recommendation:** Implement a "clamping" mechanism for labels to stay within a 20px padding from the viewport edge.
+
+### 2. Mercury/Sun Overlap (Macro)
+**Observation:** In all viewports, but most notably `tablet.png` and `mobile.png`, the Mercury label is positioned directly over the Sun's glow.
+**Impact:** Extreme contrast failure. The white text on yellow-white glow makes the label unreadable.
+**Recommendation:** Add a `z-index` offset or a logic to shift labels vertically when they are within a certain radius of the Sun's screen-space coordinates.
+
+### 3. Responsive Density (Mobile)
+**Observation:** In `mobile.png`, the vertical stack of control pills takes up nearly 30% of the screen height. 
+**Impact:** Reduces the "active" simulation area.
+**Recommendation:** Consider collapsing the simulation toggles into a single button that expands on tap for mobile viewports.
+
+### 4. Icon Alignment (Micro-detail)
+**Observation:** Upon 400% zoom of `desktop.png`, the 'Texture' (image) icon in the control bar has slightly more left padding than right padding (approx 2px difference).
+**Impact:** Minor visual imbalance.
+
+---
+## Previous Observations (Archive)
+
 ### 1. Jagged Orbit Trails (All Viewports)
-**Observation:** The orbital paths for planets (especially outer ones like Neptune) render as visible polygons rather than smooth curves.
-**Root Cause:** The `TrailManager` in `src/trails.js` uses `THREE.LineSegments` with a fixed number of segments (`pointsPerTrail`). As the orbit circumference increases, the linear distance between points grows, creating visible straight edges.
-**Status:** [FIXED] Increased `pointsPerTrail` from 100 to 500 in `src/trails.js` constructor. This creates a much higher resolution buffer for trail segments.
+**Status:** [FIXED] Increased `pointsPerTrail` from 100 to 500 in `src/trails.js`.
 
 ### 2. Label Density on Mobile
-**Observation:** In `mobile.png`, the labels for inner planets (Mercury, Venus, Earth) are clustered.
-**Context:** The `10px` font size and reduced padding in `src/style.css` helps, but in vertical orientation, the restricted width increases the likelihood of label collision during planetary alignment.
-
-### 3. Responsive Dock (Mobile)
-**Observation:** The bottom dock successfully switches to a column-reverse layout. The 'Speed' slider is functional but visually dense.
-**Verdict:** Pass. The layout shifts logic in `@media (max-width: 768px)` works as intended to keep controls accessible without obscuring the scene center.
-
-### 4. GPU Stalls (Performance/Visual)
-**Observation:** Console logs during capture indicate `GL Driver Message: GPU stall due to ReadPixels`.
-**Impact:** This may cause a "hiccup" or frame drop during the initial loading transition (fading out the loading screen), appearing as visual jank to the user.
+**Status:** [OPEN] Still observed in January 2026 audit; documented as "Responsive Density" above.
