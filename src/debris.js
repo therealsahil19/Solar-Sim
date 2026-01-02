@@ -1,30 +1,52 @@
 /**
  * @file debris.js
- * @description GPU-Accelerated Debris System (Asteroid Belt, Kuiper Belt, Oort Cloud).
+ * @description Procedural Debris Generator & Renderer.
  *
- * Uses `THREE.InstancedMesh` to render thousands of objects efficiently.
- * Supports different update modes (Keplerian physics vs Static rotation) and distributions.
+ * This module creates massive particle systems for:
+ * 1. Asteroid Belt (Inner Solar System)
+ * 2. Kuiper Belt (Outer Solar System)
+ * 3. Oort Cloud (Far Reaches)
+ *
+ * PERFORMANCE STRATEGY:
+ * - Uses `THREE.InstancedMesh` to render thousands of unique objects with 1 draw call.
+ * - Supports two physics modes:
+ *   a) Active: Every particle calculates its own Keplerian orbit (CPU bound, fine for <5000).
+ *   b) Static: Particles are fixed relative to a parent container which rotates (GPU cheap, good for >10000).
  */
 
 import * as THREE from 'three';
 import { getOrbitalPosition, physicsToRender } from './physics.js';
 
 /**
- * Creates a debris system (Belt or Cloud).
+ * @typedef {Object} DebrisDistribution
+ * @property {number} minA - Minimum Semi-major axis (AU).
+ * @property {number} maxA - Maximum Semi-major axis (AU).
+ * @property {number} minE - Minimum Eccentricity.
+ * @property {number} maxE - Maximum Eccentricity.
+ * @property {number} minI - Minimum Inclination (degrees).
+ * @property {number} maxI - Maximum Inclination (degrees).
+ */
+
+/**
+ * @typedef {Object} DebrisMaterialConfig
+ * @property {number|string} color - Hex color or string.
+ * @property {number} [roughness=0.8] - Standard material roughness.
+ * @property {number} [metalness=0.2] - Standard material metalness.
+ * @property {number} size - Radius of the particle.
+ * @property {number} [opacity=1.0] - Opacity (0.0 - 1.0).
+ */
+
+/**
+ * Factory function to create a GPU-accelerated debris field.
+ *
  * @param {Object} config - Configuration object.
- * @param {string} config.type - 'asteroid', 'kuiper', or 'oort'.
- * @param {number} config.count - Number of particles.
- * @param {Object} config.distribution - Distribution parameters.
- * @param {number} config.distribution.minA - Min Semi-major axis (AU).
- * @param {number} config.distribution.maxA - Max Semi-major axis (AU).
- * @param {number} config.distribution.minE - Min Eccentricity.
- * @param {number} config.distribution.maxE - Max Eccentricity.
- * @param {number} config.distribution.minI - Min Inclination (degrees).
- * @param {number} config.distribution.maxI - Max Inclination (degrees).
- * @param {boolean} config.isSpherical - If true, distributes on sphere (Oort). If false, disk (Belt).
- * @param {Object} config.material - Material properties (color, opacity, size).
- * @param {boolean} config.staticPhysics - If true, rotates globally instead of per-object Keplerian.
- * @returns {THREE.InstancedMesh} The mesh object with .update(time) method.
+ * @param {string} config.type - Identifier for the system (e.g., 'asteroid').
+ * @param {number} [config.count=1000] - Number of particles to generate.
+ * @param {DebrisDistribution} config.distribution - Orbital parameters for random generation.
+ * @param {boolean} [config.isSpherical=false] - If true, distributes particles on a sphere (Oort Cloud). If false, a flat disk (Belts).
+ * @param {DebrisMaterialConfig} config.material - Visual properties.
+ * @param {boolean} [config.staticPhysics=false] - Optimization: If true, freezes particles and rotates the whole container.
+ * @returns {THREE.InstancedMesh} The resulting mesh. Contains a custom `.update(time)` method.
  */
 function createDebrisSystem(config) {
     const {
