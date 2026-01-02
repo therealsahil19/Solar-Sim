@@ -1,46 +1,16 @@
-# PALETTE'S JOURNAL - DESIGN SYSTEM DECISIONS
+## 2024-05-22 - Malformed HTML & ARIA Shortcuts
+**Learning:** Broken HTML tags (unclosed elements) can silently break layout and accessibility without throwing errors. In this case, a duplicated button tag disrupted the toolbar.
+**Action:** Always check HTML structure when modifying UI. Use `aria-keyshortcuts` to expose keyboard commands to assistive technology, and ensure the JS implementation actually matches the UI hints (e.g., tooltips).
 
-## 2024-05-23 - [System Update: Semantic Tokens & Motion]
-**Problem:** The current CSS uses a mix of generic variable names (`--color-bg`, `--color-accent`) and lacks a defined motion system. Components are styled somewhat inconsistently (different button sizes/interactions).
+## 2024-10-27 - Design System Zero: Tokenization
+**Problem:** The UI uses hardcoded hex values (`#4a90e2`, `rgba(10, 10, 16, 0.85)`), arbitrary spacing (`1rem`, `200px`), and z-indices (`10`, `9999`), making theming impossible and consistency brittle.
+**Solution:** Implemented a CSS Variable system (Design Tokens) for Colors, Spacing, Z-index, and Radius.
+**Standard:** WCAG 2.1 AA (Color Contrast), DRY Principle (Single Source of Truth).
+
+## 2024-12-31 - "Palette" System Upgrade & Modal Architecture
+**Problem:** The UI relied on absolute positioning (`top: 1rem`), creating potential overlaps on mobile, and the "Onboarding Hint" was a non-interactive static text overlay, failing to engage users or clearly explain controls.
 **Solution:**
-1.  **Primitive vs. Semantic Split:** Introduce a two-tier token system.
-    *   *Primitives:* Raw hex values (e.g., `--palette-blue-500`).
-    *   *Semantic:* Contextual names (e.g., `--action-primary-bg`).
-2.  **Motion System:** Define `--anim-duration-*` and `--anim-ease-*` tokens to standardise transitions.
-3.  **Component Architecture:** Refactor generic classes into specific component classes (`.btn-icon`, `.card-glass`).
-4.  **Interaction Refactor:** Move from JS-driven `display: none` to Class-driven state (`.is-open`) to allow CSS animations.
-
-**Standard:**
-*   **WCAG 2.1 AA:** Ensure contrast ratios > 4.5:1 for all text.
-*   **Motion:** "Motion conveys Meaning" - use entrance/exit animations to orient the user.
-
-## 2024-05-24 - [System Upgrade: Dynamic Theming Engine]
-**Problem:** The application was hardcoded to a single "Space/Dark" theme. Users had no option for high-contrast or light mode (useful for educational classroom settings with glare). CSS contained scattered hardcoded RGBA values.
-**Solution:**
-1.  **Semantic Token Expansion:** All hardcoded colors (backgrounds, overlays, shadows) were replaced with semantic variables (e.g., `--color-overlay-bg`, `--color-shadow`).
-2.  **Theme Manager:** Implemented `src/managers/ThemeManager.js` to handle state switching (persisted via `localStorage`) and toggle `data-theme` attributes.
-3.  **Theme Definitions:**
-    *   **Default:** The classic cosmic dark mode.
-    *   **Blueprint:** A high-contrast, technical light mode (Light blue-gray background, dark blue text).
-    *   **OLED:** A pitch-black mode for energy saving on OLED screens.
-4.  **Interaction:** Added "Switch Theme" command to the Command Palette.
-
-**Standard:**
-*   **WCAG 2.1 AA:** "Blueprint" mode ensures high contrast for text.
-*   **Systemic Design:** Zero hardcoded colors in CSS.
-
-## 2026-01-02 - [System Update: Modal System & Utility Architecture]
-**Problem:** The application contained legacy "design debt" in the form of inline styles (`style="font-size:..."`) within `index.html`. The Modal implementation was manual and inconsistent with the design system tokens.
-**Solution:**
-1.  **Modal Standardization:** Created a reusable `Modal.js` component wrapping the native `<dialog>` element.
-    *   Enforces backdrop blur, entrance animations, and focus trapping.
-    *   Standardized CSS classes (`.modal-content`, `.modal-grid`) in `src/style.css`.
-2.  **Utility Class Architecture:** Introduced functional CSS utilities to `src/style.css` (e.g., `.text-xl`, `.font-light`, `.mb-md`, `.kbd`) to eliminate the need for inline styles.
-3.  **Refactoring:**
-    *   Removed all inline styles from `index.html`.
-    *   Updated `CommandPalette` to use the standardized `.kbd` class for shortcuts.
-    *   Refactored `src/input.js` to use the new `Modal` class for the Welcome screen.
-
-**Standard:**
-*   **No Inline Styles:** All styling is now driven by classes and tokens.
-*   **Accessibility:** Modals use native `<dialog>` for robust keyboard support and screen reader announcement.
+1. **Grid Overlay:** Replaced absolute positioning with a responsive CSS Grid (`#app-overlay`) dividing the screen into Semantic Zones (Header, Main, Footer).
+2. **Glass Component:** Standardized the `.glass-panel` class for consistent visual language.
+3. **Modal Pattern:** Implemented a persistent `<dialog id="welcome-modal">` for onboarding that opens on load and can be recalled via a "Help" button.
+**Standard:** WCAG 2.1 AA (Focus Trapping in Modals, ARIA Landmarks), Responsive Design (Mobile-First Grid).
