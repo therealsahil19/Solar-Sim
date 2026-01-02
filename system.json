@@ -2,104 +2,96 @@
     {
         "name": "Mercury",
         "type": "Planet",
-        "color": "#AAAAAA",
-        "texture": "textures/mercury.jpg",
-        "size": 0.38,
-        "distance": 6,
-        "speed": 0.02,
-        "rotationSpeed": 0.005,
+        "physics": { "a": 0.387, "e": 0.2056, "i": 7.00, "omega": 29.12, "Omega": 48.33, "M0": 174.79 },
+        "visual": { "size": 0.38, "color": "#AAAAAA", "texture": "textures/mercury.jpg" },
         "description": "The smallest planet in our solar system and closest to the Sun.",
         "moons": []
     },
     {
         "name": "Venus",
         "type": "Planet",
-        "color": "#E3BB76",
-        "texture": "textures/venus.jpg",
-        "size": 0.95,
-        "distance": 10,
-        "speed": 0.007,
-        "rotationSpeed": 0.002,
+        "physics": { "a": 0.723, "e": 0.0068, "i": 3.39, "omega": 54.88, "Omega": 76.68, "M0": 50.11 },
+        "visual": { "size": 0.95, "color": "#E3BB76", "texture": "textures/venus.jpg" },
         "description": "Second planet from the Sun, named after the Roman goddess of love and beauty.",
         "moons": []
     },
     {
         "name": "Earth",
         "type": "Planet",
-        "color": "#2233FF",
-        "texture": "textures/earth.jpg",
-        "size": 1,
-        "distance": 15,
-        "speed": 0.005,
-        "rotationSpeed": 0.02,
+        "physics": { "a": 1.000, "e": 0.0167, "i": 0.00, "omega": 288.06, "Omega": 174.87, "M0": 358.61 },
+        "visual": { "size": 1.0, "color": "#2233FF", "texture": "textures/earth.jpg" },
         "description": "Our home planet, the third from the Sun and the only place known to inhabit life.",
         "moons": [
-            { "name": "Moon", "type": "Moon", "color": "#888888", "texture": "textures/moon.jpg", "size": 0.27, "distance": 2.5, "speed": 0.03, "rotationSpeed": 0.01, "description": "Earth's only natural satellite." }
+            {
+                "name": "Moon",
+                "type": "Moon",
+                "physics": { "a": 0.00257, "e": 0.0549, "i": 5.14, "omega": 318, "Omega": 125, "M0": 135 },
+                "visual": { "size": 0.27, "color": "#888888", "texture": "textures/moon.jpg" },
+                "description": "Earth's only natural satellite."
+            }
         ]
     },
     {
         "name": "Mars",
         "type": "Planet",
-        "color": "#FF4500",
-        "texture": "textures/mars.jpg",
-        "size": 0.53,
-        "distance": 22,
-        "speed": 0.003,
-        "rotationSpeed": 0.018,
+        "physics": { "a": 1.524, "e": 0.0934, "i": 1.85, "omega": 286.50, "Omega": 49.57, "M0": 19.41 },
+        "visual": { "size": 0.53, "color": "#FF4500", "texture": "textures/mars.jpg" },
         "description": "The dusty, red fourth planet, home to the largest volcano in the solar system.",
         "moons": [
-            { "name": "Phobos", "type": "Moon", "color": "#555555", "size": 0.1, "distance": 0.8, "speed": 0.08, "rotationSpeed": 0.05, "description": "The larger and inner of the two moons of Mars." },
-            { "name": "Deimos", "type": "Moon", "color": "#555555", "size": 0.08, "distance": 1.2, "speed": 0.06, "rotationSpeed": 0.05, "description": "The smaller and outer of the two moons of Mars." }
+            {
+                "name": "Phobos",
+                "type": "Moon",
+                "physics": { "a": 0.00006, "e": 0.0151, "i": 1.09, "omega": 0, "Omega": 0, "M0": 0 },
+                "visual": { "size": 0.1, "color": "#555555" },
+                "description": "The larger and inner of the two moons of Mars."
+            },
+            {
+                "name": "Deimos",
+                "type": "Moon",
+                "physics": { "a": 0.00016, "e": 0.0002, "i": 0.93, "omega": 0, "Omega": 0, "M0": 0 },
+                "visual": { "size": 0.08, "color": "#555555" },
+                "description": "The smaller and outer of the two moons of Mars."
+            }
         ]
     },
     {
         "name": "Jupiter",
         "type": "Planet",
-        "color": "#D8CA9D",
-        "texture": "textures/jupiter.jpg",
-        "size": 3.5,
-        "distance": 35,
-        "speed": 0.001,
-        "rotationSpeed": 0.04,
+        "physics": { "a": 5.203, "e": 0.0489, "i": 1.30, "omega": 273.86, "Omega": 100.55, "M0": 20.02 },
+        "visual": { "size": 3.5, "color": "#D8CA9D", "texture": "textures/jupiter.jpg" },
         "description": "The largest planet in the solar system, a gas giant with a Great Red Spot.",
         "moons": []
     },
     {
         "name": "Saturn",
         "type": "Planet",
-        "color": "#D2C0A5",
-        "texture": "textures/saturn.jpg",
-        "size": 3,
-        "distance": 50,
-        "speed": 0.0007,
-        "rotationSpeed": 0.038,
-        "hasRing": true,
+        "physics": { "a": 9.537, "e": 0.0565, "i": 2.49, "omega": 339.39, "Omega": 113.71, "M0": 317.02 },
+        "visual": { "size": 3.0, "color": "#D2C0A5", "texture": "textures/saturn.jpg", "hasRing": true },
         "description": "Adorned with a complex system of icy rings, Saturn is unique in our solar system.",
         "moons": []
     },
     {
         "name": "Uranus",
         "type": "Planet",
-        "color": "#93B8BE",
-        "texture": "textures/uranus.jpg",
-        "size": 2,
-        "distance": 65,
-        "speed": 0.0005,
-        "rotationSpeed": 0.03,
-        "hasRing": true,
+        "physics": { "a": 19.191, "e": 0.0472, "i": 0.77, "omega": 96.99, "Omega": 74.00, "M0": 142.23 },
+        "visual": { "size": 2.0, "color": "#93B8BE", "texture": "textures/uranus.jpg", "hasRing": true },
         "description": "The seventh planet from the Sun, rotating on its side.",
         "moons": []
     },
     {
         "name": "Neptune",
         "type": "Planet",
-        "color": "#4B70DD",
-        "texture": "textures/neptune.jpg",
-        "size": 1.9,
-        "distance": 80,
-        "speed": 0.0004,
-        "rotationSpeed": 0.032,
+        "physics": { "a": 30.070, "e": 0.0086, "i": 1.77, "omega": 273.18, "Omega": 131.78, "M0": 256.22 },
+        "visual": { "size": 1.9, "color": "#4B70DD", "texture": "textures/neptune.jpg" },
         "description": "The eighth and farthest-known Solar planet from the Sun, dark, cold, and whipped by supersonic winds.",
+        "moons": []
+    },
+    {
+        "name": "Pluto",
+        "type": "Dwarf Planet",
+        "physics": { "a": 39.480, "e": 0.2488, "i": 17.16, "omega": 113.83, "Omega": 110.30, "M0": 14.53 },
+        "visual": { "size": 0.3, "color": "#E3C9A6", "texture": "textures/pluto.jpg" },
+        "description": "A dwarf planet in the Kuiper belt, known for its high eccentricity and inclination.",
         "moons": []
     }
 ]
