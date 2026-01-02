@@ -185,6 +185,8 @@ export class NavigationSidebar {
     open() {
         this.isOpen = true;
         this.dom.sidebar.setAttribute('aria-hidden', 'false');
+        this.dom.sidebar.classList.remove('animate-out');
+        this.dom.sidebar.classList.add('animate-in');
 
         // A11y: Move focus to search after a short delay (transition allowance)
         if (this.dom.search) {
@@ -198,7 +200,15 @@ export class NavigationSidebar {
      */
     close() {
         this.isOpen = false;
-        this.dom.sidebar.setAttribute('aria-hidden', 'true');
+        this.dom.sidebar.classList.remove('animate-in');
+        this.dom.sidebar.classList.add('animate-out');
+
+        setTimeout(() => {
+            if (!this.isOpen) {
+                this.dom.sidebar.setAttribute('aria-hidden', 'true');
+                this.dom.sidebar.classList.remove('animate-out');
+            }
+        }, 400); // Matches 0.4s transition
 
         // A11y: Return focus to the button that opened the menu
         if (this.dom.btnOpen) this.dom.btnOpen.focus();

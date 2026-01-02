@@ -6,6 +6,7 @@
 
 export class ThemeManager {
     constructor() {
+        // Detect themes from CSS or use a standard set (Default, Blueprint, OLED)
         this.themes = ['default', 'blueprint', 'oled'];
         this.currentThemeIndex = 0;
 

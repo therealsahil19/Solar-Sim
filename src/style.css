@@ -64,6 +64,12 @@
     --color-input-bg: rgba(255, 255, 255, 0.08);
     --color-input-bg-focus: rgba(255, 255, 255, 0.15);
 
+    /* --- Semantic: States & Feedback --- */
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: var(--palette-brand-main);
+
     /* --- Motion Tokens (Physics-based) --- */
     --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
     --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
@@ -121,6 +127,13 @@
     --z-floating: 200;
     --z-toast: 300;
     --z-modal: 400;
+
+    /* --- Motion: Transitions & Animations --- */
+    --motion-slide-up: translateY(20px);
+    --motion-slide-down: translateY(-20px);
+    --motion-slide-left: translateX(20px);
+    --motion-slide-right: translateX(-20px);
+    --motion-scale: scale(0.95);
 }
 
 /* --- Theme: Blueprint (Light / Technical) --- */
@@ -388,7 +401,58 @@ a:hover {
     }
 }
 
-/* --- Glass Panel --- */
+/* --- Motion System (entry/exit) --- */
+.animate-in {
+    animation: fade-in var(--duration-normal) var(--ease-smooth) forwards,
+        slide-in var(--duration-normal) var(--ease-spring) forwards;
+}
+
+.animate-out {
+    animation: fade-out var(--duration-fast) var(--ease-smooth) forwards,
+        slide-out var(--duration-fast) var(--ease-smooth) forwards;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fade-out {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes slide-in {
+    from {
+        transform: var(--motion-slide-up);
+    }
+
+    to {
+        transform: translate(0);
+    }
+}
+
+@keyframes slide-out {
+    from {
+        transform: translate(0);
+    }
+
+    to {
+        transform: var(--motion-slide-down);
+    }
+}
+
+/* Glass Panel Enhancements */
 .glass-panel {
     background: var(--color-surface-glass);
     backdrop-filter: blur(24px) saturate(180%);

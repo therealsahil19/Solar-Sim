@@ -407,9 +407,14 @@ function toggleOrbits() {
     showOrbits = !showOrbits;
     const btn = document.getElementById('btn-orbits');
     if (btn) btn.setAttribute('aria-pressed', showOrbits);
-    allOrbits.forEach(orbit => orbit.visible = showOrbits);
     allTrails.forEach(trail => trail.visible = showOrbits);
     showToast(`Orbits: ${showOrbits ? "ON" : "OFF"}`);
+
+    // A11y: announce state change
+    const liveAnnouncer = document.getElementById('toast');
+    if (liveAnnouncer) {
+        liveAnnouncer.setAttribute('aria-label', `Orbits and trails ${showOrbits ? 'visible' : 'hidden'}`);
+    }
 }
 
 /**
@@ -424,12 +429,15 @@ function togglePause(btnElement) {
         if (isPaused) {
             btnElement.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
             btnElement.setAttribute('aria-label', "Resume Simulation");
-        } else {
-            btnElement.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
-            btnElement.setAttribute('aria-label', "Pause Simulation");
         }
     }
-    showToast(isPaused ? "Paused" : "Resumed");
+    showToast(isPaused ? "Simulation Paused" : "Simulation Resumed");
+
+    // A11y: announce state change
+    const liveAnnouncer = document.getElementById('toast');
+    if (liveAnnouncer) {
+        liveAnnouncer.textContent = isPaused ? "Simulation Paused" : "Simulation Resumed";
+    }
 }
 
 /**

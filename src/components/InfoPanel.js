@@ -101,9 +101,10 @@ export class InfoPanel {
         }
 
         // Show the panel
-        // We use a CSS class '.visible' to trigger transitions (slide-in/fade-in)
         if (this.dom.panel) {
             this.dom.panel.classList.add('visible');
+            this.dom.panel.classList.remove('animate-out');
+            this.dom.panel.classList.add('animate-in');
             this.dom.panel.setAttribute('aria-hidden', 'false');
         }
     }
@@ -113,9 +114,17 @@ export class InfoPanel {
      * Clears `currentMesh` reference.
      */
     hide() {
-        if (this.dom.panel) {
+        if (this.dom.panel && this.dom.panel.classList.contains('visible')) {
             this.dom.panel.classList.remove('visible');
+            this.dom.panel.classList.remove('animate-in');
+            this.dom.panel.classList.add('animate-out');
             this.dom.panel.setAttribute('aria-hidden', 'true');
+
+            setTimeout(() => {
+                if (!this.dom.panel.classList.contains('visible')) {
+                    this.dom.panel.classList.remove('animate-out');
+                }
+            }, 350);
         }
         this.currentMesh = null;
     }

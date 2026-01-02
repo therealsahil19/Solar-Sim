@@ -126,6 +126,13 @@ export class CommandPalette {
         this.list.id = 'cmd-list';
         this.list.setAttribute('role', 'listbox');
 
+        // A11y: Live region for search results
+        this.liveRegion = document.createElement('div');
+        this.liveRegion.className = 'sr-only';
+        this.liveRegion.setAttribute('aria-live', 'polite');
+        this.liveRegion.setAttribute('aria-atomic', 'true');
+        container.appendChild(this.liveRegion);
+
         // Footer (Shortcuts hint)
         const footer = document.createElement('div');
         footer.className = 'cmd-footer';
@@ -208,6 +215,8 @@ export class CommandPalette {
         this.isOpen = true;
         this.overlay.hidden = false;
         this.overlay.classList.add('visible');
+        this.overlay.classList.remove('animate-out');
+        this.overlay.classList.add('animate-in');
         this.previousActiveElement = document.activeElement;
 
         this.input.value = '';
@@ -221,13 +230,15 @@ export class CommandPalette {
     close() {
         this.isOpen = false;
         this.overlay.classList.remove('visible');
-        // Wait for animation to finish before hiding?
-        // For simplicity, we just hide after a tiny delay or use CSS transition handling.
-        // But to be safe with 'hidden', we should do it immediately or use animationend.
-        // Let's just remove the class and set hidden after timeout matches CSS.
+        this.overlay.classList.remove('animate-in');
+        this.overlay.classList.add('animate-out');
+
         setTimeout(() => {
-            if (!this.isOpen) this.overlay.hidden = true;
-        }, 200); // Matches typical duration
+            if (!this.isOpen) {
+                this.overlay.hidden = true;
+                this.overlay.classList.remove('animate-out');
+            }
+        }, 350); // Matches duration-normal
 
         if (this.previousActiveElement) {
             this.previousActiveElement.focus();
@@ -265,6 +276,13 @@ export class CommandPalette {
 
         this.renderList();
         this.selectIndex(0);
+
+        // A11y update
+        if (this.liveRegion) {
+            this.liveRegion.textContent = q
+                ? `${this.filteredItems.length} results found for "${q}"`
+                : '';
+        }
     }
 
     /**
