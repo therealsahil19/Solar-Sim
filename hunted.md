@@ -46,6 +46,9 @@
 | 042| [FIXED] | 🟢 LOW   | `src/components/CommandPalette.js:249` | TypeError Risk: Accessing `.toLowerCase()` on possibly undefined |
 | 043| [FIXED] | 🟢 LOW   | `src/physics.js:116-126` | Magic Numbers: Hardcoded scale constants without documentation |
 | 044| [FIXED] | 🟢 LOW   | `src/procedural.js:337` | Zombie Code: Unused `trail` variable |
+| 045| [OPEN] | 🟢 LOW   | `src/procedural.js:30-33` | Memory Leak: `clearMaterialCache` never called |
+| 046| [OPEN] | 🟢 LOW   | `src/instancing.js:76-78` | Silent Failure: `group.mesh.dispose()` called on non-existent method |
+| 047| [OPEN] | 🟢 LOW   | `src/benchmark.js:75` | Logic Flaw: No return value in final else branch |
 
 ## Details
 
@@ -311,4 +314,52 @@ const LIMIT_2 = 50.0;      // End of Kuiper Belt Zone
 
 ### 043 - Magic Numbers: Hardcoded Scale Constants
 [FIXED] Extracted all magic numbers into a documented `SCALE_CONFIG` object in `src/physics.js` with JSDoc comments explaining each value.
+
+### 045 - Memory Leak: `clearMaterialCache` Never Called
+The `procedural.js` module has a `clearMaterialCache()` function (line 30-33) that disposes all cached materials. However, this function is **never invoked** anywhere in the codebase. When the simulation is reset or reinitialized (e.g., switching planet configurations), the old materials persist in GPU memory.
+
+```javascript
+// src/procedural.js:30-33
+export function clearMaterialCache() {
+    Object.values(materialCache).forEach(mat => mat.dispose());
+    for (const key in materialCache) delete materialCache[key];
+}
+// ❌ Exported but never called in main.js init() or anywhere else
+```
+
+**Recommendation:** Call `clearMaterialCache()` in `main.js:init()` before re-creating planets, or when the scene is disposed.
+
+### 046 - Silent Failure: `group.mesh.dispose()` Called on Non-Existent Method
+In `instancing.js:76-78`, when rebuilding instance groups, the code calls `group.mesh.dispose()`. However, `THREE.InstancedMesh` **does not have a `.dispose()` method** on the mesh object itself - it requires manual disposal of its `.geometry` and `.material` properties (which is done later in `.dispose()`). The call silently does nothing.
+
+```javascript
+// src/instancing.js:76-78
+if (group.mesh) {
+    this.scene.remove(group.mesh);
+    group.mesh.dispose(); // ❌ InstancedMesh has no dispose() method - this is a no-op
+}
+```
+
+**Impact:** Low severity since the `.dispose()` method in the class (line 173+) handles geometry/material cleanup correctly. However, the `build()` method's cleanup is incomplete - if `build()` is called multiple times without `dispose()`, old meshes may leak.
+
+**Recommendation:** Replace with explicit cleanup like done in `dispose()`, or remove the no-op call to avoid confusion.
+
+### 047 - Logic Flaw: No Return Value in Final Else Branch
+The `benchmark.js:measure()` function has a return statement in the `else` branch (lines 32-74) but this value is never captured. The `requestAnimationFrame` callback ignores return values, so technically this isn't causing a bug. However, it indicates the function was designed to return results that are never used.
+
+```javascript
+// src/benchmark.js:75
+            return {
+                frames: frameTimes.length,
+                avgFps: 1000 / avg,
+                // ... rest of result object
+            };
+        } // ← This return is inside an else block of a rAF callback
+    }
+// The outer startBenchmark returns { cancel: ... } but not the results
+```
+
+**Impact:** Low - The console.log output still works. But if a caller tries to programmatically capture benchmark results via `await`, they won't get them. This is more of a design inconsistency than a crash risk.
+
+**Recommendation:** Either use a Promise-based API or add a callback option for result delivery.
 
