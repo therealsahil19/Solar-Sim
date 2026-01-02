@@ -34,9 +34,6 @@ const interactionTargets = [];
 /** @type {Array<THREE.Mesh>} List of primary planets for keyboard shortcuts */
 const planets = [];
 
-/** @type {Array<THREE.Line>} List of trail lines to update */
-export const activeTrails = [];
-
 // Lists for toggling visibility
 const allOrbits = [];
 const allTrails = [];
@@ -188,6 +185,9 @@ export async function init() {
 
     const textureLoader = new THREE.TextureLoader(manager);
 
+    // Bolt Support: Lazy Load Queue
+    textureLoader.lazyLoadQueue = [];
+
     // Bolt Support: Init Registry
     instanceRegistry = new InstanceRegistry(scene);
     trailManager = new TrailManager(scene, 5000, 50); // 5000 trails, 50 points each (reduced from 100 for memory)
@@ -250,9 +250,6 @@ export async function init() {
             allOrbits.push(...systemNode.orbits);
             allTrails.push(...systemNode.trails);
             allLabels.push(...systemNode.labels);
-
-            // Collect trails for animation updates
-            activeTrails.push(...systemNode.trails);
 
             // Track primary planets (assuming system.json is flat list of planets)
             // With instancing, interactables might be empty.
@@ -323,6 +320,24 @@ export async function init() {
     // If they load later, manager.onLoad will handle it.
     if (assetsLoaded && interactionHelpers.openModal) {
         interactionHelpers.openModal();
+    }
+
+    // Bolt Optimization: Trigger Lazy Loader after 2 seconds (to let main assets settle)
+    if (textureLoader.lazyLoadQueue.length > 0) {
+        setTimeout(() => {
+            console.log(`Bolt ⚡: Lazy loading ${textureLoader.lazyLoadQueue.length} textures...`);
+            textureLoader.lazyLoadQueue.forEach(item => {
+                const tex = new THREE.TextureLoader().load(item.url); // Use separate loader to avoid manager UI trigger?
+                // Actually, if we use same manager, the loading bar might reappear?
+                // The manager behavior depends on if it was reset.
+                // Let's use a fresh loader without manager to be silent.
+                item.material.map = tex;
+                item.material.color.setHex(0xffffff); // Reset color to white so texture shows true colors
+                item.material.needsUpdate = true;
+            });
+            // Clear queue
+            textureLoader.lazyLoadQueue = [];
+        }, 2000);
     }
 
     // 7. Start Loop
@@ -712,25 +727,6 @@ function animate() {
         if (trailManager) {
             trailManager.update();
         }
-
-        // Legacy Trail System (Backup)
-        activeTrails.forEach(trail => {
-            const target = trail.userData.target;
-            if (!target) return;
-
-            tempVec.setFromMatrixPosition(target.matrixWorld);
-            const positions = trail.userData.positions;
-
-            // Fast Array Shift: copyWithin() moves memory blocks efficiently (O(1) relative to loop)
-            // Shift data right by 1 vector (3 floats)
-            positions.copyWithin(3, 0, positions.length - 3);
-
-            positions[0] = tempVec.x;
-            positions[1] = tempVec.y;
-            positions[2] = tempVec.z;
-
-            trail.geometry.attributes.position.needsUpdate = true;
-        });
     }
 }
 

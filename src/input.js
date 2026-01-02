@@ -125,11 +125,20 @@ export function setupInteraction(context, callbacks) {
     let lastClickedMeshId = null;
     const doubleClickDelay = 300;
 
+    // Cached values to prevent layout thrashing
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+        width = window.innerWidth;
+        height = window.innerHeight;
+    });
+
     const onPointerUp = (event) => {
         if (event.button !== 0) return;
 
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        mouse.x = (event.clientX / width) * 2 - 1;
+        mouse.y = -(event.clientY / height) * 2 + 1;
 
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(interactionTargets, false);
