@@ -37,6 +37,15 @@
 | 033| [FIXED] | 🟡 MED   | `src/trails.js:210` | Logic Flaw: `reset()` fails to clear visual artifacts |
 | 034| [FIXED] | 🟢 LOW   | `src/main.js:277` | Zombie Code: Lazy Loading executes after Init Failure |
 | 035| [FIXED] | 🟢 LOW   | `src/main.js:438` | Physics Instability: Unclamped Delta Time |
+| 036| [OPEN] | 🟡 MED   | `src/trails.js:130` | Performance: GC Allocation in Update Loop |
+| 037| [OPEN] | 🟢 LOW   | `src/debris.js:136` | Zombie Code: Unused `staticPhysics` Parameter |
+| 038| [OPEN] | 🟢 LOW   | `src/components/Modal.js:82` | Memory Leak: `dispose()` Does Not Remove Listeners |
+| 039| [OPEN] | 🟢 LOW   | `src/components/InfoPanel.js:81` | Crash Risk: Missing null check for `userData` |
+| 040| [OPEN] | 🟡 MED   | `src/instancing.js:110` | Performance: Object3D Allocation in Update Loop |
+| 041| [OPEN] | 🟢 LOW   | `src/components/NavigationSidebar.js:42` | Silent Failure: Missing null guard for DOM elements |
+| 042| [OPEN] | 🟢 LOW   | `src/components/CommandPalette.js:249` | TypeError Risk: Accessing `.toLowerCase()` on possibly undefined |
+| 043| [OPEN] | 🟢 LOW   | `src/physics.js:116-126` | Magic Numbers: Hardcoded scale constants without documentation |
+| 044| [OPEN] | 🟢 LOW   | `src/procedural.js:337` | Zombie Code: Unused `trail` variable |
 
 ## Details
 
@@ -158,4 +167,118 @@ const dt = (now - lastFrameTime) / 1000;
 
 ### 035 - Physics Instability: Unclamped Delta Time
 [FIXED] Clamped `dt` to a maximum of 0.1s in `src/main.js` to prevent physics instabilities when the tab happens to be backgrounded.
+
+### 036 - Performance: GC Allocation in Update Loop
+The `TrailManager.update()` method creates a new `THREE.Vector3()` on **every frame** (line 130). This causes garbage collection pressure on high-frequency loops, leading to micro-stutters over time.
+
+```javascript
+// src/trails.js:130
+update() {
+    const tempVec = new THREE.Vector3(); // ❌ Allocates every frame
+    this.trails.forEach(trail => { ... });
+}
+```
+
+**Recommendation:** Hoist `tempVec` to a module-level or instance-level variable, similar to how `src/main.js:472` handles it.
+
+### 037 - Zombie Code: Unused `staticPhysics` Parameter
+The `createDebrisSystem` function destructures `staticPhysics` from the config object but never uses it. The comment says it's kept for "API compatibility" but this is dead code that confuses maintainers.
+
+```javascript
+// src/debris.js:136
+const {
+    count = 1000,
+    distribution,
+    isSpherical = false,
+    material: matConfig,
+    staticPhysics = false // ❌ Destructured but never used
+} = config;
+```
+
+### 038 - Memory Leak: Modal `dispose()` Is a No-Op
+The `Modal.dispose()` method has an empty body and does not remove the event listeners added in `bindEvents()`. Since the listeners are anonymous arrow functions, they cannot be removed without refactoring.
+
+```javascript
+// src/components/Modal.js:82
+dispose() {
+    // In a complex app, we'd remove listeners here.
+    // ❌ Actually empty - listeners are never cleaned up
+}
+```
+
+### 039 - Crash Risk: Missing null check for `userData`
+In `InfoPanel.update()`, the code accesses `mesh.userData` properties without verifying that `userData` exists. If a mesh with no `userData` is passed, the app will crash.
+
+```javascript
+// src/components/InfoPanel.js:81
+update(mesh) {
+    if (!mesh) return;
+    const d = mesh.userData; // ❌ Could be undefined
+    if (this.dom.name) this.dom.name.textContent = d.name || 'Unknown'; // TypeError if d is undefined
+}
+```
+
+### 040 - Performance: Object3D Allocation in Update Loop
+The `InstanceRegistry.update()` method creates a `new THREE.Object3D()` on every call. This is executed every frame and causes unnecessary garbage collection.
+
+```javascript
+// src/instancing.js:110
+update() {
+    const dummy = new THREE.Object3D(); // ❌ Allocates every frame
+    this.groups.forEach(group => { ... });
+}
+```
+
+**Note:** The `dummy` object is not even used in the current implementation (matrices are read directly from pivots). This is doubly wasteful.
+
+### 041 - Silent Failure: Missing null guard for DOM elements
+`NavigationSidebar` checks for `this.dom.sidebar` existence before proceeding with `init()`, but other DOM elements like `list`, `search`, `btnClose`, `btnOpen` are not validated. If any of these are missing, methods will fail silently or throw.
+
+```javascript
+// src/components/NavigationSidebar.js:42
+if (!this.dom.sidebar) {
+    console.error(...);
+    return;
+}
+// ❌ this.dom.list, this.dom.search, etc. could still be null
+this.init();
+```
+
+### 042 - TypeError Risk: CommandPalette Filter
+The `filter()` method accesses `item.name.toLowerCase()` and `item.type.toLowerCase()` without verifying these properties exist. If an item has a missing or undefined `name` or `type`, the filter will throw a TypeError.
+
+```javascript
+// src/components/CommandPalette.js:249
+this.filteredItems = this.items.filter(item =>
+    item.name.toLowerCase().includes(q) || // ❌ item.name could be undefined
+    item.type.toLowerCase().includes(q)    // ❌ item.type could be undefined
+);
+```
+
+### 043 - Magic Numbers: Hardcoded Scale Constants
+The physics module uses several hardcoded numbers for the multi-zone scaling system. While some have inline comments, they are not defined with semantic names, making future modifications error-prone.
+
+```javascript
+// src/physics.js:116-126
+const AU_SCALE = 40.0;     // 1 AU = 40 Three.js units
+const LIMIT_1 = 30.0;      // End of Linear Zone (Neptune is ~30 AU)
+const LIMIT_2 = 50.0;      // End of Kuiper Belt Zone
+// ... more magic numbers without easy configurability
+```
+
+**Severity Note:** This is marked as LOW because the values are stable for the solar system simulation. However, it would become problematic if the system needed to support different scales or configurations.
+
+### 044 - Zombie Code: Unused `trail` Variable
+The `createSystem` function declares `let trail = null;` but never assigns or uses it. The trailing collection logic references a different pattern (registration to `textureLoader.trailManager`).
+
+```javascript
+// src/procedural.js:337
+let trail = null;
+if (textureLoader.trailManager && ...) {
+    textureLoader.trailManager.register(pivot, data.visual.color);
+    // ❌ `trail` is never assigned here
+}
+// ...
+const trails = trail ? [trail] : []; // Always evaluates to []
+```
 
