@@ -211,7 +211,8 @@ export class TrailManager {
         // Clear all trails logic if needed
         this.nextTrailIndex = 0;
         this.trails = [];
-        // Geometry remains allocated
+        // Geometry remains allocated but we hide it
+        this.geometry.setDrawRange(0, 0);
     }
 
     /**

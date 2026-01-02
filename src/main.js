@@ -275,6 +275,7 @@ export async function init() {
 
     if (textureLoader.lazyLoadQueue.length > 0) {
         setTimeout(() => {
+            if (initFailed) return;
             console.log(`Bolt ⚡: Lazy loading ${textureLoader.lazyLoadQueue.length} textures...`);
             textureLoader.lazyLoadQueue.forEach(item => {
                 const tex = new THREE.TextureLoader().load(item.url);
@@ -435,7 +436,8 @@ function animate() {
     requestAnimationFrame(animate);
 
     const now = performance.now();
-    const dt = (now - lastFrameTime) / 1000; // seconds
+    const rawDt = (now - lastFrameTime) / 1000;
+    const dt = Math.min(rawDt, 0.1); // Clamp to 0.1s (Bug 035)
     lastFrameTime = now;
 
     if (!isPaused) {
@@ -487,7 +489,7 @@ function animate() {
 
                 // Self Rotation (Visual Mesh)
                 if (obj.mesh) {
-                    obj.mesh.rotation.y += 0.01 * timeScale; // Simple spin
+                    obj.mesh.rotation.y += 0.5 * dt * timeScale; // Simple spin (Bug 031)
                 }
             }
         });
@@ -514,7 +516,7 @@ function animate() {
         }
 
         // Rotate Starfield
-        if (starfield) starfield.rotation.y += 0.0003;
+        if (starfield) starfield.rotation.y += 0.02 * dt;
     }
 
     // --- 2. Camera Logic ---

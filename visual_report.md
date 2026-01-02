@@ -6,8 +6,8 @@
 | `tablet.png` | Tablet | [FIXED] | Overlap | Improved text-shadow and background contrast for planet labels. |
 | `mobile.png` | Mobile | [FIXED] | Density | Reduced control dock height and icon sizes for smaller viewports. |
 | `mobile.png` | Mobile | [FIXED] | Alignment | Adjusted SVG padding and alignment in the texture toggle. |
-| `desktop.png` | Desktop | 🟢 LOW | Micro | Orbit lines pass directly through planet labels, creating visual noise. |
-| `desktop.png` | All | 🟡 MED | Consistency | Header icons mismatched style (Button vs Text). |
+| `desktop.png` | Desktop | [FIXED] | Micro | Orbit lines pass directly through planet labels, creating visual noise. |
+| `desktop.png` | All | [FIXED] | Consistency | Header icons mismatched style (Button vs Text). |
 
 
 ## Details
@@ -21,6 +21,7 @@
 **Observation:** In all viewports, but most notably `tablet.png` and `mobile.png`, the Mercury label is positioned directly over the Sun's glow.
 **Impact:** Extreme contrast failure. The white text on yellow-white glow makes the label unreadable.
 **Recommendation:** Add a `z-index` offset or a logic to shift labels vertically when they are within a certain radius of the Sun's screen-space coordinates.
+**Status:** [FIXED] Increased `.planet-label` background opacity to 0.85 and blur to 8px in `src/style.css` to ensure readability over the Sun glow.
 
 ### 3. Responsive Density (Mobile)
 **Observation:** In `mobile.png`, the vertical stack of control pills takes up nearly 30% of the screen height. 
@@ -35,6 +36,7 @@
 **Observation:** The 'Menu' button relies on a circular container interaction model, while the 'Help' (?) button is rendered as a standalone text character.
 **Impact:** Erodes the design language consistency.
 **Recommendation:** Wrap the '?' code in the same button component class as the Menu.
+**Status:** [FIXED] Updated `index.html` to use `icon-btn` class for the Help button, matching the Menu button style.
 
 ---
 ## Previous Observations (Archive)

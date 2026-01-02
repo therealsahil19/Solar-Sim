@@ -61,7 +61,7 @@ export function createStarfield() {
     const geometry = new THREE.BufferGeometry();
     const count = 3000;
     const positions = new Float32Array(count * 3);
-    for(let i=0; i<count*3; i++) {
+    for (let i = 0; i < count * 3; i++) {
         positions[i] = (Math.random() - 0.5) * 400;
     }
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -173,6 +173,13 @@ export function createSun(textureLoader, useTextures) {
     glowSprite.scale.set(12, 12, 1);
     sun.add(glowSprite);
 
+    // Bug 032 Fix: Custom minimize method for GPU memory
+    sun.dispose = () => {
+        glowTexture.dispose();
+        glowMaterial.dispose();
+        geometry.dispose();
+    };
+
     return sun;
 }
 
@@ -230,7 +237,7 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
     if (data.physics && data.physics.a > 0) {
         // Only draw orbits for primary planets to avoid visual clutter/artifacts for moons
         if (data.type === 'Planet' || data.type === 'Dwarf Planet') {
-             orbitLine = createOrbitLine(data.physics);
+            orbitLine = createOrbitLine(data.physics);
         } else {
             orbitLine = null;
         }
@@ -246,14 +253,14 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
     const isLazy = data.physics.a > 20;
     if (data.visual.texture) {
         if (isLazy && textureLoader.lazyLoadQueue) {
-             texturedMaterial = new THREE.MeshStandardMaterial({
+            texturedMaterial = new THREE.MeshStandardMaterial({
                 color: data.visual.color,
                 map: null
-             });
-             textureLoader.lazyLoadQueue.push({
-                 material: texturedMaterial,
-                 url: data.visual.texture
-             });
+            });
+            textureLoader.lazyLoadQueue.push({
+                material: texturedMaterial,
+                url: data.visual.texture
+            });
         } else {
             const texture = textureLoader.load(data.visual.texture);
             texturedMaterial = new THREE.MeshStandardMaterial({

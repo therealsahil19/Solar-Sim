@@ -32,11 +32,11 @@
 | 028| [FIXED] | 🟡 MED   | `src/components/NavigationSidebar.js:47` | Memory Leak: `NavigationSidebar` lacks `dispose()` in `init` |
 | 029| [FIXED] | 🟢 LOW   | `src/trails.js:155` | Logic Flaw: `TrailManager` head update without validation |
 | 030| [FIXED] | 🟡 MED   | `src/debris.js:278` | Memory Leak: `DebrisSystem` dispose misses `setAttribute` cleanup |
-| 031| [OPEN] | 🔴 HIGH  | `src/main.js:490` | Framerate Dependent Animation Speed |
-| 032| [OPEN] | 🟡 MED   | `src/procedural.js:164` | GPU Memory Leak: Sun Glow Texture never disposed |
-| 033| [OPEN] | 🟡 MED   | `src/trails.js:210` | Logic Flaw: `reset()` fails to clear visual artifacts |
-| 034| [OPEN] | 🟢 LOW   | `src/main.js:277` | Zombie Code: Lazy Loading executes after Init Failure |
-| 035| [OPEN] | 🟢 LOW   | `src/main.js:438` | Physics Instability: Unclamped Delta Time |
+| 031| [FIXED] | 🔴 HIGH  | `src/main.js:490` | Framerate Dependent Animation Speed |
+| 032| [FIXED] | 🟡 MED   | `src/procedural.js:164` | GPU Memory Leak: Sun Glow Texture never disposed |
+| 033| [FIXED] | 🟡 MED   | `src/trails.js:210` | Logic Flaw: `reset()` fails to clear visual artifacts |
+| 034| [FIXED] | 🟢 LOW   | `src/main.js:277` | Zombie Code: Lazy Loading executes after Init Failure |
+| 035| [FIXED] | 🟢 LOW   | `src/main.js:438` | Physics Instability: Unclamped Delta Time |
 
 ## Details
 
@@ -143,3 +143,19 @@ The `dt` (delta time) is calculated directly from `performance.now()`. If the us
 const dt = (now - lastFrameTime) / 1000;
 // Recommendation: const dt = Math.min((now - lastFrameTime) / 1000, 0.1);
 ```
+
+### 031 - Framerate Dependent Animation Speed
+[FIXED] Updated `src/main.js` to multiply rotation increments by `dt` (delta time), ensuring consistent speed across different refresh rates.
+
+### 032 - GPU Memory Leak: Sun Glow
+[FIXED] Added a custom `dispose()` method to the Sun mesh in `src/procedural.js` that explicitly disposes of the glow texture and material.
+
+### 033 - Logic Flaw: TrailManager.reset
+[FIXED] Added `this.geometry.setDrawRange(0, 0)` to `TrailManager.reset()` in `src/trails.js` to hide old trails immediately.
+
+### 034 - Zombie Code: Lazy Loading
+[FIXED] Added `if (initFailed) return;` check inside the lazy loading `setTimeout` callback in `src/main.js`.
+
+### 035 - Physics Instability: Unclamped Delta Time
+[FIXED] Clamped `dt` to a maximum of 0.1s in `src/main.js` to prevent physics instabilities when the tab happens to be backgrounded.
+
