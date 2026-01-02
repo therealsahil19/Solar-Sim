@@ -79,6 +79,11 @@ window.isPaused = isPaused;
 // Initialization
 // ============================================================================
 
+/**
+ * Initializes the application.
+ * Sets up renderers, loads assets, and starts the animation loop.
+ * Uses Async/Await to handle configuration loading.
+ */
 export async function init() {
     // 1. Setup Basic Three.js Components
     scene = new THREE.Scene();
@@ -413,6 +418,10 @@ const sunPos = new THREE.Vector3(0, 0, 0);
 // Animation Loop (Updated for Physics)
 // ============================================================================
 
+/**
+ * The Main Loop.
+ * Handles Physics, Animation, and Rendering.
+ */
 function animate() {
     requestAnimationFrame(animate);
 

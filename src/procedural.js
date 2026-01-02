@@ -74,22 +74,11 @@ export function createStarfield() {
  * and transforming points to render space.
  *
  * @param {Object} physicsData - The orbital elements.
- * @param {THREE.Object3D|null} parentBody - The parent object (for relative orbits).
  * @returns {THREE.LineLoop} The orbit line object.
  */
 export function createOrbitLine(physicsData) {
     const points = [];
     const segments = 256; // High resolution for elliptical/inclined orbits
-
-    // We want to draw the full orbit path.
-    // getOrbitalPosition calculates position based on TIME.
-    // However, for drawing the static orbit shape, we should iterate over Mean Anomaly (0 to 2PI).
-    // Note: getOrbitalPosition uses M0 + n*t.
-    // We can simulate one full period by varying time from 0 to Period.
-    // Or simpler: Just modify the M0 passed to a temp calc function.
-
-    // Let's assume we iterate Mean Anomaly from 0 to 2PI directly in a helper way,
-    // OR we just assume T=0 to T=Period.
 
     const period = Math.pow(physicsData.a, 1.5);
     const dt = period / segments;
@@ -222,72 +211,28 @@ export function createPlayerShip() {
 /**
  * Recursively creates a celestial body system (planet + moons).
  *
- * @param {Object} data - Configuration object.
- * @param {THREE.TextureLoader} textureLoader - Loader.
+ * @param {Object} data - Configuration object from `system.json`.
+ * @param {THREE.TextureLoader} textureLoader - Loader instance.
  * @param {boolean} useTextures - Initial texture state.
  * @param {Object} [parentData] - Data of the parent body (for relative calculations).
- * @returns {Object} System components.
+ * @returns {Object} System components (pivot, orbit, interactables, etc.).
  */
 export function createSystem(data, textureLoader, useTextures, parentData = null) {
     // 1. Pivot & Body Container
-    // In the new physics model, we update the position of the visual mesh directly in Render Space.
-    // However, to support rotation (self-spin) without affecting position, we should wrap the mesh.
-
-    // Structure:
-    // systemRoot (Group) -> positioned at (0,0,0) usually, but we will move this Group to the Render Position.
-    //   -> visualMesh (Mesh) -> local rotation (spin).
-    //   -> orbitLine (Line) -> added to SCENE, not here, because it's static in world space.
-    //   -> label (CSS2D) -> added to systemRoot.
-
-    // BUT: Recursive Moons.
-    // If we move systemRoot, children move too.
-    // Moon Position = Planet Render Position + Moon Local Render Offset?
-    // Log scaling is non-linear. Transform(Planet + Moon) != Transform(Planet) + Transform(Moon).
-    // We must calculate Moon World Position -> Transform -> Render Position.
-    // Thus, Moons CANNOT be children of Planet in the scene graph if we want accurate Log positioning,
-    // UNLESS we are doing local scaling.
-    // Given the strict "Apply transform to final position" rule, Moons should be siblings in the scene graph,
-    // physically calculated relative to parent, but rendered absolutely.
-    // HOWEVER, `createSystem` is recursive.
-    // If I return the moon pivot, and the caller adds it to the parent pivot, we get Scene Graph hierarchy.
-    // I will return the objects, but `main.js` will likely add them to the `scene` directly to decouple transforms?
-    // OR: I can use the Scene Graph, but I have to be very careful.
-    // If I add Moon to Planet, and set Moon position to (Render(Moon) - Render(Planet)), it works.
-    // Let's assume `main.js` handles the absolute positioning of the `pivot` returned here.
-    // So `pivot` will be moved to `physicsToRender(pos)`.
-
-    const pivot = new THREE.Group(); // This will be moved to the planet's Render Position
+    // This Group acts as the "Anchor". It will be moved to the calculated
+    // Render Position by the physics loop in `main.js`.
+    const pivot = new THREE.Group();
     pivot.userData.physics = data.physics; // Store physics data for main loop
     pivot.userData.type = data.type;
 
     // 2. Orbit Line
     let orbitLine = null;
     if (data.physics && data.physics.a > 0) {
-        orbitLine = createOrbitLine(data.physics);
-        // Orbit line is in World Space (centered at 0,0,0 or Parent).
-        // Since we transformed points to absolute Render Space, orbitLine should be at Scene Origin (0,0,0).
-        // If it's a moon, it's complicated. The orbit line is drawn around the planet.
-        // Transform(Planet + OrbitPath).
-        // My `createOrbitLine` does `getOrbitalPosition` (relative) -> `physicsToRender`.
-        // `physicsToRender` assumes Heliocentric distance.
-        // For Moons, `getOrbitalPosition` returns vector from Planet.
-        // We need: Transform(PlanetPos + MoonPos).
-        // My current `createOrbitLine` assumes `physicsToRender` handles the absolute vector.
-        // So for moons, I need to pass the parent's physics state?
-        // Simulating the parent's orbit for every point of the moon's orbit is expensive and complex (time varying).
-        // OR: I just draw the moon orbit relative to the planet in *Physics* space, add it to Planet in Scene Graph,
-        // and let the Log Transform of the Planet Group handle it?
-        // No, Log Transform is non-linear.
-
-        // Compromise for Visual Orbit Lines of Moons:
-        // Drawing accurate log-transformed moon orbits is hard because the shape changes as the planet moves (closer/further from sun).
-        // I will SKIP orbit lines for Moons for now, or draw a simple circle scaled by local derivative?
-        // Let's stick to Planets. `data.type === 'Planet'`.
+        // Only draw orbits for primary planets to avoid visual clutter/artifacts for moons
         if (data.type === 'Planet' || data.type === 'Dwarf Planet') {
-             // It's a primary body. Orbit is centered at Sun (0,0,0).
-             // My `createOrbitLine` works perfect for these.
+             orbitLine = createOrbitLine(data.physics);
         } else {
-            orbitLine = null; // Skip moon orbits for now to avoid visual artifacts
+            orbitLine = null;
         }
     }
 
@@ -297,7 +242,8 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
     let texturedMaterial = solidMaterial; // Default
 
     // Lazy Load Texture
-    const isLazy = data.physics.a > 20; // Load outer planets later
+    // Bolt Optimization: Load outer planets (>20AU) later to speed up initial render
+    const isLazy = data.physics.a > 20;
     if (data.visual.texture) {
         if (isLazy && textureLoader.lazyLoadQueue) {
              texturedMaterial = new THREE.MeshStandardMaterial({
@@ -329,6 +275,7 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
     };
 
     // Visual Group handles Scale
+    // We separate Scale (Visual) from Position (Pivot)
     const visualGroup = new THREE.Group();
     visualGroup.scale.set(data.visual.size, data.visual.size, data.visual.size);
     pivot.add(visualGroup);
@@ -336,7 +283,7 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
     // Create Mesh or Register Instance
     let mesh = null;
     if (textureLoader.instanceRegistry) {
-        // Use Instancing
+        // Bolt Optimization: Use Instancing for performance
         const mat = useTextures ? texturedMaterial : solidMaterial;
         // visualGroup is the object that will be moved/scaled.
         // We pass visualGroup to registry.
@@ -407,16 +354,9 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
             // Pass current body's physics as parentData
             const result = createSystem(moonData, textureLoader, useTextures, data.physics);
 
-            // Crucial: Where to add the Moon?
-            // If we add to `pivot`, it moves with the planet.
-            // Moon Pos = Planet Pos + Local Pos.
-            // If we use Log Transform, Planet Pos is transformed.
-            // If we add Moon as child, its Local Pos is added in Render Space.
-            // BUT, we want to calculate Local Pos in Physics Space, add to Planet Physics, THEN transform.
-            // This means Moons should NOT be children in the Scene Graph if we want accurate global positioning.
-            // OR: We set the Moon's position to (Transform(P+M) - Transform(P)) every frame.
-            // This allows us to keep the scene graph hierarchy (good for grouping).
-            // Yes, let's keep the hierarchy.
+            // Hierarchy: Moons are children of the Planet Pivot.
+            // This ensures they move with the planet in Render Space.
+            // However, their position must be updated relative to the planet every frame.
             pivot.add(result.pivot);
 
             if (result.orbit) pivot.add(result.orbit);

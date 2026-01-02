@@ -38,3 +38,13 @@
     - **InfoPanel**: Documented the data binding process between `three.js` userData and the DOM.
     - **download_textures.py**: Added module-level docstring and usage instructions.
     - **CONTRIBUTING.md**: Created a new comprehensive guide for contributors, covering setup, structure, and standards.
+
+### 2024-05-24 - The Glossary & Core Logic
+- **Focus:** `GLOSSARY.md`, `src/procedural.js`, `src/main.js`.
+- **Standard:**
+    - "Factory Pattern": Defined the pure function approach in `procedural.js`.
+    - "Internal Code Names": Defined "Bolt", "Scribe", "Sentinel".
+- **Changes:**
+    - **GLOSSARY.md**: Created a central dictionary for domain terms (Keplerian Orbit, Instancing) and internal codenames.
+    - **src/procedural.js**: Added file-level JSDoc explaining the "Factory" role. Documented the complex recursive `createSystem` function and the "Lazy Loading" logic for textures.
+    - **src/main.js**: Documented the "Conductor" role. Added JSDoc to `init` (Async/Await) and `animate` (Render Loop phases). Explains Global State variables.
