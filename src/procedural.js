@@ -14,21 +14,10 @@
 
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { getOrbitalPosition, physicsToRender } from './physics.js';
 
 // --- Shared Resources ---
 // Reusing geometry reduces memory overhead significantly
-const baseOrbitGeometry = new THREE.BufferGeometry();
-{
-    const points = [];
-    const segments = 128;
-    for (let i = 0; i <= segments; i++) {
-        const theta = (i / segments) * Math.PI * 2;
-        points.push(new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta)));
-    }
-    baseOrbitGeometry.setFromPoints(points);
-}
-const baseOrbitMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.15, transparent: true });
-
 const baseSphereGeometry = new THREE.SphereGeometry(1, 64, 64);
 
 // Material Cache to reduce shader programs and draw calls
@@ -81,15 +70,45 @@ export function createStarfield() {
 }
 
 /**
- * Creates an orbit line visualization.
- * Scaled from the shared unit circle geometry.
- * @param {number} radius - The radius of the orbit.
+ * Creates an orbit line visualization by sampling the physics orbit
+ * and transforming points to render space.
+ *
+ * @param {Object} physicsData - The orbital elements.
+ * @param {THREE.Object3D|null} parentBody - The parent object (for relative orbits).
  * @returns {THREE.LineLoop} The orbit line object.
  */
-export function createOrbitLine(radius) {
-    const line = new THREE.LineLoop(baseOrbitGeometry, baseOrbitMaterial);
-    line.scale.set(radius, 1, radius);
-    return line;
+export function createOrbitLine(physicsData) {
+    const points = [];
+    const segments = 256; // High resolution for elliptical/inclined orbits
+
+    // We want to draw the full orbit path.
+    // getOrbitalPosition calculates position based on TIME.
+    // However, for drawing the static orbit shape, we should iterate over Mean Anomaly (0 to 2PI).
+    // Note: getOrbitalPosition uses M0 + n*t.
+    // We can simulate one full period by varying time from 0 to Period.
+    // Or simpler: Just modify the M0 passed to a temp calc function.
+
+    // Let's assume we iterate Mean Anomaly from 0 to 2PI directly in a helper way,
+    // OR we just assume T=0 to T=Period.
+
+    const period = Math.pow(physicsData.a, 1.5);
+    const dt = period / segments;
+
+    for (let i = 0; i <= segments; i++) {
+        const t = i * dt;
+        const posPhys = getOrbitalPosition(physicsData, t);
+        const posRender = physicsToRender(posPhys);
+        points.push(posRender);
+    }
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        opacity: 0.15,
+        transparent: true
+    });
+
+    return new THREE.LineLoop(geometry, material);
 }
 
 /**
@@ -124,10 +143,10 @@ function createGlowTexture() {
  * Creates the central Sun mesh.
  * @param {THREE.TextureLoader} textureLoader - The loader instance for fetching textures.
  * @param {boolean} useTextures - Whether to apply the texture initially.
- * @returns {THREE.Mesh} The Sun mesh, with userData containing both material references.
+ * @returns {THREE.Mesh} The Sun mesh.
  */
 export function createSun(textureLoader, useTextures) {
-    const geometry = new THREE.SphereGeometry(2.5, 64, 64);
+    const geometry = new THREE.SphereGeometry(2.5, 64, 64); // Visual Size 2.5
 
     // We assume 'textures/sun.jpg' exists or will be loaded
     const texture = textureLoader.load('textures/sun.jpg');
@@ -142,12 +161,13 @@ export function createSun(textureLoader, useTextures) {
     const sun = new THREE.Mesh(geometry, useTextures ? texturedMaterial : solidMaterial);
     sun.castShadow = false;
     sun.receiveShadow = false;
+    sun.position.set(0, 0, 0); // Sun is at origin
 
     sun.userData.name = "Sun";
     sun.userData.type = "Star";
     sun.userData.size = 2.5;
     sun.userData.description = "The star at the center of the Solar System.";
-    sun.userData.distance = 0;
+    sun.userData.distance = 0; // Legacy / Info Panel
     sun.userData.solidMaterial = solidMaterial;
     sun.userData.texturedMaterial = texturedMaterial;
 
@@ -161,7 +181,6 @@ export function createSun(textureLoader, useTextures) {
         depthWrite: false
     });
     const glowSprite = new THREE.Sprite(glowMaterial);
-    // Scale up slightly larger than the sun (size 2.5 * 2 = 5 diameter)
     glowSprite.scale.set(12, 12, 1);
     sun.add(glowSprite);
 
@@ -169,7 +188,7 @@ export function createSun(textureLoader, useTextures) {
 }
 
 /**
- * Creates the player ship group consisting of a body and engines.
+ * Creates the player ship group.
  * @returns {THREE.Group} The player ship group.
  */
 export function createPlayerShip() {
@@ -182,7 +201,7 @@ export function createPlayerShip() {
     body.rotation.x = Math.PI / 2;
     shipGroup.add(body);
 
-    // Engines (Cylinders)
+    // Engines
     const engineGeo = new THREE.CylinderGeometry(0.2, 0.1, 1.5, 8);
     const engineMat = new THREE.MeshNormalMaterial();
 
@@ -196,149 +215,143 @@ export function createPlayerShip() {
     rightEngine.rotation.x = Math.PI / 2;
     shipGroup.add(rightEngine);
 
-    shipGroup.position.set(20, 5, 20);
+    shipGroup.position.set(20, 5, 20); // Initial position
     return shipGroup;
 }
 
 /**
  * Recursively creates a celestial body system (planet + moons).
- * This function implements the recursive logic to support an infinite hierarchy of satellites.
  *
- * @param {Object} data - Configuration object for the planet/moon.
- * @param {string} data.name - Name of the body.
- * @param {string} data.type - Type of body (e.g., 'Planet', 'Moon').
- * @param {string|number} data.color - Color of the body (hex or CSS string).
- * @param {string} [data.texture] - Path to texture image.
- * @param {number} data.size - Radius of the body.
- * @param {number} data.distance - Orbital distance from parent.
- * @param {number} data.speed - Orbital speed around parent.
- * @param {number} data.rotationSpeed - Self-rotation speed.
- * @param {boolean} [data.hasRing] - Whether the body has rings.
- * @param {string} [data.description] - Description of the body.
- * @param {Array<Object>} [data.moons] - Array of sub-satellites (recursive structure).
- * @param {THREE.TextureLoader} textureLoader - Loader for textures.
+ * @param {Object} data - Configuration object.
+ * @param {THREE.TextureLoader} textureLoader - Loader.
  * @param {boolean} useTextures - Initial texture state.
- * @returns {Object} An object containing the generated components:
- *  - `pivot` {THREE.Object3D}: The center point for orbit rotation.
- *  - `orbit` {THREE.LineLoop|null}: The visual orbit line.
- *  - `trail` {THREE.Line|null}: The dynamic trail mesh (planets only).
- *  - `label` {CSS2DObject}: The label object.
- *  - `interactables` {Array<THREE.Mesh>}: Flat list of interactive meshes.
- *  - `animated` {Array<Object>}: Flat list of objects needing animation.
- *  - `orbits` {Array<THREE.Object3D>}: Flat list of orbit lines.
- *  - `trails` {Array<THREE.Line>}: Flat list of trail lines.
- *  - `labels` {Array<CSS2DObject>}: Flat list of label objects.
+ * @param {Object} [parentData] - Data of the parent body (for relative calculations).
+ * @returns {Object} System components.
  */
-export function createSystem(data, textureLoader, useTextures) {
-    // 1. Pivot
-    const orbitPivot = new THREE.Object3D();
+export function createSystem(data, textureLoader, useTextures, parentData = null) {
+    // 1. Pivot & Body Container
+    // In the new physics model, we update the position of the visual mesh directly in Render Space.
+    // However, to support rotation (self-spin) without affecting position, we should wrap the mesh.
+
+    // Structure:
+    // systemRoot (Group) -> positioned at (0,0,0) usually, but we will move this Group to the Render Position.
+    //   -> visualMesh (Mesh) -> local rotation (spin).
+    //   -> orbitLine (Line) -> added to SCENE, not here, because it's static in world space.
+    //   -> label (CSS2D) -> added to systemRoot.
+
+    // BUT: Recursive Moons.
+    // If we move systemRoot, children move too.
+    // Moon Position = Planet Render Position + Moon Local Render Offset?
+    // Log scaling is non-linear. Transform(Planet + Moon) != Transform(Planet) + Transform(Moon).
+    // We must calculate Moon World Position -> Transform -> Render Position.
+    // Thus, Moons CANNOT be children of Planet in the scene graph if we want accurate Log positioning,
+    // UNLESS we are doing local scaling.
+    // Given the strict "Apply transform to final position" rule, Moons should be siblings in the scene graph,
+    // physically calculated relative to parent, but rendered absolutely.
+    // HOWEVER, `createSystem` is recursive.
+    // If I return the moon pivot, and the caller adds it to the parent pivot, we get Scene Graph hierarchy.
+    // I will return the objects, but `main.js` will likely add them to the `scene` directly to decouple transforms?
+    // OR: I can use the Scene Graph, but I have to be very careful.
+    // If I add Moon to Planet, and set Moon position to (Render(Moon) - Render(Planet)), it works.
+    // Let's assume `main.js` handles the absolute positioning of the `pivot` returned here.
+    // So `pivot` will be moved to `physicsToRender(pos)`.
+
+    const pivot = new THREE.Group(); // This will be moved to the planet's Render Position
+    pivot.userData.physics = data.physics; // Store physics data for main loop
+    pivot.userData.type = data.type;
 
     // 2. Orbit Line
     let orbitLine = null;
-    if (data.distance > 0) {
-        orbitLine = createOrbitLine(data.distance);
+    if (data.physics && data.physics.a > 0) {
+        orbitLine = createOrbitLine(data.physics);
+        // Orbit line is in World Space (centered at 0,0,0 or Parent).
+        // Since we transformed points to absolute Render Space, orbitLine should be at Scene Origin (0,0,0).
+        // If it's a moon, it's complicated. The orbit line is drawn around the planet.
+        // Transform(Planet + OrbitPath).
+        // My `createOrbitLine` does `getOrbitalPosition` (relative) -> `physicsToRender`.
+        // `physicsToRender` assumes Heliocentric distance.
+        // For Moons, `getOrbitalPosition` returns vector from Planet.
+        // We need: Transform(PlanetPos + MoonPos).
+        // My current `createOrbitLine` assumes `physicsToRender` handles the absolute vector.
+        // So for moons, I need to pass the parent's physics state?
+        // Simulating the parent's orbit for every point of the moon's orbit is expensive and complex (time varying).
+        // OR: I just draw the moon orbit relative to the planet in *Physics* space, add it to Planet in Scene Graph,
+        // and let the Log Transform of the Planet Group handle it?
+        // No, Log Transform is non-linear.
+
+        // Compromise for Visual Orbit Lines of Moons:
+        // Drawing accurate log-transformed moon orbits is hard because the shape changes as the planet moves (closer/further from sun).
+        // I will SKIP orbit lines for Moons for now, or draw a simple circle scaled by local derivative?
+        // Let's stick to Planets. `data.type === 'Planet'`.
+        if (data.type === 'Planet' || data.type === 'Dwarf Planet') {
+             // It's a primary body. Orbit is centered at Sun (0,0,0).
+             // My `createOrbitLine` works perfect for these.
+        } else {
+            orbitLine = null; // Skip moon orbits for now to avoid visual artifacts
+        }
     }
 
-    // 3. Body Group (Position & Rotation Container - UNSCALED)
-    // This group holds the position relative to the pivot.
-    // We attach children (moons) here so they inherit position but NOT scale.
-    const bodyGroup = new THREE.Group();
-    bodyGroup.position.x = data.distance;
-    orbitPivot.add(bodyGroup);
-
-    // 4. Visual Mesh Group (Scaled)
-    // This inner group holds the visual mesh and is scaled to the planet size.
-    // Children should NOT be added here unless they are surface details.
-    const visualGroup = new THREE.Group();
-    visualGroup.scale.set(data.size, data.size, data.size);
-    bodyGroup.add(visualGroup);
-
-    // 5. Mesh
+    // 3. Visual Mesh
     const geometry = baseSphereGeometry;
+    const solidMaterial = getSolidMaterial(data.visual.color);
+    let texturedMaterial = solidMaterial; // Default
 
-    // Bolt Optimization: Use cached material
-    const solidMaterial = getSolidMaterial(data.color);
-
-    // Bolt Optimization: Lazy Loading Logic
-    let texturedMaterial;
-
-    // Logic: If distance > 60 (Outer Planets), postpone texture load.
-    // This dramatically reduces initial network contention for the Sun/Earth/Mars.
-    // We attach the texture path to userData for the main loop to pick up later.
-    const isLazy = data.distance > 60;
-
-    if (data.texture) {
+    // Lazy Load Texture
+    const isLazy = data.physics.a > 20; // Load outer planets later
+    if (data.visual.texture) {
         if (isLazy && textureLoader.lazyLoadQueue) {
-             // Defer
              texturedMaterial = new THREE.MeshStandardMaterial({
-                color: data.color, // Use color as placeholder
+                color: data.visual.color,
                 map: null
              });
-             // Mark for lazy load
              textureLoader.lazyLoadQueue.push({
                  material: texturedMaterial,
-                 url: data.texture
+                 url: data.visual.texture
              });
         } else {
-            // Immediate
-            const texture = textureLoader.load(data.texture);
+            const texture = textureLoader.load(data.visual.texture);
             texturedMaterial = new THREE.MeshStandardMaterial({
                 map: texture,
                 color: 0xffffff
             });
         }
-    } else {
-        texturedMaterial = solidMaterial;
     }
-
-    // Bolt Support: Instancing
-    // If an instanceRegistry is provided, we register instead of creating a Mesh.
-    // However, primary planets often need specific traits. For simplicity, we instance everything.
-    // NOTE: Scale must be applied to the Pivot or handled in the matrix.
-    // Since we pass pivot.matrixWorld to instance, scaling the pivot works!
-
-    // We used to scale bodyGroup, now we scale visualGroup.
-    // bodyGroup remains scale (1,1,1).
 
     const userData = {
         name: data.name,
         type: data.type,
-        size: data.size,
+        size: data.visual.size,
         description: data.description || "",
-        distance: data.distance,
+        distance: data.physics.a, // Display AU
         solidMaterial: solidMaterial,
         texturedMaterial: texturedMaterial,
-        useTextures: useTextures
+        physics: data.physics // Store here too
     };
 
+    // Visual Group handles Scale
+    const visualGroup = new THREE.Group();
+    visualGroup.scale.set(data.visual.size, data.visual.size, data.visual.size);
+    pivot.add(visualGroup);
+
+    // Create Mesh or Register Instance
     let mesh = null;
-
-    // Check if we have a registry (passed via data.instanceRegistry hack or we add a param)
-    // We will update createSystem signature in main.js
     if (textureLoader.instanceRegistry) {
-        // Use current material based on useTextures
+        // Use Instancing
         const mat = useTextures ? texturedMaterial : solidMaterial;
-        // IMPORTANT: The instance pivot is now `visualGroup` because it has the scale!
-        // The registry will read `visualGroup.matrixWorld` which includes the scale.
+        // visualGroup is the object that will be moved/scaled.
+        // We pass visualGroup to registry.
         textureLoader.instanceRegistry.addInstance(visualGroup, geometry, mat, userData);
-
-        // We create a dummy object for interaction targets if needed,
-        // but the InstancedMesh itself will be the interaction target.
-        // The Pivot (visualGroup) holds the userData.
     } else {
-        // Fallback for Sun or if registry missing
         mesh = new THREE.Mesh(geometry, useTextures ? texturedMaterial : solidMaterial);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        // Scale is already on visualGroup, but Mesh default scale is 1, so it inherits.
-
         mesh.userData = userData;
         visualGroup.add(mesh);
     }
 
-    // --- Feature: Rings ---
-    if (data.hasRing) {
-        const inner = 1.4; // Relative to unit sphere (since visualGroup is scaled)
+    // 4. Rings (Saturn/Uranus)
+    if (data.visual.hasRing) {
+        const inner = 1.4;
         const outer = 2.2;
         const ringGeo = new THREE.RingGeometry(inner, outer, 64);
         const ringMat = new THREE.MeshStandardMaterial({
@@ -356,89 +369,58 @@ export function createSystem(data, textureLoader, useTextures) {
         visualGroup.add(ring);
     }
 
-    // --- Feature: Labels ---
-    // Labels should NOT be scaled, so they remain on bodyGroup?
-    // But they need to be positioned above the planet surface.
-    // Surface is at Y = data.size (since radius is size).
+    // 5. Label
     const labelDiv = document.createElement('div');
     labelDiv.className = 'planet-label';
     labelDiv.textContent = data.name;
     const label = new CSS2DObject(labelDiv);
+    // Position label above the planet (taking scale into account)
+    label.position.set(0, data.visual.size + 1.0, 0);
+    pivot.add(label);
 
-    // Position label relative to bodyGroup center.
-    // The surface is at `data.size`. So we put it slightly above.
-    label.position.set(0, data.size + 0.5, 0);
-    bodyGroup.add(label);
-
-    // --- Feature: Trails (Planets Only) ---
-    // Bolt Support: Unified Trails
+    // 6. Trails
+    // Register with manager if available
     let trail = null;
-    // We register trails if a manager is present.
-    // Hack: check textureLoader.trailManager
-    if (data.distance > 0 && textureLoader.trailManager) {
-        if (data.type === 'Planet' || data.type === 'Moon') {
-             // Trail should follow the center (bodyGroup), not the scaled visual
-             textureLoader.trailManager.register(bodyGroup, data.color);
-        }
-    } else if (data.type === 'Planet' && data.distance > 0) {
-        // Fallback to legacy trails if no manager
-        const trailLength = 100; // Number of points
-        const trailGeo = new THREE.BufferGeometry();
-        const positions = new Float32Array(trailLength * 3);
-        trailGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-        const trailMat = new THREE.LineBasicMaterial({
-            color: data.color, // Match planet color
-            transparent: true,
-            opacity: 0.4
-        });
-
-        trail = new THREE.Line(trailGeo, trailMat);
-        trail.frustumCulled = false; // Prevent culling issues with dynamic bounds
-
-        // Store trail metadata for updating
-        trail.userData.isTrail = true;
-        trail.userData.positions = positions;
-        trail.userData.nextIndex = 0;
-        trail.userData.full = false;
-        trail.userData.target = bodyGroup; // What it follows
+    if (textureLoader.trailManager && (data.type === 'Planet' || data.type === 'Dwarf Planet')) {
+        // Trace the PIVOT (which moves).
+        textureLoader.trailManager.register(pivot, data.visual.color);
     }
 
-
-    // Collection arrays
+    // Collections
     const interactables = [];
     if (mesh) interactables.push(mesh);
 
-    // For animated, we still need to update rotations
-    // If mesh is null (instanced), we still rotate the Pivot (bodyGroup) for self-rotation?
-    // Actually, bodyGroup handles position.
-    // Self-rotation usually happens on the mesh.
-    // Since we scale bodyGroup, we can also rotate bodyGroup for self-rotation!
     const animated = [{
-        pivot: orbitPivot, // Orbital rotation
-        mesh: visualGroup, // Self rotation (applied to visualGroup)
-        speed: data.speed || 0,
-        rotationSpeed: data.rotationSpeed || 0
+        pivot: pivot,
+        mesh: visualGroup, // Self rotation
+        physics: data.physics,
+        parent: parentData // Store parent physics if this is a moon
     }];
 
-    // Aggregate lists for easy toggling in main.js
     const orbits = orbitLine ? [orbitLine] : [];
-    const trails = trail ? [trail] : [];
     const labels = [label];
+    const trails = trail ? [trail] : [];
 
-    // 5. Recursion (Moons)
-    // Recursively call createSystem for any moons. This allows for infinite nesting
-    // (e.g., moons of moons), although physically rare.
-    // The child system is attached to the parent's bodyGroup, so it moves with the parent.
+    // 7. Recursion (Moons)
     if (data.moons && data.moons.length > 0) {
         data.moons.forEach(moonData => {
-            const result = createSystem(moonData, textureLoader, useTextures);
-            // Attach moon system to this body's group
-            bodyGroup.add(result.pivot);
-            if (result.orbit) {
-                bodyGroup.add(result.orbit);
-            }
-            // Merge lists
+            // Pass current body's physics as parentData
+            const result = createSystem(moonData, textureLoader, useTextures, data.physics);
+
+            // Crucial: Where to add the Moon?
+            // If we add to `pivot`, it moves with the planet.
+            // Moon Pos = Planet Pos + Local Pos.
+            // If we use Log Transform, Planet Pos is transformed.
+            // If we add Moon as child, its Local Pos is added in Render Space.
+            // BUT, we want to calculate Local Pos in Physics Space, add to Planet Physics, THEN transform.
+            // This means Moons should NOT be children in the Scene Graph if we want accurate global positioning.
+            // OR: We set the Moon's position to (Transform(P+M) - Transform(P)) every frame.
+            // This allows us to keep the scene graph hierarchy (good for grouping).
+            // Yes, let's keep the hierarchy.
+            pivot.add(result.pivot);
+
+            if (result.orbit) pivot.add(result.orbit);
+
             interactables.push(...result.interactables);
             animated.push(...result.animated);
             orbits.push(...result.orbits);
@@ -448,10 +430,8 @@ export function createSystem(data, textureLoader, useTextures) {
     }
 
     return {
-        pivot: orbitPivot,
+        pivot,
         orbit: orbitLine,
-        trail: trail,
-        label: label,
         interactables,
         animated,
         orbits,

@@ -4,150 +4,121 @@
  *
  * BOLT OPTIMIZATION:
  * Uses `THREE.InstancedMesh` to render thousands of asteroids in 1 Draw Call.
- * Uses Vertex Shader injection to animate orbits entirely on the GPU.
- * Zero CPU overhead for animation.
+ * Uses CPU-side Keplerian logic to ensure physical accuracy matching the planets.
  */
 
 import * as THREE from 'three';
+import { getOrbitalPosition, physicsToRender } from './physics.js';
 
 /**
- * Creates a GPU-animated asteroid belt using InstancedMesh.
+ * Creates an asteroid belt using InstancedMesh with Keplerian physics.
  * @param {Object} config - Configuration.
  * @param {number} config.count - Number of asteroids.
- * @param {number} config.minRadius - Inner radius of the belt.
- * @param {number} config.maxRadius - Outer radius of the belt.
- * @param {THREE.TextureLoader} textureLoader - Loader for textures.
- * @returns {Object} { mesh: THREE.InstancedMesh, uniform: { value: number } }
+ * @param {number} config.minRadius - Inner radius (AU). (Defaults to 2.1)
+ * @param {number} config.maxRadius - Outer radius (AU). (Defaults to 3.3)
+ * @returns {THREE.InstancedMesh} The belt mesh with an .update(time) method.
  */
 export function createAsteroidBelt(config = {}) {
-    const count = config.count || 2000;
-    const minRadius = config.minRadius || 25;
-    const maxRadius = config.maxRadius || 32;
+    const count = config.count || 500;
+    const minRadius = config.minRadius || 2.1;
+    const maxRadius = config.maxRadius || 3.3;
 
     // Shared Geometry & Material
     // Low poly sphere for asteroids
     const geometry = new THREE.IcosahedronGeometry(0.2, 0);
 
-    // Custom Uniform for Time
-    const timeUniform = { value: 0 };
-
-    /**
-     * Injects the orbital animation logic into the vertex shader.
-     * This is reused for the Visual Material and Shadow Materials.
-     * @param {THREE.Shader} shader - The shader object to modify.
-     */
-    const compileShader = (shader) => {
-        shader.uniforms.time = timeUniform;
-
-        // Inject Attributes
-        shader.vertexShader = `
-            attribute float aOrbitRadius;
-            attribute float aSpeed;
-            attribute float aOrbitPhase;
-            uniform float time;
-        ` + shader.vertexShader;
-
-        // Technical Note: Coordinate Space Transformation
-        // We inject the orbital logic into the <project_vertex> chunk.
-        // Critically, we apply the orbit offset AFTER the instanceMatrix (local rotation/scale)
-        // but BEFORE the modelViewMatrix. This ensures the orbital path remains flat
-        // on the World XZ plane, effectively decoupling the orbit position from the
-        // individual asteroid's tumbling rotation.
-
-        const projectVertexChunk = `
-            vec4 mvPosition = vec4( transformed, 1.0 );
-
-            #ifdef USE_INSTANCING
-                mvPosition = instanceMatrix * mvPosition;
-            #endif
-
-            // --- INJECTED ORBIT LOGIC ---
-            float currentAngle = aOrbitPhase + (time * aSpeed);
-            float orbitX = cos(currentAngle) * aOrbitRadius;
-            float orbitZ = sin(currentAngle) * aOrbitRadius;
-
-            // Apply Orbit Offset (World Space relative to Belt Center)
-            mvPosition.x += orbitX;
-            mvPosition.z += orbitZ;
-            // ----------------------------
-
-            mvPosition = modelViewMatrix * mvPosition;
-            gl_Position = projectionMatrix * mvPosition;
-        `;
-
-        shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>', projectVertexChunk);
-    };
-
-    // 1. Visual Material
+    // Visual Material
     const material = new THREE.MeshStandardMaterial({
         color: 0x888888,
         roughness: 0.8,
         metalness: 0.2,
         flatShading: true
     });
-    material.onBeforeCompile = compileShader;
 
-    // 2. Mesh Creation
+    // Mesh Creation
     const mesh = new THREE.InstancedMesh(geometry, material, count);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
 
-    // 3. Shadow Materials (Fix for Incorrect Shadows)
-    // Directional Light Shadows
-    const customDepthMaterial = new THREE.MeshDepthMaterial({
-        depthPacking: THREE.RGBADepthPacking
-    });
-    customDepthMaterial.onBeforeCompile = compileShader;
-    mesh.customDepthMaterial = customDepthMaterial;
-
-    // Point Light Shadows (The Sun)
-    const customDistanceMaterial = new THREE.MeshDistanceMaterial();
-    customDistanceMaterial.onBeforeCompile = compileShader;
-    mesh.customDistanceMaterial = customDistanceMaterial;
-
-    // 4. Attributes Generation
-    const orbitRadius = new Float32Array(count);
-    const orbitSpeed = new Float32Array(count);
-    const orbitPhase = new Float32Array(count);
+    // Attributes Generation
+    // We store orbital elements in userData to compute positions each frame
+    const orbitals = [];
 
     const dummy = new THREE.Object3D();
 
     for (let i = 0; i < count; i++) {
-        // Randomize Orbit
-        const r = minRadius + Math.random() * (maxRadius - minRadius);
-        const speedMsg = 0.05 + Math.random() * 0.05;
+        // Randomize Orbit (AU)
+        const a = minRadius + Math.random() * (maxRadius - minRadius);
+        // Eccentricity [0.05, 0.15]
+        const e = 0.05 + Math.random() * 0.10;
+        // Inclination [0, 20] degrees
+        const inc = Math.random() * 20;
 
-        orbitRadius[i] = r;
-        orbitSpeed[i] = speedMsg * (20 / r); // Slower at distance
-        orbitPhase[i] = Math.random() * Math.PI * 2;
+        // Random Angles
+        const omega = Math.random() * 360;
+        const Omega = Math.random() * 360;
+        const M0 = Math.random() * 360;
 
-        // Initial Transform (Scale & Vertical Scatter)
-        dummy.position.set(0, (Math.random() - 0.5) * 2, 0);
+        orbitals.push({
+            a, e, i: inc, omega, Omega, M0
+        });
+
+        // Set initial scale/rotation (random tumble)
+        dummy.position.set(0, 0, 0); // Position will be set by update()
         dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-        const s = 0.5 + Math.random() * 0.8;
+        const s = 0.5 + Math.random() * 0.5; // Visual scale factor
         dummy.scale.set(s, s, s);
-
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
     }
 
-    mesh.geometry.setAttribute('aOrbitRadius', new THREE.InstancedBufferAttribute(orbitRadius, 1));
-    mesh.geometry.setAttribute('aSpeed', new THREE.InstancedBufferAttribute(orbitSpeed, 1));
-    mesh.geometry.setAttribute('aOrbitPhase', new THREE.InstancedBufferAttribute(orbitPhase, 1));
+    mesh.instanceMatrix.needsUpdate = true;
 
-    // Store uniform ref
-    mesh.userData.timeUniform = timeUniform;
+    // Store orbitals
+    mesh.userData.orbitals = orbitals;
 
-    // Add a dispose method to clean up materials and geometry
+    /**
+     * Updates the asteroid positions based on simulation time.
+     * @param {number} time - Simulation time in Earth Years.
+     */
+    mesh.update = (time) => {
+        const orbitals = mesh.userData.orbitals;
+        const dummy = new THREE.Object3D();
+
+        for (let i = 0; i < count; i++) {
+            const orbital = orbitals[i];
+
+            // 1. Calculate Physics Position
+            const physPos = getOrbitalPosition(orbital, time);
+
+            // 2. Transform to Render Space
+            const renderPos = physicsToRender(physPos);
+
+            // 3. Update Matrix
+            mesh.getMatrixAt(i, dummy.matrix); // Get current to preserve scale/rotation
+            dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+
+            dummy.position.copy(renderPos);
+
+            // Rotate the asteroid itself (tumble)
+            // Simple rotation based on time, uncorrelated to orbit
+            dummy.rotation.x += 0.01;
+            dummy.rotation.y += 0.02;
+
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i, dummy.matrix);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
+    };
+
+    // Dispose method
     mesh.dispose = () => {
         mesh.geometry.dispose();
         mesh.material.dispose();
-        if (mesh.customDepthMaterial) mesh.customDepthMaterial.dispose();
-        if (mesh.customDistanceMaterial) mesh.customDistanceMaterial.dispose();
     };
 
-    // Prevent frustum culling
-    mesh.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), maxRadius + 5);
+    // Prevent frustum culling (bounds are huge)
+    mesh.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 500); // Estimating log scale max
     mesh.frustumCulled = false;
 
     return mesh;
