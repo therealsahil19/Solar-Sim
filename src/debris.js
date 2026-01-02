@@ -234,9 +234,9 @@ function createDebrisSystem(config) {
         let inc;
         if (isSpherical) {
             // Uniform sphere distribution approx
-             inc = distribution.minI + Math.random() * (distribution.maxI - distribution.minI);
+            inc = distribution.minI + Math.random() * (distribution.maxI - distribution.minI);
         } else {
-             inc = distribution.minI + Math.random() * (distribution.maxI - distribution.minI);
+            inc = distribution.minI + Math.random() * (distribution.maxI - distribution.minI);
         }
 
         const omega = Math.random() * 360;
@@ -245,18 +245,18 @@ function createDebrisSystem(config) {
         const tumbleSpeed = 0.5 + Math.random() * 2.0;
 
         // Fill Attributes
-        aOrbit[i*4 + 0] = a;
-        aOrbit[i*4 + 1] = e;
-        aOrbit[i*4 + 2] = inc;
-        aOrbit[i*4 + 3] = M0;
+        aOrbit[i * 4 + 0] = a;
+        aOrbit[i * 4 + 1] = e;
+        aOrbit[i * 4 + 2] = inc;
+        aOrbit[i * 4 + 3] = M0;
 
-        aParams[i*3 + 0] = omega;
-        aParams[i*3 + 1] = Omega;
-        aParams[i*3 + 2] = tumbleSpeed;
+        aParams[i * 3 + 0] = omega;
+        aParams[i * 3 + 1] = Omega;
+        aParams[i * 3 + 2] = tumbleSpeed;
 
         // Set Instance Matrix (Initial Random Scale/Rot)
         dummy.position.set(0, 0, 0); // Position controlled by shader
-        dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+        dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
         const s = 0.5 + Math.random() * 0.5;
         dummy.scale.set(s, s, s);
         dummy.updateMatrix();
@@ -278,6 +278,9 @@ function createDebrisSystem(config) {
     mesh.dispose = () => {
         mesh.geometry.dispose();
         mesh.material.dispose();
+        if (mesh.material.userData && mesh.material.userData.shader) {
+            mesh.material.userData.shader = null;
+        }
     };
 
     return mesh;

@@ -361,7 +361,11 @@ export class CommandPalette {
         const item = this.filteredItems[this.selectedIndex];
         if (item) {
             this.close();
-            item.handler();
+            if (typeof item.handler === 'function') {
+                item.handler();
+            } else {
+                console.warn(`CommandPalette: Item "${item.name}" has no valid handler.`);
+            }
         }
     }
 }

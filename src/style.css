@@ -89,13 +89,20 @@
     --radius-full: 9999px;
 
     /* --- Typography Scale (Major Third) --- */
-    --text-xs: 0.75rem;   /* 12px */
-    --text-sm: 0.875rem;  /* 14px */
-    --text-base: 1rem;    /* 16px */
-    --text-lg: 1.25rem;   /* 20px */
-    --text-xl: 1.563rem;  /* 25px */
-    --text-2xl: 1.953rem; /* 31.25px */
-    --text-3xl: 2.441rem; /* 39.06px */
+    --text-xs: 0.75rem;
+    /* 12px */
+    --text-sm: 0.875rem;
+    /* 14px */
+    --text-base: 1rem;
+    /* 16px */
+    --text-lg: 1.25rem;
+    /* 20px */
+    --text-xl: 1.563rem;
+    /* 25px */
+    --text-2xl: 1.953rem;
+    /* 31.25px */
+    --text-3xl: 2.441rem;
+    /* 39.06px */
 
     --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
@@ -157,7 +164,9 @@
 /* ==========================================================================
    2. GLOBAL RESET & BASE
    ========================================================================== */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
@@ -199,7 +208,12 @@ canvas {
     outline: none;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     margin: 0;
     font-weight: 600;
     line-height: 1.2;
@@ -216,15 +230,24 @@ a:hover {
 }
 
 /* Scrollbar Styling */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
 ::-webkit-scrollbar-thumb {
     background: var(--color-border);
     border-radius: var(--radius-full);
     border: 2px solid transparent;
     background-clip: content-box;
 }
-::-webkit-scrollbar-thumb:hover { background-color: var(--color-text-tertiary); }
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-text-tertiary);
+}
 
 /* Focus Ring */
 :focus-visible {
@@ -235,30 +258,82 @@ a:hover {
 /* ==========================================================================
    3. UTILITIES
    ========================================================================== */
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
+.text-center {
+    text-align: center;
+}
 
-.text-secondary { color: var(--color-text-secondary); }
-.text-tertiary { color: var(--color-text-tertiary); }
+.text-left {
+    text-align: left;
+}
 
-.font-light { font-weight: 300; }
-.font-normal { font-weight: 400; }
-.font-bold { font-weight: 700; }
+.text-right {
+    text-align: right;
+}
 
-.text-lg { font-size: var(--text-lg); }
-.text-xl { font-size: var(--text-xl); }
-.text-2xl { font-size: var(--text-2xl); }
+.text-secondary {
+    color: var(--color-text-secondary);
+}
 
-.mb-xs { margin-bottom: var(--space-xs); }
-.mb-sm { margin-bottom: var(--space-sm); }
-.mb-md { margin-bottom: var(--space-md); }
-.mb-lg { margin-bottom: var(--space-lg); }
+.text-tertiary {
+    color: var(--color-text-tertiary);
+}
 
-.flex-col { display: flex; flex-direction: column; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.w-full { width: 100%; }
+.font-light {
+    font-weight: 300;
+}
+
+.font-normal {
+    font-weight: 400;
+}
+
+.font-bold {
+    font-weight: 700;
+}
+
+.text-lg {
+    font-size: var(--text-lg);
+}
+
+.text-xl {
+    font-size: var(--text-xl);
+}
+
+.text-2xl {
+    font-size: var(--text-2xl);
+}
+
+.mb-xs {
+    margin-bottom: var(--space-xs);
+}
+
+.mb-sm {
+    margin-bottom: var(--space-sm);
+}
+
+.mb-md {
+    margin-bottom: var(--space-md);
+}
+
+.mb-lg {
+    margin-bottom: var(--space-lg);
+}
+
+.flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.w-full {
+    width: 100%;
+}
 
 /* KBD Badge (Replaces .key-badge) */
 .kbd {
@@ -299,18 +374,18 @@ a:hover {
     bottom: 0;
     left: 0;
     transform: translateX(-100%);
-    background-image: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0) 0,
-        rgba(255, 255, 255, 0.05) 20%,
-        rgba(255, 255, 255, 0.1) 60%,
-        rgba(255, 255, 255, 0)
-    );
+    background-image: linear-gradient(90deg,
+            rgba(255, 255, 255, 0) 0,
+            rgba(255, 255, 255, 0.05) 20%,
+            rgba(255, 255, 255, 0.1) 60%,
+            rgba(255, 255, 255, 0));
     animation: shimmer 2s infinite;
 }
 
 @keyframes shimmer {
-    100% { transform: translateX(100%); }
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 /* --- Glass Panel --- */
@@ -341,6 +416,7 @@ button {
         opacity var(--duration-fast) var(--ease-smooth),
         box-shadow var(--duration-fast) var(--ease-smooth);
 }
+
 button:active {
     transform: scale(0.96);
 }
@@ -358,6 +434,7 @@ button:active {
     font-size: var(--text-lg);
     color: var(--color-text-primary);
 }
+
 .icon-btn:hover {
     background: var(--color-border);
     border-color: var(--color-border);
@@ -376,6 +453,7 @@ button:active {
     border: 1px solid transparent;
     color: var(--color-text-secondary);
 }
+
 .icon-btn-small:hover {
     background: var(--color-action-subtle);
     color: var(--color-text-primary);
@@ -384,16 +462,19 @@ button:active {
 /* Primary Button (Call to Action) */
 .btn-primary {
     background: var(--color-action);
-    color: white; /* Always white for contrast on brand color */
+    color: white;
+    /* Always white for contrast on brand color */
     padding: var(--space-md) var(--space-xl);
     border-radius: var(--radius-md);
     font-weight: 600;
     font-size: var(--text-base);
-    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3); /* Keep generic shadow for brand */
+    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+    /* Keep generic shadow for brand */
     letter-spacing: 0.5px;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     display: inline-block;
 }
+
 .btn-primary:hover {
     background: var(--color-action-hover);
     transform: translateY(-2px);
@@ -411,14 +492,17 @@ button[aria-pressed="true"] {
 /* --- Range Slider --- */
 input[type="range"] {
     -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     background: transparent;
     cursor: pointer;
     margin: var(--space-xs) 0;
 }
+
 input[type="range"]:focus {
     outline: none;
 }
+
 input[type="range"]::-webkit-slider-runnable-track {
     width: 100%;
     height: 6px;
@@ -426,6 +510,7 @@ input[type="range"]::-webkit-slider-runnable-track {
     border-radius: var(--radius-full);
     border: 1px solid var(--color-border-subtle);
 }
+
 input[type="range"]::-webkit-slider-thumb {
     height: 18px;
     width: 18px;
@@ -434,13 +519,16 @@ input[type="range"]::-webkit-slider-thumb {
     border: 2px solid var(--palette-white);
     cursor: pointer;
     -webkit-appearance: none;
-    margin-top: -7px; /* center on track */
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    margin-top: -7px;
+    /* center on track */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     transition: transform var(--duration-fast) var(--ease-out-expo);
 }
+
 input[type="range"]:hover::-webkit-slider-thumb {
     transform: scale(1.2);
 }
+
 input[type="range"]:focus-visible::-webkit-slider-thumb {
     box-shadow: 0 0 0 4px var(--color-focus);
 }
@@ -487,6 +575,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     letter-spacing: -0.02em;
     background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-text-tertiary) 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -566,6 +655,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     font-size: var(--text-sm);
     border: 1px solid var(--color-border);
 }
+
 #btn-follow:hover {
     background: var(--color-action);
     border-color: var(--color-action);
@@ -634,7 +724,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 #nav-list {
     overflow-y: auto;
     flex-grow: 1;
-    margin-right: -12px; /* Offset scrollbar padding */
+    margin-right: -12px;
+    /* Offset scrollbar padding */
     padding-right: 12px;
 }
 
@@ -667,11 +758,14 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     text-align: left;
     transition: background var(--duration-fast), color var(--duration-fast), padding-left var(--duration-fast);
 }
+
 .nav-btn:hover {
     background: var(--color-action-subtle);
     color: var(--color-text-primary);
-    padding-left: calc(var(--space-md) + 4px); /* Subtle shift */
+    padding-left: calc(var(--space-md) + 4px);
+    /* Subtle shift */
 }
+
 .nav-type {
     margin-left: auto;
     font-size: 10px;
@@ -704,7 +798,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     background: var(--color-surface-glass);
     backdrop-filter: blur(20px);
     border: 1px solid var(--color-border);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     pointer-events: auto;
     transition: transform var(--duration-normal) var(--ease-out-expo);
 }
@@ -735,6 +829,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     text-align: center;
     max-width: 90vw;
 }
+
 #toast.visible {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
@@ -782,7 +877,11 @@ dialog {
     align-items: center;
     justify-content: center;
 }
-dialog:not([open]) { display: none; }
+
+dialog:not([open]) {
+    display: none;
+}
+
 dialog::backdrop {
     background: var(--color-overlay-bg);
     backdrop-filter: blur(8px);
@@ -803,8 +902,15 @@ dialog::backdrop {
 }
 
 @keyframes modal-enter {
-    from { opacity: 0; transform: scale(0.95) translateY(20px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .modal-grid {
@@ -826,20 +932,29 @@ dialog::backdrop {
 .planet-label {
     color: var(--color-text-primary);
     font-family: var(--font-sans);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
-    padding: 2px 6px;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 1), 0 0 5px rgba(0, 0, 0, 1);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 3px 10px;
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     white-space: nowrap;
     margin-top: -30px;
     pointer-events: none;
     user-select: none;
-    transition: opacity 0.2s;
-    mix-blend-mode: screen;
+    transition: opacity 0.2s, transform 0.2s;
+    mix-blend-mode: normal;
+    /* Fix for visibility over bright objects like Sun */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Specific fix for label clipping at edges (Issue 1) */
+.planet-label {
+    max-width: 15vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* --- Footer --- */
@@ -852,12 +967,16 @@ dialog::backdrop {
     z-index: var(--z-ui);
     pointer-events: none;
 }
+
 #footer-credits a {
     color: var(--color-text-secondary);
     text-decoration: none;
     pointer-events: auto;
 }
-#footer-credits a:hover { text-decoration: underline; }
+
+#footer-credits a:hover {
+    text-decoration: underline;
+}
 
 /* ==========================================================================
    6. RESPONSIVE
@@ -878,7 +997,9 @@ dialog::backdrop {
         max-height: 40vh;
         overflow-y: auto;
         position: absolute;
-        top: 80px; left: 10px; right: 10px;
+        top: 80px;
+        left: 10px;
+        right: 10px;
         z-index: 101;
     }
 
@@ -900,19 +1021,27 @@ dialog::backdrop {
     }
 
     .icon-btn {
-        width: 36px;
-        height: 36px;
-        font-size: var(--text-base);
+        width: 32px;
+        height: 32px;
+        font-size: var(--text-sm);
     }
 
     .icon-btn svg {
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Fix Icon Alignment (Issue 4) */
+    .texture-toggle svg {
+        margin-left: -1px;
+        /* Subtle adjustment for 'Texture' icon centering */
     }
 
     #nav-sidebar {
         width: 100%;
-        top: 0; left: 0; bottom: 0;
+        top: 0;
+        left: 0;
+        bottom: 0;
         z-index: 999;
         transform: translateX(-100%);
     }
@@ -985,7 +1114,7 @@ dialog::backdrop {
     flex-direction: column;
     padding: 0;
     overflow: hidden;
-    box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
     border: 1px solid var(--color-border);
     background: var(--color-surface-floating);
     animation: slide-up-fade 0.3s var(--ease-out-expo);
@@ -997,7 +1126,7 @@ dialog::backdrop {
     padding: var(--space-md);
     border-bottom: 1px solid var(--color-border);
     gap: var(--space-md);
-    background: rgba(255,255,255,0.03);
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .cmd-icon {
@@ -1016,6 +1145,7 @@ dialog::backdrop {
     outline: none;
     height: 32px;
 }
+
 .cmd-panel input::placeholder {
     color: var(--color-text-tertiary);
 }
@@ -1083,26 +1213,38 @@ dialog::backdrop {
     justify-content: flex-end;
     gap: var(--space-lg);
     padding: var(--space-xs) var(--space-md);
-    background: rgba(0,0,0,0.3);
+    background: rgba(0, 0, 0, 0.3);
     border-top: 1px solid var(--color-border-subtle);
     font-size: var(--text-xs);
     color: var(--color-text-tertiary);
 }
 
 .cmd-footer kbd {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 3px;
     padding: 1px 5px;
     font-family: var(--font-mono);
-    border-bottom: 1px solid rgba(255,255,255,0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slide-up-fade {
-    from { opacity: 0; transform: translateY(20px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }

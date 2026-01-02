@@ -130,15 +130,18 @@ export class TrailManager {
         const tempVec = new THREE.Vector3();
 
         this.trails.forEach(trail => {
-            // 1. Advance the Ring Buffer Head (Cyclic)
+            // 1. Validate Target (ID-029)
+            if (!trail.target || !trail.target.parent) return;
+
+            // 2. Advance the Ring Buffer Head (Cyclic)
             trail.head = (trail.head + 1) % this.pointsPerTrail;
 
-            // 2. Capture Current Position
+            // 3. Capture Current Position
             // We overwrite the existing Vector3 at 'head' rather than creating a new one.
             tempVec.setFromMatrixPosition(trail.target.matrixWorld);
             trail.history[trail.head].copy(tempVec);
 
-            // 3. Update the Geometry Buffers
+            // 4. Update the Geometry Buffers
             this.updateTrailGeometry(trail.index, trail.history, trail.head, trail.baseColor);
         });
 

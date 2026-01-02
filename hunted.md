@@ -27,11 +27,11 @@
 | 023 | [FIXED] | 🟢 LOW   | `src/input.js:135` | Memory Leak: Anonymous Window Resize Listener |
 | 024| [FIXED] | 🟢 LOW   | `src/input.js:135` | Memory Leak: Anonymous Window Resize Listener |
 | 025| [FIXED] | 🟢 LOW   | `src/main.js:413` | Performance: High GC in Animation Loop |
-| 026| [OPEN]  | 🔴 HIGH  | `src/main.js:192` | Unhandled Promise Rejection in Initialization |
-| 027| [OPEN]  | 🟡 MED   | `src/components/CommandPalette.js:364` | Crash Risk: Unsafe call to `item.handler()` |
-| 028| [OPEN]  | 🟡 MED   | `src/components/NavigationSidebar.js:47` | Memory Leak: `NavigationSidebar` lacks `dispose()` in `init` |
-| 029| [OPEN]  | 🟢 LOW   | `src/trails.js:155` | Logic Flaw: `TrailManager` head update without validation |
-| 030| [OPEN]  | 🟡 MED   | `src/debris.js:278` | Memory Leak: `DebrisSystem` dispose misses `setAttribute` cleanup |
+| 026| [FIXED] | 🔴 HIGH  | `src/main.js:192` | Unhandled Promise Rejection in Initialization |
+| 027| [FIXED] | 🟡 MED   | `src/components/CommandPalette.js:364` | Crash Risk: Unsafe call to `item.handler()` |
+| 028| [FIXED] | 🟡 MED   | `src/components/NavigationSidebar.js:47` | Memory Leak: `NavigationSidebar` lacks `dispose()` in `init` |
+| 029| [FIXED] | 🟢 LOW   | `src/trails.js:155` | Logic Flaw: `TrailManager` head update without validation |
+| 030| [FIXED] | 🟡 MED   | `src/debris.js:278` | Memory Leak: `DebrisSystem` dispose misses `setAttribute` cleanup |
 
 ## Details
 

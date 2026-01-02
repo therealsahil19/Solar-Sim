@@ -611,10 +611,15 @@ if (!window.__SKIP_INIT__) {
             loading.style.display = 'block';
             loading.style.opacity = '1';
             loading.setAttribute('aria-hidden', 'false');
-            loading.innerHTML = `<div style="color:red; text-align:center; padding-top:20%">
-                <h1>Failed to Start</h1>
-                <p>${err.message}</p>
-            </div>`;
+            loading.innerHTML = `
+                <div class="glass-panel" style="color:var(--text-primary); text-align:center; padding: 2rem; border: 1px solid var(--accent-red);">
+                    <h1 style="color:var(--accent-red); margin-bottom: 1rem;">Simulation Error</h1>
+                    <p style="margin-bottom: 2rem;">${err.message || 'An unexpected error occurred during initialization.'}</p>
+                    <button onclick="window.location.reload()" class="nav-btn" style="padding: 0.5rem 1rem; cursor: pointer;">
+                        🔄 Reload Simulation
+                    </button>
+                </div>
+            `;
         }
     });
 }

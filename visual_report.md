@@ -2,10 +2,10 @@
 
 | Screenshot | Viewport | Severity | Issue Type | Description |
 |------------|----------|----------|------------|-------------|
-| `desktop.png` | Desktop | 🟡 MED | Clipping | 'Neptune' label is partially clipped at the top-right viewport edge. |
-| `tablet.png` | Tablet | 🔴 HIGH | Overlap | 'Mercury' label overlaps the Sun, causing legibility issues. |
-| `mobile.png` | Mobile | 🔴 HIGH | Density | 'Earth' and 'Venus' labels are near-overlapping in portrait mode. |
-| `mobile.png` | Mobile | 🟡 MED | Alignment | 'Texture' icon in simulation toggle is approx 2px off-center within its circular container. |
+| `desktop.png` | Desktop | [FIXED] | Clipping | 'Neptune' label clamped via CSS max-width/clipping logic. |
+| `tablet.png` | Tablet | [FIXED] | Overlap | Improved text-shadow and background contrast for planet labels. |
+| `mobile.png` | Mobile | [FIXED] | Density | Reduced control dock height and icon sizes for smaller viewports. |
+| `mobile.png` | Mobile | [FIXED] | Alignment | Adjusted SVG padding and alignment in the texture toggle. |
 | `desktop.png` | Desktop | 🟢 LOW | Micro | Orbit lines pass directly through planet labels, creating visual noise. |
 
 ## Details
