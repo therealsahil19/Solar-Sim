@@ -1,6 +1,6 @@
 /*
    🎨 PALETTE DESIGN SYSTEM
-   Version: 3.1.0 "Unleashed" - Component Architecture & Tokens
+   Version: 3.2.0 "Unleashed" - Modal System & Utility Architecture
 */
 
 /* ==========================================================================
@@ -37,7 +37,7 @@
     --color-bg: var(--palette-black);
 
     /* Surfaces */
-    --color-surface-glass: rgba(10, 10, 16, 0.85); /* Slightly more opaque for better legibility */
+    --color-surface-glass: rgba(10, 10, 16, 0.85);
     --color-surface-floating: rgba(0, 0, 0, 0.95);
     --color-surface-solid: var(--palette-gray-900);
 
@@ -58,14 +58,13 @@
     --color-border: rgba(255, 255, 255, 0.15);
     --color-border-subtle: rgba(255, 255, 255, 0.08);
     --color-shadow: rgba(0, 0, 0, 0.6);
-    --color-overlay-bg: rgba(0, 0, 0, 0.7);
+    --color-overlay-bg: rgba(0, 0, 0, 0.8);
 
     /* Inputs */
     --color-input-bg: rgba(255, 255, 255, 0.08);
     --color-input-bg-focus: rgba(255, 255, 255, 0.15);
 
     /* --- Motion Tokens (Physics-based) --- */
-    /* Spring-like ease */
     --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
     --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
     --ease-smooth: cubic-bezier(0.4, 0.0, 0.2, 1);
@@ -101,7 +100,7 @@
     --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
 
-    /* --- Layout Tokens (NEW) --- */
+    /* --- Layout Tokens --- */
     --layout-sidebar-width: 340px;
     --layout-info-width: 320px;
     --layout-header-height: 64px;
@@ -234,7 +233,50 @@ a:hover {
 }
 
 /* ==========================================================================
-   3. COMPONENTS & UTILITIES
+   3. UTILITIES
+   ========================================================================== */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-bold { font-weight: 700; }
+
+.text-lg { font-size: var(--text-lg); }
+.text-xl { font-size: var(--text-xl); }
+.text-2xl { font-size: var(--text-2xl); }
+
+.mb-xs { margin-bottom: var(--space-xs); }
+.mb-sm { margin-bottom: var(--space-sm); }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }
+
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.w-full { width: 100%; }
+
+/* KBD Badge (Replaces .key-badge) */
+.kbd {
+    background: var(--color-action-subtle);
+    border: 1px solid var(--color-border-subtle);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.8em;
+    color: var(--color-action);
+    min-width: 24px;
+    text-align: center;
+    display: inline-block;
+    box-shadow: 0 1px 0 var(--color-border-subtle);
+}
+
+/* ==========================================================================
+   4. COMPONENTS
    ========================================================================== */
 
 /* --- Skeleton Loading (Shimmer) --- */
@@ -350,6 +392,7 @@ button:active {
     box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3); /* Keep generic shadow for brand */
     letter-spacing: 0.5px;
     border: 1px solid rgba(255,255,255,0.2);
+    display: inline-block;
 }
 .btn-primary:hover {
     background: var(--color-action-hover);
@@ -403,7 +446,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 }
 
 /* ==========================================================================
-   4. LAYOUT & REGIONS
+   5. LAYOUT & REGIONS
    ========================================================================== */
 
 #app-overlay {
@@ -728,7 +771,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     box-shadow: 0 0 10px var(--color-action);
 }
 
-/* --- Modal (Welcome) --- */
+/* --- Modal System (Standardized) --- */
 dialog {
     border: none;
     background: transparent;
@@ -741,7 +784,7 @@ dialog {
 }
 dialog:not([open]) { display: none; }
 dialog::backdrop {
-    background: rgba(0, 0, 0, 0.8);
+    background: var(--color-overlay-bg);
     backdrop-filter: blur(8px);
     animation: fade-in 0.3s ease;
 }
@@ -779,32 +822,20 @@ dialog::backdrop {
     color: var(--color-text-secondary);
 }
 
-.key-badge {
-    background: var(--color-action-subtle);
-    border: 1px solid var(--color-border-subtle);
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-family: var(--font-mono);
-    font-size: 0.8em;
-    color: var(--color-action);
-    min-width: 30px;
-    text-align: center;
-}
-
 /* --- Planet Labels --- */
 .planet-label {
     color: var(--color-text-primary);
     font-family: var(--font-sans);
-    font-size: 10px; /* Reduced from text-xs (12px) to mitigate overlap */
+    font-size: 10px;
     font-weight: 600;
     text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-    background: rgba(0, 0, 0, 0.5); /* Slightly more transparent */
+    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(2px);
-    padding: 2px 6px; /* Reduced padding */
+    padding: 2px 6px;
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,0.15);
     white-space: nowrap;
-    margin-top: -30px; /* Adjusted offset */
+    margin-top: -30px;
     pointer-events: none;
     user-select: none;
     transition: opacity 0.2s;
@@ -829,7 +860,7 @@ dialog::backdrop {
 #footer-credits a:hover { text-decoration: underline; }
 
 /* ==========================================================================
-   5. RESPONSIVE
+   6. RESPONSIVE
    ========================================================================== */
 @media (max-width: 768px) {
     #app-overlay {
@@ -856,17 +887,16 @@ dialog::backdrop {
         align-items: center;
         width: 100%;
         padding-bottom: var(--space-xs);
-        gap: 0; /* Remove gap to stack tighter */
-        /* Reduce overall height impact */
+        gap: 0;
     }
 
     .dock-group {
         width: 100%;
         justify-content: space-around;
-        height: 48px; /* Reduced from 56px */
+        height: 48px;
         padding: 2px var(--space-sm);
-        margin-bottom: 4px; /* Tiny margin between rows */
-        backdrop-filter: blur(12px); /* Slightly less blur for perf */
+        margin-bottom: 4px;
+        backdrop-filter: blur(12px);
     }
 
     .icon-btn {
@@ -912,7 +942,6 @@ dialog::backdrop {
         font-size: var(--text-sm);
     }
 
-    /* Ensure Command Palette button text doesn't overflow */
     .modal-item span:last-child {
         white-space: nowrap;
         overflow: hidden;
@@ -929,13 +958,13 @@ dialog::backdrop {
 }
 
 /* ==========================================================================
-   6. COMMAND PALETTE
+   7. COMMAND PALETTE
    ========================================================================== */
 #cmd-palette-overlay {
     position: fixed;
     inset: 0;
     z-index: var(--z-modal);
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--color-overlay-bg);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: flex-start;

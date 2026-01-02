@@ -28,3 +28,19 @@
 **Standard:**
 *   **WCAG 2.1 AA:** "Blueprint" mode ensures high contrast for text.
 *   **Systemic Design:** Zero hardcoded colors in CSS.
+
+## 2026-01-02 - [System Update: Modal System & Utility Architecture]
+**Problem:** The application contained legacy "design debt" in the form of inline styles (`style="font-size:..."`) within `index.html`. The Modal implementation was manual and inconsistent with the design system tokens.
+**Solution:**
+1.  **Modal Standardization:** Created a reusable `Modal.js` component wrapping the native `<dialog>` element.
+    *   Enforces backdrop blur, entrance animations, and focus trapping.
+    *   Standardized CSS classes (`.modal-content`, `.modal-grid`) in `src/style.css`.
+2.  **Utility Class Architecture:** Introduced functional CSS utilities to `src/style.css` (e.g., `.text-xl`, `.font-light`, `.mb-md`, `.kbd`) to eliminate the need for inline styles.
+3.  **Refactoring:**
+    *   Removed all inline styles from `index.html`.
+    *   Updated `CommandPalette` to use the standardized `.kbd` class for shortcuts.
+    *   Refactored `src/input.js` to use the new `Modal` class for the Welcome screen.
+
+**Standard:**
+*   **No Inline Styles:** All styling is now driven by classes and tokens.
+*   **Accessibility:** Modals use native `<dialog>` for robust keyboard support and screen reader announcement.

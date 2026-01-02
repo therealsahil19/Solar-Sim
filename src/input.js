@@ -7,7 +7,7 @@
  * 2. Raycasting for mouse clicks on 3D objects.
  * 3. Keyboard shortcuts (e.g., 'C' for camera toggle).
  * 4. UI event listeners (Buttons).
- * 5. Component Initialization (CommandPalette, NavigationSidebar, InfoPanel).
+ * 5. Component Initialization (CommandPalette, NavigationSidebar, InfoPanel, Modal).
  *
  * It uses dependency injection to access the Scene, Camera, and other context
  * without relying on global variables.
@@ -18,6 +18,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CommandPalette } from './components/CommandPalette.js';
 import { NavigationSidebar } from './components/NavigationSidebar.js';
 import { InfoPanel } from './components/InfoPanel.js';
+import { Modal } from './components/Modal.js'; // Import Modal
 import { ThemeManager } from './managers/ThemeManager.js';
 
 /**
@@ -181,13 +182,18 @@ export function setupInteraction(context, callbacks) {
     };
     rendererDomElement.addEventListener('pointerup', onPointerUp);
 
-    // --- Modal Logic ---
-    const welcomeModal = document.getElementById('welcome-modal');
+    // --- Modal Logic (Refactored to use Modal class) ---
+    const welcomeModal = new Modal('welcome-modal', {
+        onClose: () => {
+            // Optional: Actions when closed
+        }
+    });
+
     const btnHelp = document.getElementById('btn-help');
     const btnStart = document.getElementById('btn-start');
 
     function openModal() {
-        if (welcomeModal && !welcomeModal.open) welcomeModal.showModal();
+        if (welcomeModal) welcomeModal.open();
     }
     function closeModal() {
         if (welcomeModal) welcomeModal.close();
@@ -300,6 +306,7 @@ export function setupInteraction(context, callbacks) {
 
              // Clean up components if they have dispose methods
              if (commandPalette && commandPalette.destroy) commandPalette.destroy();
+             if (welcomeModal && welcomeModal.dispose) welcomeModal.dispose(); // Dispose Modal
         }
     };
 }
