@@ -630,6 +630,19 @@ function animate() {
     if (renderer) {
         renderer.render(scene, camera);
         if (showLabels || labelsNeedUpdate) {
+            // Conditional Visibility for Moons (Bolt Optimization)
+            allLabels.forEach(label => {
+                if (label.userData.isMoon) {
+                    const parentName = label.userData.parentPlanet;
+                    const isParentFocused = focusTarget && focusTarget.userData.name === parentName;
+                    const isParentSelected = selectedObject && selectedObject.userData.name === parentName;
+
+                    label.visible = showLabels && (isParentFocused || isParentSelected);
+                } else {
+                    label.visible = showLabels;
+                }
+            });
+
             labelRenderer.render(scene, camera);
             if (!showLabels) labelsNeedUpdate = false;
         }

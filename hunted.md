@@ -91,6 +91,23 @@ if (this.dom.btnOpen) {
 // src/trails.js:138
 tempVec.setFromMatrixPosition(trail.target.matrixWorld);
 ```
+# Bug Hunt Report: Solar-Sim (Hunted)
+
+## New Diagnosed Issues
+### 1. Moon Label Over-persistence
+- **Symptom:** Moon labels are always visible, cluttering the view.
+- **Diagnosis:** `procedural.js` creates labels for all celestial bodies and adds them to a flat `allLabels` array. `main.js` toggles visibility globally. There is no conditional logic to check if a moon's parent planet is selected or focused before rendering its label.
+
+### 2. Trail Radial Artifacts
+- **Symptom:** Straight lines connect planets to the Sun (origin).
+- **Diagnosis:** `TrailManager` in `trails.js` initializes history buffers with $(0,0,0)$ (the default position before physics update). `LineSegments` draws lines between all points in the history. The transition between the current orbital path and the uninitialized origin creates a radial "spoke" to $(0,0,0)$.
+
+### 3. Starbox "Inner Cloud" Clustering
+- **Symptom:** Stars appear as a dense cloud inside the solar system.
+- **Diagnosis:** `createStarfield` in `procedural.js` generates points in a $[-200, 200]$ unit range. Given the simulation scale ($1 \text{ AU} = 40$ units), this puts the entire "universe" of stars within $5 \text{ AU}$ of the Sun, overlapping with the planetary orbits.
+
+## Resolved/Previously Found Bugs
+...
 
 ### 030 - Memory Leak: DebrisSystem dispose
 The `dispose` method for the debris system cleans up geometry and material but doesn't remove the attributes from the geometry, and `onBeforeCompile` adds a `shader` reference to `userData` which might prevent material GC if not cleared.

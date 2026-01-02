@@ -111,7 +111,8 @@ export class TrailManager {
             baseColor: col,
             history,
             head: 0, // Pointer to the "newest" position in the ring buffer
-            index
+            index,
+            initialized: false // New flag to delay drawing until valid motion
         });
 
         // Initialize the geometry data for this trail (all points at startPos initially)
@@ -141,6 +142,19 @@ export class TrailManager {
             // 3. Capture Current Position
             // We overwrite the existing Vector3 at 'head' rather than creating a new one.
             _tempVec.setFromMatrixPosition(trail.target.matrixWorld);
+
+            // Bug Fix: Check if target is at origin (0,0,0)
+            // If it is, and we aren't initialized, skip recording to prevent radial spokes
+            if (!trail.initialized) {
+                if (_tempVec.lengthSq() > 0.1) {
+                    // Object has moved from origin, fill history with current pos to start clean
+                    trail.history.forEach(v => v.copy(_tempVec));
+                    trail.initialized = true;
+                } else {
+                    return; // Still at origin, skip this frame
+                }
+            }
+
             trail.history[trail.head].copy(_tempVec);
 
             // 4. Update the Geometry Buffers

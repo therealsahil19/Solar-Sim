@@ -59,13 +59,14 @@ function getSolidMaterial(color) {
  */
 export function createStarfield() {
     const geometry = new THREE.BufferGeometry();
-    const count = 3000;
+    const count = 5000;
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count * 3; i++) {
-        positions[i] = (Math.random() - 0.5) * 400;
+        // High distribution range to keep stars in the background (far beyond Pluto/Oort)
+        positions[i] = (Math.random() - 0.5) * 100000;
     }
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2, transparent: true, opacity: 0.8 });
+    const material = new THREE.PointsMaterial({ color: 0xffffff, size: 2.0, transparent: true, opacity: 0.9, sizeAttenuation: true });
     return new THREE.Points(geometry, material);
 }
 
@@ -330,6 +331,11 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
     const label = new CSS2DObject(labelDiv);
     // Position label above the planet (taking scale into account)
     label.position.set(0, data.visual.size + 1.0, 0);
+
+    // Visibility Logic: Tag moons so they can be hidden if parent isn't focused
+    label.userData.isMoon = (data.type === 'Moon');
+    label.userData.parentPlanet = parentData ? parentData.name : null; // Label uses name for matching if needed, or we link via pivot later
+
     pivot.add(label);
 
     // 6. Trails
