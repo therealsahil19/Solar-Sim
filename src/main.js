@@ -8,7 +8,7 @@
 import * as THREE from 'three';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 import { createStarfield, createSun, createPlayerShip, createSystem } from './procedural.js';
-import { createAsteroidBelt } from './debris.js';
+import { createAsteroidBelt, createKuiperBelt, createOortCloud } from './debris.js';
 import { setupControls, setupInteraction } from './input.js';
 import { InstanceRegistry } from './instancing.js';
 import { TrailManager } from './trails.js';
@@ -65,6 +65,8 @@ let interactionHelpers = null;
 let frameCount = 0;
 let closestObjectCache = null;
 let asteroidBelt = null;
+let kuiperBelt = null;
+let oortCloud = null;
 let instanceRegistry = null;
 let trailManager = null;
 
@@ -166,8 +168,16 @@ export async function init() {
 
     // Asteroid Belt (CPU)
     // Range 2.1 - 3.3 AU
-    asteroidBelt = createAsteroidBelt({ count: 500, minRadius: 2.1, maxRadius: 3.3 });
+    asteroidBelt = createAsteroidBelt();
     scene.add(asteroidBelt);
+
+    // Kuiper Belt (30 - 50 AU)
+    kuiperBelt = createKuiperBelt();
+    scene.add(kuiperBelt);
+
+    // Oort Cloud (2000 - 100000 AU)
+    oortCloud = createOortCloud();
+    scene.add(oortCloud);
 
     // 5. Load System Data
     let planetData = null;
@@ -473,6 +483,16 @@ function animate() {
         // Update Asteroid Belt
         if (asteroidBelt && asteroidBelt.update) {
             asteroidBelt.update(simulationTime);
+        }
+
+        // Update Kuiper Belt
+        if (kuiperBelt && kuiperBelt.update) {
+            kuiperBelt.update(simulationTime);
+        }
+
+        // Update Oort Cloud (Static Physics - Rotate Only)
+        if (oortCloud && oortCloud.update) {
+            oortCloud.update(simulationTime);
         }
 
         // Rotate Starfield
