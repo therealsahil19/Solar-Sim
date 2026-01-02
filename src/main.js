@@ -137,17 +137,7 @@ export async function init() {
     manager.onLoad = function ( ) {
         if (initFailed) return;
         assetsLoaded = true;
-        if (loadingScreen) {
-            loadingScreen.style.opacity = '0';
-            setTimeout(() => {
-                if (initFailed) return;
-                loadingScreen.style.display = 'none';
-                loadingScreen.setAttribute('aria-hidden', 'true');
-                if (interactionHelpers && interactionHelpers.openModal) {
-                    interactionHelpers.openModal();
-                }
-            }, 500);
-        }
+        // Don't hide loading screen here. Wait for system data to load.
     };
 
     const textureLoader = new THREE.TextureLoader(manager);
@@ -193,6 +183,10 @@ export async function init() {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         planetData = await response.json();
 
+        if (!Array.isArray(planetData)) {
+            throw new Error('Invalid configuration: planetData must be an array.');
+        }
+
         planetData.forEach(planetConfig => {
             // Root System Creation
             const systemNode = createSystem(planetConfig, textureLoader, useTextures, null);
@@ -224,6 +218,19 @@ export async function init() {
         instanceRegistry.groups.forEach(group => {
             if (group.mesh) interactionTargets.push(group.mesh);
         });
+
+        // Safe to hide loading screen now
+        if (loadingScreen && !initFailed) {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                if (initFailed) return;
+                loadingScreen.style.display = 'none';
+                loadingScreen.setAttribute('aria-hidden', 'true');
+                if (interactionHelpers && interactionHelpers.openModal) {
+                    interactionHelpers.openModal();
+                }
+            }, 500);
+        }
 
     } catch (error) {
         console.error("Failed to load system data:", error);

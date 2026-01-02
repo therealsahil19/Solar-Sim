@@ -48,13 +48,23 @@ export class InfoPanel {
      */
     bindEvents() {
         if (this.dom.btnFollow) {
-            this.dom.btnFollow.addEventListener('click', (e) => {
+            this._handleFollowClick = (e) => {
                 // Prevent bubbling if necessary, though usually fine here
                 e.stopPropagation();
                 if (this.currentMesh && this.callbacks.onFollow) {
                     this.callbacks.onFollow(this.currentMesh);
                 }
-            });
+            };
+            this.dom.btnFollow.addEventListener('click', this._handleFollowClick);
+        }
+    }
+
+    /**
+     * Cleans up event listeners.
+     */
+    dispose() {
+        if (this.dom.btnFollow && this._handleFollowClick) {
+            this.dom.btnFollow.removeEventListener('click', this._handleFollowClick);
         }
     }
 

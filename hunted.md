@@ -19,10 +19,10 @@
 | 015| [FIXED] | 🟡 MED   | `src/trails.js:14` | GPU Memory Leak: `TrailManager` lacks `dispose()` |
 | 016| [FIXED] | 🟡 MED   | `src/components/CommandPalette.js:172` | Logic Bomb: Crash on missing `name` property |
 | 017| [FIXED] | 🟢 LOW   | `src/main.js:492` | Regression: Anonymous Window Resize Listener |
-| 018| [OPEN] | 🔴 HIGH  | `src/main.js:141` | Race Condition: Loading Screen hides before Config loads |
-| 019| [OPEN] | 🔴 HIGH  | `src/trails.js:33` | Performance: TrailManager renders 1M vertices per frame |
-| 020| [OPEN] | 🟡 MED   | `src/main.js:156` | Crash Risk: Unsafe access to `planetData.forEach` |
-| 021| [OPEN] | 🟢 LOW   | `src/components/NavigationSidebar.js:154` | Memory Leak: Undisposed DOM event listeners |
+| 018 | [FIXED] | 🔴 HIGH  | `src/main.js:141` | Race Condition: Loading Screen hides before Config loads |
+| 019 | [FIXED] | 🔴 HIGH  | `src/trails.js:33` | Performance: TrailManager renders 1M vertices per frame |
+| 020 | [FIXED] | 🟡 MED   | `src/main.js:156` | Crash Risk: Unsafe access to `planetData.forEach` |
+| 021 | [FIXED] | 🟢 LOW   | `src/components/NavigationSidebar.js:154` | Memory Leak: Undisposed DOM event listeners |
 
 ## Details
 
