@@ -22,6 +22,16 @@
 
     <link rel="stylesheet" href="src/style.css">
 
+    <!-- Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
     <!-- Sentinel: Subresource Integrity (SRI) for Dependencies -->
     <link rel="modulepreload" href="https://unpkg.com/three@0.160.0/build/three.module.js" integrity="sha384-61S/Nu32S3E5+n+KpCOTb2eRYps6fVKm+9Gz1QBvSePFthb46f063Aa/qe/lykFZ" crossorigin="anonymous">
     <link rel="modulepreload" href="https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js" integrity="sha384-qlO/ZugKPxAQUAvTlQoo0QECzxJIJySZmCF/DHdb2Xn/hHndFwX/vfUAC9Hbk6LP" crossorigin="anonymous">
@@ -148,15 +158,6 @@
         Solar-Sim · Built with Three.js · <a href="https://github.com/therealsahil19/Solar-Sim" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
 
-    <!-- Import Map -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
     <script type="module" src="src/main.js"></script>
 </body>
 </html>
