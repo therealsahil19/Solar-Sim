@@ -32,6 +32,11 @@
 | 028| [FIXED] | 🟡 MED   | `src/components/NavigationSidebar.js:47` | Memory Leak: `NavigationSidebar` lacks `dispose()` in `init` |
 | 029| [FIXED] | 🟢 LOW   | `src/trails.js:155` | Logic Flaw: `TrailManager` head update without validation |
 | 030| [FIXED] | 🟡 MED   | `src/debris.js:278` | Memory Leak: `DebrisSystem` dispose misses `setAttribute` cleanup |
+| 031| [OPEN] | 🔴 HIGH  | `src/main.js:490` | Framerate Dependent Animation Speed |
+| 032| [OPEN] | 🟡 MED   | `src/procedural.js:164` | GPU Memory Leak: Sun Glow Texture never disposed |
+| 033| [OPEN] | 🟡 MED   | `src/trails.js:210` | Logic Flaw: `reset()` fails to clear visual artifacts |
+| 034| [OPEN] | 🟢 LOW   | `src/main.js:277` | Zombie Code: Lazy Loading executes after Init Failure |
+| 035| [OPEN] | 🟢 LOW   | `src/main.js:438` | Physics Instability: Unclamped Delta Time |
 
 ## Details
 
@@ -87,4 +92,54 @@ mesh.dispose = () => {
     mesh.geometry.dispose();
     mesh.material.dispose();
 };
+```
+
+### 031 - Framerate Dependent Animation
+The planet and starfield rotation logic uses a fixed increment per frame (`+= 0.01` or `+= 0.0003`) instead of multiplying by the delta time (`dt`). This means the simulation runs 2.4x faster on a 144Hz monitor compared to a 60Hz screen, breaking the simulation conceptual time.
+
+```javascript
+// src/main.js:490
+obj.mesh.rotation.y += 0.01 * timeScale;
+```
+
+### 032 - GPU Memory Leak: Sun Glow
+`createSun` generates a `CanvasTexture` and `SpriteMaterial` for the glow effect. However, these are local variables. The returned `sun` mesh does not have a custom `dispose` method that cleans these up. When the scene is cleared, the `Mesh` is removed, but the Texture and Material remain in VRAM.
+
+```javascript
+// src/procedural.js:164
+const glowTexture = createGlowTexture();
+const glowMaterial = new THREE.SpriteMaterial({ map: glowTexture ... });
+```
+
+### 033 - Logic Flaw: TrailManager.reset
+The `reset()` method clears the internal `trails` array but fails to reset the `geometry.drawRange` or clear the buffer data. If called, the "ghosts" of the old trails will remain visible on screen (frozen static lines) until new trails happen to overwrite the specific buffer indices.
+
+```javascript
+// src/trails.js:210
+reset() {
+    this.nextTrailIndex = 0;
+    this.trails = [];
+    // MISSING: this.geometry.setDrawRange(0, 0);
+}
+```
+
+### 034 - Zombie Code: Lazy Loading
+The `setTimeout` for lazy loading textures is scheduled in `init`. If `init` fails (e.g., config load error), `initFailed` is set, but the timeout callback (2000ms later) does not check this flag before attempting to process `textureLoader.lazyLoadQueue`. This can lead to console errors or network requests for a dead simulation.
+
+```javascript
+// src/main.js:277
+setTimeout(() => {
+    // Should check: if (initFailed) return;
+    console.log("Bolt ⚡: Lazy loading...");
+    textureLoader.lazyLoadQueue.forEach(...)
+}, 2000);
+```
+
+### 035 - Physics Instability: Unclamped Delta Time
+The `dt` (delta time) is calculated directly from `performance.now()`. If the user switches tabs (backgrounding the browser), `dt` can become arbitrarily large (e.g., 5000ms). When applied to `limit` or `simulationTime` logic, this can cause massive jumps in orbital calculation or physics instability.
+
+```javascript
+// src/main.js:438
+const dt = (now - lastFrameTime) / 1000;
+// Recommendation: const dt = Math.min((now - lastFrameTime) / 1000, 0.1);
 ```
