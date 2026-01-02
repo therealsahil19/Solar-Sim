@@ -85,6 +85,12 @@ export class InstanceRegistry {
             instancedMesh.castShadow = true;
             instancedMesh.receiveShadow = true;
 
+            // Fix vanishing planets when zooming in:
+            // Since instances move far from the initial bounding sphere (calculated at origin),
+            // frustum culling thinks they are off-screen. We disable culling as the cost is negligible
+            // for the low number of instances we have.
+            instancedMesh.frustumCulled = false;
+
             // Store reference to this registry group on the mesh for reverse lookup if needed
             instancedMesh.userData.registryKey = key;
 
