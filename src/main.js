@@ -85,6 +85,14 @@ window.isPaused = isPaused;
  * Uses Async/Await to handle configuration loading.
  */
 export async function init() {
+    // 0. Reset Global State
+    interactionTargets.length = 0;
+    animatedObjects.length = 0;
+    planets.length = 0;
+    allOrbits.length = 0;
+    allTrails.length = 0;
+    allLabels.length = 0;
+
     // 1. Setup Basic Three.js Components
     scene = new THREE.Scene();
     window.scene = scene;
@@ -524,9 +532,8 @@ function animate() {
             playerShip.position.z + 5
         );
     } else if (focusTarget) {
-        const targetPos = new THREE.Vector3();
-        targetPos.setFromMatrixPosition(focusTarget.matrixWorld);
-        controls.target.copy(targetPos);
+        tempVec.setFromMatrixPosition(focusTarget.matrixWorld);
+        controls.target.copy(tempVec);
     }
 
     // --- 3. Player Ship AI ---
