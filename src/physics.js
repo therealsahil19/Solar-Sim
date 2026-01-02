@@ -44,13 +44,16 @@ export function getOrbitalPosition(orbit, time) {
     // Kepler's 3rd Law: T^2 = a^3 -> T = a^1.5 (for mass of Sun = 1)
     const period = Math.pow(a, 1.5);
     const n = 360 / period; // Mean motion (degrees per year)
-    const M = (M0 + n * time) * DEG_TO_RAD; // Current Mean Anomaly in radians
+    let M = (M0 + n * time) % 360; // Wrap to [0, 360) to maintain precision
+    if (M < 0) M += 360;
+    M *= DEG_TO_RAD; // Current Mean Anomaly in radians
 
     // 2. Solve Kepler's Equation for Eccentric Anomaly (E)
     // M = E - e * sin(E). This is transcendental, so we approximate E.
     // We use Fixed-Point Iteration which works well for low eccentricities.
     let E = M;
-    for (let j = 0; j < 5; j++) {
+    // Increased iterations for better precision (Bug Fix)
+    for (let j = 0; j < 10; j++) {
         E = M + e * Math.sin(E);
     }
 
