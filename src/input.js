@@ -30,6 +30,7 @@ export function setupControls(camera, domElement) {
     const controls = new OrbitControls(camera, domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
+    controls.minDistance = 5;
     return controls;
 }
 
