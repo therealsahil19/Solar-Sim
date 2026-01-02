@@ -295,6 +295,10 @@ export async function init() {
 // Logic Helpers
 // ============================================================================
 
+/**
+ * Toggles the camera mode between "Orbit View" (Overview) and "Ship View" (Chase Camera).
+ * Updates the ARIA state of the camera button.
+ */
 function toggleCameraView() {
     isShipView = !isShipView;
     const btn = document.getElementById('btn-camera');
@@ -317,6 +321,10 @@ function toggleCameraView() {
     controls.update();
 }
 
+/**
+ * Resets the camera to its initial overview position and clears any focus target.
+ * Updates UI state and displays a feedback toast.
+ */
 function resetCamera() {
     isShipView = false;
     focusTarget = null;
@@ -329,6 +337,11 @@ function resetCamera() {
     showToast("View Reset");
 }
 
+/**
+ * Sets the camera's focus target to a specific mesh.
+ * The camera will smoothly follow this object in the animation loop.
+ * @param {THREE.Object3D} mesh - The object to follow.
+ */
 function setFocusTarget(mesh) {
     focusTarget = mesh;
     isShipView = false;
@@ -337,10 +350,19 @@ function setFocusTarget(mesh) {
     showToast(`Following ${name}`);
 }
 
+/**
+ * Updates the global time scale factor for the simulation.
+ * @param {number} scale - The new time multiplier (e.g., 1.0 = normal, 2.0 = 2x speed).
+ */
 function updateTimeScale(scale) {
     timeScale = scale;
 }
 
+/**
+ * Toggles between High Definition (Textured) and Low Definition (Solid Color) rendering modes.
+ * This is a "Bolt" optimization feature to improve performance on low-end devices.
+ * @param {HTMLElement} [btnElement] - The button element trigger (optional, for ARIA/Text update).
+ */
 function toggleTextures(btnElement) {
     useTextures = !useTextures;
     if (btnElement) {
@@ -364,6 +386,10 @@ function toggleTextures(btnElement) {
     showToast(`Textures: ${useTextures ? "ON" : "OFF"}`);
 }
 
+/**
+ * Toggles the visibility of all text labels (CSS2DObject).
+ * Useful for reducing visual clutter or improving performance.
+ */
 function toggleLabels() {
     showLabels = !showLabels;
     labelsNeedUpdate = true;
@@ -373,6 +399,9 @@ function toggleLabels() {
     showToast(`Labels: ${showLabels ? "ON" : "OFF"}`);
 }
 
+/**
+ * Toggles the visibility of orbit lines and trails.
+ */
 function toggleOrbits() {
     showOrbits = !showOrbits;
     const btn = document.getElementById('btn-orbits');
@@ -382,6 +411,11 @@ function toggleOrbits() {
     showToast(`Orbits: ${showOrbits ? "ON" : "OFF"}`);
 }
 
+/**
+ * Pauses or Resumes the simulation loop.
+ * When paused, physics integration stops, but camera controls remain active.
+ * @param {HTMLElement} [btnElement] - The pause button element (optional, for Icon/ARIA update).
+ */
 function togglePause(btnElement) {
     isPaused = !isPaused;
     window.isPaused = isPaused;
@@ -397,6 +431,11 @@ function togglePause(btnElement) {
     showToast(isPaused ? "Paused" : "Resumed");
 }
 
+/**
+ * Focuses the camera on a primary planet by its index in the `planets` array.
+ * Mapped to number keys (1-9).
+ * @param {number} index - The 0-based index of the planet.
+ */
 function focusPlanet(index) {
     if (index < 0 || index >= planets.length) return;
     const planet = planets[index];
@@ -407,10 +446,19 @@ function focusPlanet(index) {
     }
 }
 
+/**
+ * Updates the currently selected object.
+ * Used for driving the Info Panel logic.
+ * @param {THREE.Object3D} mesh - The selected object.
+ */
 function handleObjectSelection(mesh) {
     selectedObject = mesh;
 }
 
+/**
+ * Displays a temporary visual feedback message (Toast) to the user.
+ * @param {string} message - The text to display.
+ */
 function showToast(message) {
     const toast = document.getElementById('toast');
     if (toast) {
@@ -444,7 +492,7 @@ function animate() {
         // Increment Simulation Time
         // 1 second real time = 1 year simulation time (at timeScale 1.0)
         // Adjust this constant to find a good default speed.
-        // Let's say default is slower: 0.2 years per second.
+        // Base Speed: 0.2 Earth Years per second (at timeScale 1.0).
         simulationTime += dt * 0.2 * timeScale;
 
         // --- 1. Physics & Motion ---
@@ -468,11 +516,9 @@ function animate() {
                 const renderPos = physicsToRender(worldPos);
 
                 // Update Pivot Position
-                // Moons are attached to `pivot` which is a child of the Scene (or Planet).
-                // Wait, in `procedural.js`, we attached moons to the Planet's Pivot.
-                // So if we set `moon.pivot.position` to `renderPos`, it is Relative to Planet Pivot.
-                // Planet Pivot is at `renderPos_Planet`.
-                // So Moon Pivot Position should be `renderPos_Moon - renderPos_Planet`.
+                // Moons are children of the Planet's Pivot in the scene graph.
+                // However, their physics calculation yields a World Position (relative to Sun).
+                // We must calculate the relative position for the child pivot.
 
                 if (obj.parent) {
                     // We need the parent's render position to calculate the offset
@@ -489,7 +535,7 @@ function animate() {
 
                 // Self Rotation (Visual Mesh)
                 if (obj.mesh) {
-                    obj.mesh.rotation.y += 0.5 * dt * timeScale; // Simple spin (Bug 031)
+                    obj.mesh.rotation.y += 0.5 * dt * timeScale; // Visual rotation independent of physics
                 }
             }
         });

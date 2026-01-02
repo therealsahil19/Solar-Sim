@@ -58,3 +58,11 @@
     - **GLOSSARY.md**: Added definitions for Keplerian orbital elements and expanded the explanation of Multi-Zone Scaling.
     - **Troubleshooting**: Added a section to README for common setup issues.
 - **Gap:** UI components like `NavigationSidebar` could benefit from more detailed prop-type style documentation in JSDoc for future migrations to TS.
+
+### 2026-01-02 - The Deep Dive (Part 2)
+- **Focus:** `src/main.js` helper functions.
+- **Standard:**
+    - "Helper Documentation": All UI/Interaction helper functions must have JSDoc explaining side effects (ARIA updates, State mutations).
+- **Changes:**
+    - Added JSDoc to 11 helper functions in `main.js` including `toggleCameraView`, `toggleTextures`, and `resetCamera`.
+    - Polished inline comments in the `animate` loop to remove "thinking aloud" notes and clarify physics/visual decoupling.
