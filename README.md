@@ -71,24 +71,27 @@ The project is organized into a modular architecture:
 
 ```
 /
-├── index.html          # Entry point, loads styles and modules
-├── system.json         # Configuration data for planets and moons
-├── textures/           # Directory for texture assets
-├── download_textures.py # Helper script to fetch assets
+├── index.html            # Entry point, loads styles and modules
+├── system.json           # Configuration data for planets and moons
+├── textures/             # Directory for texture assets
+├── download_textures.py  # Helper script to fetch assets
 ├── src/
-│   ├── main.js         # The "Conductor" - initializes scene and loop
-│   ├── procedural.js   # "Factory" - creates 3D objects (planets, stars)
-│   ├── input.js        # "Controller" - handles user input and UI events
-│   ├── physics.js      # "Engineer" - handles Keplerian orbits and multi-zone scaling
-│   ├── debris.js       # "Generator" - creates GPU-accelerated asteroid belt
-│   ├── instancing.js   # "Optimizer" - manages InstancedMesh groups
-│   ├── trails.js       # "Optimizer" - manages unified orbit trail geometry
+│   ├── main.js           # The "Conductor" - initializes scene and loop
+│   ├── procedural.js     # "Factory" - creates 3D objects (planets, stars)
+│   ├── input.js          # "Controller" - handles user input and UI events
+│   ├── physics.js        # "Engineer" - handles Keplerian orbits and multi-zone scaling
+│   ├── debris.js         # "Generator" - creates GPU-accelerated asteroid belt
+│   ├── instancing.js     # "Optimizer" - manages InstancedMesh groups
+│   ├── trails.js         # "Optimizer" - manages unified orbit trail geometry
+│   ├── style.css         # Design System tokens and styles
 │   ├── components/
-│   │   └── CommandPalette.js # Class-based UI component for "Cmd+K" menu
-│   ├── managers/
-│   │   └── ThemeManager.js   # Manages visual themes and persistence
-│   └── style.css       # Design System tokens and styles
-└── README.md           # This documentation
+│   │   ├── CommandPalette.js    # Searchable command menu (Cmd+K)
+│   │   ├── InfoPanel.js         # Object details overlay panel
+│   │   ├── Modal.js             # Reusable accessible <dialog> wrapper
+│   │   └── NavigationSidebar.js # Hierarchical planet navigation tree
+│   └── managers/
+│       └── ThemeManager.js      # Visual themes and persistence
+└── README.md             # This documentation
 ```
 
 ### Architecture
@@ -119,9 +122,24 @@ The project is organized into a modular architecture:
 
 6.  **`src/components/CommandPalette.js`**:
     -   **Component**: A reusable UI component that provides a searchable command menu.
-    -   **Accessibility**: Implements WAI-ARIA Combobox pattern.
+    -   **Accessibility**: Implements WAI-ARIA Combobox pattern for full keyboard and screen reader support.
 
-7.  **`src/managers/ThemeManager.js`**:
+7.  **`src/components/InfoPanel.js`**:
+    -   **Data Binding**: Displays details of a selected celestial object using its `userData`.
+    -   **State Management**: Manages visibility/hiding via CSS classes.
+    -   **Accessibility**: Uses ARIA attributes to announce updates to screen readers.
+
+8.  **`src/components/Modal.js`**:
+    -   **Wrapper Pattern**: A thin wrapper around the native `<dialog>` element for consistency.
+    -   **Accessibility**: Leverages built-in `<dialog>` focus trapping and Escape key handling.
+    -   **Lifecycle**: Provides `open()`, `close()`, and `dispose()` methods for clean resource management.
+
+9.  **`src/components/NavigationSidebar.js`**:
+    -   **DOM Generation**: Recursively builds a tree view from hierarchical system data.
+    -   **Client-side Search**: Implements a "Show Matches & Parents" filter strategy.
+    -   **Decoupled Design**: Communicates with the 3D scene purely via callbacks, maintaining separation of concerns.
+
+10. **`src/managers/ThemeManager.js`**:
     -   **State Management**: Handles theme switching and persistence via localStorage.
 
 ## Configuration (`system.json`)

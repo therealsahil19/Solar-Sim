@@ -66,3 +66,15 @@
 - **Changes:**
     - Added JSDoc to 11 helper functions in `main.js` including `toggleCameraView`, `toggleTextures`, and `resetCamera`.
     - Polished inline comments in the `animate` loop to remove "thinking aloud" notes and clarify physics/visual decoupling.
+
+### 2026-01-02 - The Complete Components (Part 3)
+- **Focus:** `README.md` - Project Structure & Architecture.
+- **Standard:**
+    - "Project Structure Accuracy": The README must list ALL source files and components, not a partial subset.
+    - "Architecture Completeness": Every UI component class must have its own architecture entry explaining its role.
+- **Changes:**
+    - **README.md**: Updated Project Structure tree to include all four components (`CommandPalette.js`, `InfoPanel.js`, `Modal.js`, `NavigationSidebar.js`).
+    - **README.md**: Added Architecture entries for `InfoPanel` (Data Binding, State Management), `Modal` (Wrapper Pattern, Lifecycle), and `NavigationSidebar` (DOM Generation, Client-side Search, Decoupled Design).
+    - Fixed alignment and improved directory tree formatting.
+- **Gap:** The `CONTRIBUTING.md` could be expanded with component architecture diagrams (Mermaid) to help new contributors understand UI component relationships.
+
