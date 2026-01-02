@@ -7,6 +7,8 @@
 | `mobile.png` | Mobile | [FIXED] | Density | Reduced control dock height and icon sizes for smaller viewports. |
 | `mobile.png` | Mobile | [FIXED] | Alignment | Adjusted SVG padding and alignment in the texture toggle. |
 | `desktop.png` | Desktop | 🟢 LOW | Micro | Orbit lines pass directly through planet labels, creating visual noise. |
+| `desktop.png` | All | 🟡 MED | Consistency | Header icons mismatched style (Button vs Text). |
+
 
 ## Details
 
@@ -28,6 +30,11 @@
 ### 4. Icon Alignment (Micro-detail)
 **Observation:** Upon 400% zoom of `desktop.png`, the 'Texture' (image) icon in the control bar has slightly more left padding than right padding (approx 2px difference).
 **Impact:** Minor visual imbalance.
+
+### 5. Header Icon Inconsistency
+**Observation:** The 'Menu' button relies on a circular container interaction model, while the 'Help' (?) button is rendered as a standalone text character.
+**Impact:** Erodes the design language consistency.
+**Recommendation:** Wrap the '?' code in the same button component class as the Menu.
 
 ---
 ## Previous Observations (Archive)
