@@ -1,52 +1,131 @@
 /**
  * @file debris.js
- * @description Procedural Debris Generator & Renderer.
+ * @description Procedural Debris Generator & Renderer (GPU Optimized).
  *
- * This module creates massive particle systems for:
- * 1. Asteroid Belt (Inner Solar System)
- * 2. Kuiper Belt (Outer Solar System)
- * 3. Oort Cloud (Far Reaches)
- *
- * PERFORMANCE STRATEGY:
- * - Uses `THREE.InstancedMesh` to render thousands of unique objects with 1 draw call.
- * - Supports two physics modes:
- *   a) Active: Every particle calculates its own Keplerian orbit (CPU bound, fine for <5000).
- *   b) Static: Particles are fixed relative to a parent container which rotates (GPU cheap, good for >10000).
+ * PERFORMANCE STRATEGY ("Bolt" ⚡):
+ * - Uses `THREE.InstancedMesh` for rendering.
+ * - Orbit mechanics are calculated entirely in the Vertex Shader.
+ * - NO CPU OVERHEAD for animation (0ms per frame).
+ * - Supports Multi-Zone Scaling (Linear -> Log) in GLSL.
  */
 
 import * as THREE from 'three';
-import { getOrbitalPosition, physicsToRender } from './physics.js';
 
-/**
- * @typedef {Object} DebrisDistribution
- * @property {number} minA - Minimum Semi-major axis (AU).
- * @property {number} maxA - Maximum Semi-major axis (AU).
- * @property {number} minE - Minimum Eccentricity.
- * @property {number} maxE - Maximum Eccentricity.
- * @property {number} minI - Minimum Inclination (degrees).
- * @property {number} maxI - Maximum Inclination (degrees).
- */
+// GLSL: Constants & Helper Functions
+const DEBRIS_SHADER_HEAD = `
+#define AU_SCALE 40.0
+#define LIMIT_1 30.0
+#define LIMIT_2 50.0
+#define VISUAL_LIMIT_1 1200.0
+#define LOG_FACTOR_K 1.5
+#define VISUAL_LIMIT_2 1382.67
+#define LOG_FACTOR_O 4.0
+#define PI 3.14159265359
 
-/**
- * @typedef {Object} DebrisMaterialConfig
- * @property {number|string} color - Hex color or string.
- * @property {number} [roughness=0.8] - Standard material roughness.
- * @property {number} [metalness=0.2] - Standard material metalness.
- * @property {number} size - Radius of the particle.
- * @property {number} [opacity=1.0] - Opacity (0.0 - 1.0).
- */
+uniform float uTime;
+
+// Attributes
+attribute vec4 aOrbit;  // x=a, y=e, z=i, w=M0
+attribute vec3 aParams; // x=omega, y=Omega, z=tumbleSpeed
+
+// Helper: Rotate vector by axis/angle
+vec3 rotateAxis(vec3 v, vec3 axis, float angle) {
+    return v * cos(angle) + cross(axis, v) * sin(angle) + axis * dot(axis, v) * (1.0 - cos(angle));
+}
+
+// Helper: Piecewise Scale (Physics AU -> Render Units)
+vec3 physicsToRender(vec3 pos) {
+    float r = length(pos);
+    if (r == 0.0) return vec3(0.0);
+
+    float r_vis;
+    if (r <= LIMIT_1) {
+        r_vis = r * AU_SCALE;
+    } else if (r <= LIMIT_2) {
+        r_vis = VISUAL_LIMIT_1 + log(1.0 + (r - LIMIT_1)) * AU_SCALE * LOG_FACTOR_K;
+    } else {
+        r_vis = VISUAL_LIMIT_2 + log(1.0 + (r - LIMIT_2)) * AU_SCALE * LOG_FACTOR_O;
+    }
+
+    return normalize(pos) * r_vis;
+}
+
+// Helper: Kepler Solver
+vec3 solveKepler(float a, float e, float i, float w, float Om, float M0, float time) {
+    // 1. Mean Anomaly
+    // period = a^1.5
+    float period = pow(a, 1.5);
+    float n = 360.0 / period; // degrees per year
+    float M = radians(M0 + n * time);
+
+    // 2. Eccentric Anomaly (Iterative)
+    float E = M;
+    // 5 iterations for precision
+    for (int k = 0; k < 5; k++) {
+        E = M + e * sin(E);
+    }
+
+    // 3. True Anomaly & Radius
+    float r = a * (1.0 - e * cos(E));
+
+    // atan2(y, x)
+    float xv = a * (cos(E) - e);
+    float yv = a * sqrt(1.0 - e * e) * sin(E);
+    float nu = atan(yv, xv);
+
+    // 4. Orientation
+    float cosNu = cos(nu);
+    float sinNu = sin(nu);
+
+    // Pre-calc rotations
+    float radOm = radians(Om);
+    float radw = radians(w);
+    float radi = radians(i);
+
+    // Argument of Latitude u
+    float u = radw + nu;
+
+    float cosU = cos(u);
+    float sinU = sin(u);
+    float cosOm = cos(radOm);
+    float sinOm = sin(radOm);
+    float cosI = cos(radi);
+    float sinI = sin(radi);
+
+    // Heliocentric Coords
+    float x = r * (cosOm * cosU - sinOm * sinU * cosI);
+    float y = r * (sinOm * cosU + cosOm * sinU * cosI);
+    float z = r * (sinI * sinU);
+
+    // Map to Three.js (Y-up) -> x=x, y=z, z=y
+    return vec3(x, z, y);
+}
+`;
+
+const DEBRIS_VERTEX_MAIN = `
+    // 1. Tumble Animation (Local Space)
+    // Tumble axis is random per instance (we use aParams.x/y as seed or just constant axis)
+    // Let's use a simple axis based on ID or just (1,1,1)
+    vec3 tumbleAxis = normalize(vec3(sin(aParams.x), cos(aParams.y), sin(aParams.x * aParams.y)));
+    float tumbleAngle = uTime * aParams.z; // z is speed
+
+    vec3 transformed = rotateAxis(position, tumbleAxis, tumbleAngle);
+
+    // 2. Solve Orbit (World Space)
+    vec3 orbitPosPhys = solveKepler(aOrbit.x, aOrbit.y, aOrbit.z, aParams.x, aParams.y, aOrbit.w, uTime);
+    vec3 orbitPosRender = physicsToRender(orbitPosPhys);
+
+    // 3. Instance Transform
+    // instanceMatrix contains the initial random Rotation/Scale.
+    // We apply it to our tumbled geometry.
+    // NOTE: instanceMatrix in Three.js includes translation, but we set it to 0,0,0 in CPU.
+
+    // Standard Three.js injection for Instancing usually happens in 'project_vertex'.
+    // We will inject logic to offset the world position.
+`;
 
 /**
  * Factory function to create a GPU-accelerated debris field.
- *
- * @param {Object} config - Configuration object.
- * @param {string} config.type - Identifier for the system (e.g., 'asteroid').
- * @param {number} [config.count=1000] - Number of particles to generate.
- * @param {DebrisDistribution} config.distribution - Orbital parameters for random generation.
- * @param {boolean} [config.isSpherical=false] - If true, distributes particles on a sphere (Oort Cloud). If false, a flat disk (Belts).
- * @param {DebrisMaterialConfig} config.material - Visual properties.
- * @param {boolean} [config.staticPhysics=false] - Optimization: If true, freezes particles and rotates the whole container.
- * @returns {THREE.InstancedMesh} The resulting mesh. Contains a custom `.update(time)` method.
  */
 function createDebrisSystem(config) {
     const {
@@ -54,12 +133,11 @@ function createDebrisSystem(config) {
         distribution,
         isSpherical = false,
         material: matConfig,
-        staticPhysics = false
+        staticPhysics = false // Kept for API compatibility, but effectively ignored as everything is GPU now
     } = config;
 
-    // Shared Geometry
+    // Geometry
     const size = matConfig.size || 0.2;
-    // Use low poly geometry
     const geometry = new THREE.IcosahedronGeometry(size, 0);
 
     // Material
@@ -72,100 +150,130 @@ function createDebrisSystem(config) {
         opacity: matConfig.opacity !== undefined ? matConfig.opacity : 1.0
     });
 
-    const mesh = new THREE.InstancedMesh(geometry, material, count);
-    mesh.castShadow = !matConfig.transparent; // Don't cast shadow if transparent/faint
-    mesh.receiveShadow = true;
+    // Custom Shader Injection
+    material.onBeforeCompile = (shader) => {
+        shader.uniforms.uTime = { value: 0 };
+        material.userData.shader = shader; // Save ref to update uniform
 
-    // Data Storage
-    const orbitals = [];
+        // Inject Constants & Helpers
+        shader.vertexShader = DEBRIS_SHADER_HEAD + shader.vertexShader;
+
+        // Inject Logic
+        // We replace 'include <begin_vertex>' to handle local deformation (tumble)
+        shader.vertexShader = shader.vertexShader.replace(
+            '#include <begin_vertex>',
+            `
+            vec3 transformed = vec3( position );
+            // Tumble
+            vec3 tumbleAxis = normalize(vec3(sin(aParams.x*10.0), cos(aParams.y*10.0), 0.5));
+            float tumbleAngle = uTime * aParams.z;
+            transformed = rotateAxis(transformed, tumbleAxis, tumbleAngle);
+            `
+        );
+
+        // We replace 'include <project_vertex>' to handle world positioning
+        shader.vertexShader = shader.vertexShader.replace(
+            '#include <project_vertex>',
+            `
+            vec4 mvPosition = vec4( transformed, 1.0 );
+            #ifdef USE_INSTANCING
+                mvPosition = instanceMatrix * mvPosition;
+            #endif
+
+            // Calculate Orbit Position
+            vec3 orbitPosPhys = solveKepler(aOrbit.x, aOrbit.y, aOrbit.z, aParams.x, aParams.y, aOrbit.w, uTime);
+            vec3 orbitPosRender = physicsToRender(orbitPosPhys);
+
+            // Apply Offset (in View Space? No, we need to add it before View Matrix)
+            // mvPosition currently is (Model * Instance * Local).
+            // ModelView = View * Model.
+            // But usually 'mvPosition' calculation above includes modelViewMatrix multiplication.
+            // Let's check standard chunk:
+            // mvPosition = modelViewMatrix * mvPosition;
+
+            // Wait, the standard chunk is:
+            // vec4 mvPosition = vec4( transformed, 1.0 );
+            // #ifdef USE_INSTANCING
+            //     mvPosition = instanceMatrix * mvPosition;
+            // #endif
+            // mvPosition = modelViewMatrix * mvPosition;
+
+            // So we need to INTERCEPT before modelViewMatrix.
+            // But we can't easily split the chunk string without Copy-Paste.
+            // So we will do the calculation in world space and apply it.
+
+            // RE-WRITE standard block slightly:
+            #ifdef USE_INSTANCING
+                mvPosition = instanceMatrix * mvPosition;
+            #endif
+
+            // Add Orbital Offset (World Space)
+            mvPosition.xyz += orbitPosRender;
+
+            mvPosition = modelViewMatrix * mvPosition;
+            gl_Position = projectionMatrix * mvPosition;
+            `
+        );
+    };
+
+    const mesh = new THREE.InstancedMesh(geometry, material, count);
+    mesh.castShadow = !matConfig.transparent;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false; // Important: bounds are dynamic
+
+    // Allocate Attributes
+    const aOrbit = new Float32Array(count * 4);  // a, e, i, M0
+    const aParams = new Float32Array(count * 3); // omega, Omega, tumbleSpeed
     const dummy = new THREE.Object3D();
 
     for (let i = 0; i < count; i++) {
-        // Randomize Orbit
+        // Random Distribution
         const a = distribution.minA + Math.random() * (distribution.maxA - distribution.minA);
         const e = distribution.minE + Math.random() * (distribution.maxE - distribution.minE);
 
-        // Inclination
         let inc;
         if (isSpherical) {
-            // Uniform point on sphere logic for inclination?
-            // Actually, for Oort cloud, we just want random 0-180.
-            inc = distribution.minI + Math.random() * (distribution.maxI - distribution.minI);
+            // Uniform sphere distribution approx
+             inc = distribution.minI + Math.random() * (distribution.maxI - distribution.minI);
         } else {
-            inc = distribution.minI + Math.random() * (distribution.maxI - distribution.minI);
+             inc = distribution.minI + Math.random() * (distribution.maxI - distribution.minI);
         }
 
         const omega = Math.random() * 360;
         const Omega = Math.random() * 360;
         const M0 = Math.random() * 360;
+        const tumbleSpeed = 0.5 + Math.random() * 2.0;
 
-        const orbital = { a, e, i: inc, omega, Omega, M0 };
-        orbitals.push(orbital);
+        // Fill Attributes
+        aOrbit[i*4 + 0] = a;
+        aOrbit[i*4 + 1] = e;
+        aOrbit[i*4 + 2] = inc;
+        aOrbit[i*4 + 3] = M0;
 
-        // Initial Position Setup
-        if (staticPhysics) {
-             // Calculate once and freeze (relative to container)
-             // We use time=0 for initial static placement
-             // For Oort cloud, we might want purely random spherical distribution ignoring Keplerian "orbit" logic
-             // But using getOrbitalPosition gives us a valid point on a valid orbit, so it works visually too.
-             const physPos = getOrbitalPosition(orbital, 0);
-             const renderPos = physicsToRender(physPos);
+        aParams[i*3 + 0] = omega;
+        aParams[i*3 + 1] = Omega;
+        aParams[i*3 + 2] = tumbleSpeed;
 
-             dummy.position.copy(renderPos);
-
-             // Random tumble
-             dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-             const s = 0.5 + Math.random() * 0.5;
-             dummy.scale.set(s, s, s);
-             dummy.updateMatrix();
-             mesh.setMatrixAt(i, dummy.matrix);
-        }
+        // Set Instance Matrix (Initial Random Scale/Rot)
+        dummy.position.set(0, 0, 0); // Position controlled by shader
+        dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+        const s = 0.5 + Math.random() * 0.5;
+        dummy.scale.set(s, s, s);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
     }
 
+    mesh.geometry.setAttribute('aOrbit', new THREE.InstancedBufferAttribute(aOrbit, 4));
+    mesh.geometry.setAttribute('aParams', new THREE.InstancedBufferAttribute(aParams, 3));
     mesh.instanceMatrix.needsUpdate = true;
-    mesh.userData.orbitals = orbitals;
 
-    // Update Method
+    // Update Method (Called by main.js)
     mesh.update = (time) => {
-        if (staticPhysics) {
-            // Global slow rotation for Oort Cloud
-            // 0.000001 per frame might be too slow if time isn't delta, but we use timeScale in main.
-            // Let's just rotate the mesh object itself.
-            // Note: time here is simulationTime (years).
-            // We'll use a constant rotation speed.
-            mesh.rotation.y += 0.00005;
-            return;
+        // Just update uniform
+        if (mesh.material.userData.shader) {
+            mesh.material.userData.shader.uniforms.uTime.value = time;
         }
-
-        const orbitals = mesh.userData.orbitals;
-        for (let i = 0; i < count; i++) {
-            const orbital = orbitals[i];
-
-            // 1. Physics
-            const physPos = getOrbitalPosition(orbital, time);
-
-            // 2. Render Scale
-            const renderPos = physicsToRender(physPos);
-
-            // 3. Update
-            mesh.getMatrixAt(i, dummy.matrix);
-            dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
-
-            dummy.position.copy(renderPos);
-
-            // Visual Tumble
-            dummy.rotation.x += 0.01;
-            dummy.rotation.y += 0.02;
-
-            dummy.updateMatrix();
-            mesh.setMatrixAt(i, dummy.matrix);
-        }
-        mesh.instanceMatrix.needsUpdate = true;
     };
-
-    // Frustum Culling disable for large structures
-    mesh.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 5000);
-    mesh.frustumCulled = false;
 
     mesh.dispose = () => {
         mesh.geometry.dispose();
@@ -175,76 +283,30 @@ function createDebrisSystem(config) {
     return mesh;
 }
 
-/**
- * Creates the standard Asteroid Belt (2.1 - 3.3 AU).
- */
 export function createAsteroidBelt() {
     return createDebrisSystem({
         type: 'asteroid',
         count: 2000,
-        distribution: {
-            minA: 2.1, maxA: 3.3,
-            minE: 0.05, maxE: 0.15,
-            minI: 0, maxI: 20
-        },
-        isSpherical: false,
-        material: {
-            color: 0x888888,
-            roughness: 0.8,
-            metalness: 0.2,
-            size: 0.2,
-            opacity: 1.0
-        },
-        staticPhysics: false
+        distribution: { minA: 2.1, maxA: 3.3, minE: 0.05, maxE: 0.15, minI: 0, maxI: 20 },
+        material: { color: 0x888888, size: 0.2 }
     });
 }
 
-/**
- * Creates the Kuiper Belt (30 - 50 AU).
- * Thick disk, icy blue.
- */
 export function createKuiperBelt() {
     return createDebrisSystem({
         type: 'kuiper',
         count: 2000,
-        distribution: {
-            minA: 30, maxA: 50,
-            minE: 0.0, maxE: 0.3,
-            minI: 0, maxI: 30
-        },
-        isSpherical: false,
-        material: {
-            color: 0xbfd6ff,
-            roughness: 0.8,
-            metalness: 0.0,
-            size: 0.25,
-            opacity: 0.8 // Slightly transparent
-        },
-        staticPhysics: false
+        distribution: { minA: 30, maxA: 50, minE: 0.0, maxE: 0.3, minI: 0, maxI: 30 },
+        material: { color: 0xbfd6ff, size: 0.25, opacity: 0.8 }
     });
 }
 
-/**
- * Creates the Oort Cloud (2000 - 100,000 AU).
- * Vast spherical shell, static physics with slow rotation.
- */
 export function createOortCloud() {
     return createDebrisSystem({
         type: 'oort',
-        count: 300, // Sparse representative markers
-        distribution: {
-            minA: 2000, maxA: 100000,
-            minE: 0.7, maxE: 0.999,
-            minI: 0, maxI: 180 // Isotropic
-        },
+        count: 300,
+        distribution: { minA: 2000, maxA: 100000, minE: 0.7, maxE: 0.999, minI: 0, maxI: 180 },
         isSpherical: true,
-        material: {
-            color: 0xf2f5ff,
-            roughness: 1.0,
-            metalness: 0.0,
-            size: 0.15, // Smaller points
-            opacity: 0.15 // Very faint
-        },
-        staticPhysics: true
+        material: { color: 0xf2f5ff, size: 0.15, opacity: 0.15 }
     });
 }
