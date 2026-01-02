@@ -42,7 +42,7 @@
 
     <!-- Loading Screen -->
     <div id="loading-screen" role="alert" aria-busy="true">
-        <h2 style="font-weight: 300;">Loading Simulation...</h2>
+        <h2 class="font-light">Loading Simulation...</h2>
         <div id="loading-bar-container">
             <div id="loading-bar" role="progressbar" aria-label="Loading assets" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
         </div>
@@ -135,8 +135,8 @@
     <!-- Onboarding / Help Modal -->
     <dialog id="welcome-modal">
         <div class="modal-content glass-panel">
-            <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">Interactive Solar System</h2>
-            <p style="color: var(--color-text-secondary);">Explore the cosmos in real-time.</p>
+            <h2 class="text-2xl mb-sm">Interactive Solar System</h2>
+            <p class="text-secondary mb-md">Explore the cosmos in real-time.</p>
 
             <div class="modal-grid">
                 <div class="modal-item">🖱️ <span><strong>Drag</strong> to Rotate</span></div>
@@ -144,10 +144,10 @@
                 <div class="modal-item">🖱️ <span><strong>Click</strong> to Select</span></div>
                 <div class="modal-item">🖱️ <span><strong>Double Click</strong> to Focus</span></div>
 
-                <div class="modal-item"><span class="key-badge">Cmd+K</span> <span>Command Palette</span></div>
-                <div class="modal-item"><span class="key-badge">Space</span> <span>Pause / Play</span></div>
-                <div class="modal-item"><span class="key-badge">C</span> <span>Ship Camera</span></div>
-                <div class="modal-item"><span class="key-badge">Esc</span> <span>Reset View</span></div>
+                <div class="modal-item"><kbd class="kbd">Cmd+K</kbd> <span>Command Palette</span></div>
+                <div class="modal-item"><kbd class="kbd">Space</kbd> <span>Pause / Play</span></div>
+                <div class="modal-item"><kbd class="kbd">C</kbd> <span>Ship Camera</span></div>
+                <div class="modal-item"><kbd class="kbd">Esc</kbd> <span>Reset View</span></div>
             </div>
 
             <button id="btn-start" class="btn-primary" autofocus>Start Exploration</button>

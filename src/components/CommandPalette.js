@@ -130,9 +130,9 @@ export class CommandPalette {
         const footer = document.createElement('div');
         footer.className = 'cmd-footer';
         footer.innerHTML = `
-            <span><kbd>↑</kbd> <kbd>↓</kbd> to navigate</span>
-            <span><kbd>↵</kbd> to select</span>
-            <span><kbd>esc</kbd> to close</span>
+            <span><kbd class="kbd">↑</kbd> <kbd class="kbd">↓</kbd> to navigate</span>
+            <span><kbd class="kbd">↵</kbd> to select</span>
+            <span><kbd class="kbd">esc</kbd> to close</span>
         `;
 
         container.appendChild(inputWrapper);
