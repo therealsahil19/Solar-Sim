@@ -43,18 +43,26 @@ export function getOrbitalPosition(orbit, time) {
     // 1. Calculate Mean Anomaly (M)
     // Kepler's 3rd Law: T^2 = a^3 -> T = a^1.5 (for mass of Sun = 1)
     const period = Math.pow(a, 1.5);
+
+    // CRITICAL FIX: Wrap time within one orbital period BEFORE any calculation.
+    // This prevents precision loss when simulationTime becomes very large.
+    // NOTE: Direct `time % period` fails for very large time values due to
+    // floating-point precision limits. Instead, we extract the fractional part
+    // of (time / period) which is more numerically stable.
+    let phaseFraction = (time / period) % 1;
+    if (phaseFraction < 0) phaseFraction += 1;
+    const wrappedTime = phaseFraction * period;
+
     const n = 360 / period; // Mean motion (degrees per year)
-    let M = (M0 + n * time) % 360; // Wrap to [0, 360) to maintain precision
-    if (M < 0) M += 360;
-    M *= DEG_TO_RAD; // Current Mean Anomaly in radians
+    const M = (M0 + n * wrappedTime) * DEG_TO_RAD; // Now this stays in a small range
 
     // 2. Solve Kepler's Equation for Eccentric Anomaly (E)
-    // M = E - e * sin(E). This is transcendental, so we approximate E.
-    // We use Fixed-Point Iteration which works well for low eccentricities.
-    let E = M;
-    // Increased iterations for better precision (Bug Fix)
-    for (let j = 0; j < 10; j++) {
-        E = M + e * Math.sin(E);
+    // M = E - e * sin(E). Using Newton-Raphson for fast, accurate convergence.
+    let E = M; // Initial guess
+    for (let j = 0; j < 15; j++) {
+        const dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+        E = E - dE;
+        if (Math.abs(dE) < 1e-12) break; // Converged to high precision
     }
 
     // 3. Calculate True Anomaly (nu) and Radius (r)
