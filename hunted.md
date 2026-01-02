@@ -25,8 +25,13 @@
 | 021 | [FIXED] | 🟢 LOW   | `src/components/NavigationSidebar.js:154` | Memory Leak: Undisposed DOM event listeners |
 | 022 | [FIXED] | 🔴 HIGH  | `src/main.js:30` | Persistent State Pollution in Global Arrays |
 | 023 | [FIXED] | 🟢 LOW   | `src/input.js:135` | Memory Leak: Anonymous Window Resize Listener |
-| 024 | [FIXED] | 🟢 LOW   | `src/main.js:413` | Performance: High GC in Animation Loop |
-| 025 | [FIXED] | 🟢 LOW   | `src/input.js:225` | Memory Leak: Undisposed Button Event Listeners |
+| 024| [FIXED] | 🟢 LOW   | `src/input.js:135` | Memory Leak: Anonymous Window Resize Listener |
+| 025| [FIXED] | 🟢 LOW   | `src/main.js:413` | Performance: High GC in Animation Loop |
+| 026| [OPEN]  | 🔴 HIGH  | `src/main.js:192` | Unhandled Promise Rejection in Initialization |
+| 027| [OPEN]  | 🟡 MED   | `src/components/CommandPalette.js:364` | Crash Risk: Unsafe call to `item.handler()` |
+| 028| [OPEN]  | 🟡 MED   | `src/components/NavigationSidebar.js:47` | Memory Leak: `NavigationSidebar` lacks `dispose()` in `init` |
+| 029| [OPEN]  | 🟢 LOW   | `src/trails.js:155` | Logic Flaw: `TrailManager` head update without validation |
+| 030| [OPEN]  | 🟡 MED   | `src/debris.js:278` | Memory Leak: `DebrisSystem` dispose misses `setAttribute` cleanup |
 
 ## Details
 
@@ -36,8 +41,50 @@
 ### 023 - Memory Leak: Anonymous Window Resize Listener
 [FIXED] Replaced anonymous arrow function with named `onWindowResize` function in `src/input.js` and added `removeEventListener` to `dispose`.
 
-### 024 - Performance: High GC in Animation Loop
+### 025 - Performance: High GC in Animation Loop
 [FIXED] Replaced `new THREE.Vector3()` allocation in the `animate` loop with a shared module-level `tempVec` in `src/main.js`.
 
-### 025 - Memory Leak: Undisposed Button Event Listeners
-[FIXED] Added explicit `removeEventListener` calls for all UI buttons in `src/input.js`'s `dispose` method.
+### 026 - Unhandled Promise Rejection
+The `init` function in `src/main.js` awaits `response.json()` and other async calls but the top-level call in `main.js:607` only has a basic `.catch`. If `system.json` is malformed or missing, the loading screen might stay visible or show a broken state without proper recovery logic.
+
+```javascript
+// src/main.js:192
+planetData = await response.json();
+```
+
+### 027 - Crash Risk: Unsafe handler call
+In `CommandPalette.js`, the `executeCurrent` method calls `item.handler()` without checking if `handler` exists. If a static command or flattened data item is missing a handler, the app will crash and close the palette.
+
+```javascript
+// src/components/CommandPalette.js:364
+item.handler();
+```
+
+### 028 - Memory Leak: NavigationSidebar
+While `NavigationSidebar` has a `dispose` method, it doesn't clean up the trigger button listener `btnOpen` properly because it's an anonymous arrow function bound in `bindEvents`. Frequent recreation of this component (if it were to happen) would leak listeners.
+
+```javascript
+// src/components/NavigationSidebar.js:148
+if (this.dom.btnOpen) {
+    this.dom.btnOpen.addEventListener('click', () => this.open());
+}
+```
+
+### 029 - Logic Flaw: TrailManager head update
+`TrailManager.update` updates the `head` pointer but doesn't verify if the `target` is still in the scene or valid. If a planet is removed from the `animatedObjects` but remains in `trailManager`, it will continue to attempt to read `matrixWorld` from a potentially stale object.
+
+```javascript
+// src/trails.js:138
+tempVec.setFromMatrixPosition(trail.target.matrixWorld);
+```
+
+### 030 - Memory Leak: DebrisSystem dispose
+The `dispose` method for the debris system cleans up geometry and material but doesn't remove the attributes from the geometry, and `onBeforeCompile` adds a `shader` reference to `userData` which might prevent material GC if not cleared.
+
+```javascript
+// src/debris.js:278
+mesh.dispose = () => {
+    mesh.geometry.dispose();
+    mesh.material.dispose();
+};
+```
