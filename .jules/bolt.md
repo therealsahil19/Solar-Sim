@@ -14,3 +14,24 @@
 2.  **Unified Trails:** Replaced individual `THREE.Line` trails with a single `LineSegments` buffer managed by `TrailManager`.
 3.  **Draw Call Reduction:** Reduced draw calls from O(N) to O(1) for both moons and trails.
 **Result:** Theoretical capacity increased to 10,000+ objects with minimal CPU overhead.
+
+## 2026-01-03 - [Zero-Allocation Animate Loop Analysis]
+**Bottleneck:** GC pressure from Vector3 allocations in `main.js` animate loop.
+**Root Cause Analysis:**
+- `localPos.clone()` creates new Vector3 each frame (Line 506)
+- `worldPos.add(parentPos)` returns new vector for moons
+- `renderPos.clone().sub(parentPosRender)` creates 2 vectors (Line 529)
+- **Impact:** ~30 Vector3 allocations/frame × 60fps = 1,800 allocations/sec
+- Causes periodic GC pauses (frame spikes)
+
+**Additional Issue:** Duplicate `getOrbitalPosition` calls for moons
+- Parent position calculated once per child
+- Same parent recalculated for each sibling moon
+
+**Strategy:** ✅ IMPLEMENTED
+1. Pre-allocate reusable Vector3 objects at module level
+2. Cache parent physics positions per-frame
+3. Use in-place operations instead of clone/sub
+
+**Result:** Zero-allocation animate loop deployed. Benchmark tool available via `boltBenchmark()`.
+

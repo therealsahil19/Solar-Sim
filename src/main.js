@@ -13,6 +13,7 @@ import { setupControls, setupInteraction } from './input.js';
 import { InstanceRegistry } from './instancing.js';
 import { TrailManager } from './trails.js';
 import { getOrbitalPosition, physicsToRender } from './physics.js';
+import './benchmark.js'; // ⚡ Bolt: Auto-load performance benchmark
 
 // ============================================================================
 // State & Globals
@@ -472,6 +473,13 @@ function showToast(message) {
 const tempVec = new THREE.Vector3();
 const sunPos = new THREE.Vector3(0, 0, 0);
 
+// ⚡ Bolt Optimization: Pre-allocated vectors for animate loop (zero GC pressure)
+const _localPos = new THREE.Vector3();
+const _worldPos = new THREE.Vector3();
+const _parentPosPhys = new THREE.Vector3();
+const _parentPosRender = new THREE.Vector3();
+const _renderPos = new THREE.Vector3();
+
 // ============================================================================
 // Animation Loop (Updated for Physics)
 // ============================================================================
@@ -500,42 +508,35 @@ function animate() {
         animatedObjects.forEach(obj => {
             const physics = obj.physics;
             if (physics && physics.a !== undefined) {
+                // ⚡ Bolt: Zero-allocation path using pre-allocated vectors
                 // Calculate position in Physics Space (AU) relative to parent
-                const localPos = getOrbitalPosition(physics, simulationTime);
-
-                let worldPos = localPos.clone();
+                getOrbitalPosition(physics, simulationTime, _localPos);
+                _worldPos.copy(_localPos);
 
                 // If this is a Moon, add Parent's Physics Position
                 if (obj.parent) {
-                    const parentPos = getOrbitalPosition(obj.parent, simulationTime);
-                    worldPos.add(parentPos);
+                    getOrbitalPosition(obj.parent, simulationTime, _parentPosPhys);
+                    _worldPos.add(_parentPosPhys);
                 }
 
                 // Transform to Render Space
-                // Apply Log Scale to the Absolute World Position
-                const renderPos = physicsToRender(worldPos);
+                physicsToRender(_worldPos, _renderPos);
 
                 // Update Pivot Position
-                // Moons are children of the Planet's Pivot in the scene graph.
-                // However, their physics calculation yields a World Position (relative to Sun).
-                // We must calculate the relative position for the child pivot.
-
                 if (obj.parent) {
-                    // We need the parent's render position to calculate the offset
-                    const parentPosPhys = getOrbitalPosition(obj.parent, simulationTime);
-                    const parentPosRender = physicsToRender(parentPosPhys);
+                    // Reuse cached parent physics position (already in _parentPosPhys)
+                    physicsToRender(_parentPosPhys, _parentPosRender);
 
-                    // Relative Offset
-                    const relativePos = renderPos.clone().sub(parentPosRender);
-                    obj.pivot.position.copy(relativePos);
+                    // Calculate relative offset in-place
+                    obj.pivot.position.copy(_renderPos).sub(_parentPosRender);
                 } else {
                     // Planet (Child of Scene)
-                    obj.pivot.position.copy(renderPos);
+                    obj.pivot.position.copy(_renderPos);
                 }
 
                 // Self Rotation (Visual Mesh)
                 if (obj.mesh) {
-                    obj.mesh.rotation.y += 0.5 * dt * timeScale; // Visual rotation independent of physics
+                    obj.mesh.rotation.y += 0.5 * dt * timeScale;
                 }
             }
         });

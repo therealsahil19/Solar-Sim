@@ -35,9 +35,10 @@ const DEG_TO_RAD = Math.PI / 180;
  * @param {number} orbit.Omega - Longitude of Ascending Node (degrees). Orientation of the ascending node.
  * @param {number} orbit.M0 - Mean Anomaly at Epoch (degrees). Starting position at time=0.
  * @param {number} time - Current simulation time in Earth Years.
+ * @param {THREE.Vector3} [out] - Optional output vector to avoid allocation.
  * @returns {THREE.Vector3} The physical position vector in AU (before visual scaling).
  */
-export function getOrbitalPosition(orbit, time) {
+export function getOrbitalPosition(orbit, time, out = null) {
     const { a, e, i, omega, Omega, M0 } = orbit;
 
     // 1. Calculate Mean Anomaly (M)
@@ -111,7 +112,9 @@ export function getOrbitalPosition(orbit, time) {
     const y_astro = r * (sinOm * cosU + cosOm * sinU * cosI);
     const z_astro = r * (sinI * sinU);
 
-    return new THREE.Vector3(x_astro, z_astro, y_astro);
+    // ⚡ Bolt: Use provided output vector or create new one
+    const result = out || new THREE.Vector3();
+    return result.set(x_astro, z_astro, y_astro);
 }
 
 
@@ -158,9 +161,10 @@ const VISUAL_LIMIT_2 = VISUAL_LIMIT_1 + VISUAL_OFFSET_K; // ~1382.67 units
  * Applies the Multi-Zone Piecewise Scaling function.
  *
  * @param {THREE.Vector3} vector - The physical position (x, y, z) in AU.
+ * @param {THREE.Vector3} [out] - Optional output vector to avoid allocation.
  * @returns {THREE.Vector3} A NEW Vector3 representing the visual position in the scene.
  */
-export function physicsToRender(vector) {
+export function physicsToRender(vector, out = null) {
     const r = vector.length(); // Physical distance from origin (AU)
 
     if (r === 0) return new THREE.Vector3(0, 0, 0);
@@ -180,8 +184,9 @@ export function physicsToRender(vector) {
         r_vis = VISUAL_LIMIT_2 + Math.log(1 + (r - LIMIT_2)) * AU_SCALE * LOG_FACTOR_O;
     }
 
-    // Preserve direction, apply new magnitude
-    return vector.clone().normalize().multiplyScalar(r_vis);
+    // ⚡ Bolt: Preserve direction, apply new magnitude (zero-allocation path)
+    const result = out || new THREE.Vector3();
+    return result.copy(vector).normalize().multiplyScalar(r_vis);
 }
 
 /**
