@@ -19,6 +19,10 @@
 | 015| [FIXED] | 🟡 MED   | `src/trails.js:14` | GPU Memory Leak: `TrailManager` lacks `dispose()` |
 | 016| [FIXED] | 🟡 MED   | `src/components/CommandPalette.js:172` | Logic Bomb: Crash on missing `name` property |
 | 017| [FIXED] | 🟢 LOW   | `src/main.js:492` | Regression: Anonymous Window Resize Listener |
+| 018| [OPEN] | 🔴 HIGH  | `src/main.js:141` | Race Condition: Loading Screen hides before Config loads |
+| 019| [OPEN] | 🔴 HIGH  | `src/trails.js:33` | Performance: TrailManager renders 1M vertices per frame |
+| 020| [OPEN] | 🟡 MED   | `src/main.js:156` | Crash Risk: Unsafe access to `planetData.forEach` |
+| 021| [OPEN] | 🟢 LOW   | `src/components/NavigationSidebar.js:154` | Memory Leak: Undisposed DOM event listeners |
 
 ## Details
 
@@ -157,4 +161,48 @@ Despite Bug 012 being marked as fixed, `src/main.js` still contains an anonymous
 ```javascript
 // src/main.js:492
 window.addEventListener('resize', () => { ... });
+```
+
+### 018 - Race Condition: Loading Screen vs Async Fetch
+The `THREE.LoadingManager`'s `onLoad` callback fires when all tracked items are loaded. In `init()`, `createSun` adds a texture to the manager immediately. Then, `fetch('system.json')` is called, which is asynchronous.
+If the sun texture loads (or is cached) before the `fetch` promise resolves, `onLoad` fires, hiding the loading screen. The user sees an empty scene (only Sun) until the `fetch` completes and planets are created.
+
+```javascript
+// src/main.js
+manager.onLoad = function () { ... hides screen ... }; // Fires when count=0
+// ...
+const sun = createSun(textureLoader, useTextures); // Adds 1 item
+// ...
+// AWAIT gap: manager.onLoad can fire here!
+const response = await fetch(configUrl);
+planetData = await response.json();
+// ...
+createSystem(...); // Adds more items
+```
+
+### 019 - Performance: TrailManager Over-Allocation
+The `TrailManager` allocates a `LineSegments` geometry with a fixed size based on `maxTrails` (default 5000) * `pointsPerTrail` (100). This results in ~1,000,000 vertices processed by the GPU every frame. The `update()` method does not update the `drawRange`, so the renderer attempts to draw all 5000 trails, even if only a few are active.
+
+```javascript
+// src/trails.js
+this.mesh = new THREE.LineSegments(this.geometry, this.material);
+this.mesh.frustumCulled = false; // Always render 1M vertices
+// No setDrawRange usage
+```
+
+### 020 - Crash Risk: Invalid Configuration Type
+The `init` function assumes `system.json` returns a JSON Array. If a user (or custom config URL) provides a valid JSON Object (not an array), `planetData.forEach` throws a generic `TypeError`, crashing the application initialization.
+
+```javascript
+// src/main.js:156
+planetData = await response.json();
+planetData.forEach(planetConfig => { ... }); // Crash if planetData is {}
+```
+
+### 021 - Memory Leak: Component Listeners
+`NavigationSidebar` and `InfoPanel` attach event listeners to global DOM elements (e.g., `btn-close-nav`, `btn-follow`) in their constructors/methods. These classes do not have `dispose()` methods, and their listeners are not tracked. If the application logic ever re-initializes `setupInteraction` (or if these components were used in a dynamic context), listeners would accumulate, retaining the component instances in memory.
+
+```javascript
+// src/components/NavigationSidebar.js:154
+this.dom.btnClose.addEventListener('click', () => this.close()); // Leaks 'this'
 ```
