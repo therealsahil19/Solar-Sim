@@ -50,6 +50,13 @@ export class Modal {
             document.documentElement.classList.remove('modal-open');
         };
 
+        // Close button handler (WCAG 2.1.1 Keyboard)
+        const closeBtn = this.element.querySelector('.modal-close-btn');
+        if (closeBtn) {
+            this._handleCloseClick = () => this.close();
+            closeBtn.addEventListener('click', this._handleCloseClick);
+        }
+
         this.element.addEventListener('click', this._handleBackdropClick);
         this.element.addEventListener('close', this._handleClose);
     }
@@ -85,6 +92,11 @@ export class Modal {
         }
         if (this.element && this._handleClose) {
             this.element.removeEventListener('close', this._handleClose);
+        }
+        // Cleanup close button listener
+        const closeBtn = this.element?.querySelector('.modal-close-btn');
+        if (closeBtn && this._handleCloseClick) {
+            closeBtn.removeEventListener('click', this._handleCloseClick);
         }
     }
 }

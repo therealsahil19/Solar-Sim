@@ -22,3 +22,13 @@
 2. **Semantic Live Regions:** Implementing `aria-live` for critical state changes (Simulation Pause/Resume).
 3. **Theme Fluidity:** Decoupling themes from JS arrays into CSS-driven attributes.
 **Standard:** WCAG 2.1 AA (Live Regions, Contrast), Motion for Meaning (State explanatory animations).
+
+## 2026-01-03 - Accessibility Hardening: Modal System & Screen Reader Support
+**Problem:** Welcome modal lacked explicit close button (keyboard users couldn't easily dismiss), no `.sr-only` utility for hidden accessible text, motion preferences not respected, pause/resume state not announced to screen readers.
+**Solution:**
+1. **Modal Close Button:** Added visible `✕` button with `aria-label="Close dialog"` for WCAG 2.1.1 Keyboard compliance.
+2. **Screen Reader Utility:** Added `.sr-only` CSS class for visually hidden but accessible content.
+3. **Reduced Motion:** Added `@media (prefers-reduced-motion: reduce)` query to disable animations for vestibular disorder users (WCAG 2.3.3).
+4. **Live Region:** Added `#sr-status` element with `role="status"` and `aria-live="polite"` for simulation state announcements (WCAG 4.1.3).
+5. **Pause Icon Fix:** Fixed pause button not resetting to pause icon when simulation resumes.
+**Standard:** WCAG 2.1.1 (Keyboard), WCAG 1.3.1 (Info & Relationships), WCAG 2.3.3 (Animation), WCAG 4.1.3 (Status Messages).

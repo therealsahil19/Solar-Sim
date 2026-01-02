@@ -429,14 +429,17 @@ function togglePause(btnElement) {
         if (isPaused) {
             btnElement.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
             btnElement.setAttribute('aria-label', "Resume Simulation");
+        } else {
+            btnElement.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+            btnElement.setAttribute('aria-label', "Pause Simulation");
         }
     }
     showToast(isPaused ? "Simulation Paused" : "Simulation Resumed");
 
-    // A11y: announce state change
-    const liveAnnouncer = document.getElementById('toast');
-    if (liveAnnouncer) {
-        liveAnnouncer.textContent = isPaused ? "Simulation Paused" : "Simulation Resumed";
+    // A11y: Announce state change to screen readers (WCAG 4.1.3)
+    const srStatus = document.getElementById('sr-status');
+    if (srStatus) {
+        srStatus.textContent = isPaused ? "Simulation paused" : "Simulation resumed";
     }
 }
 
