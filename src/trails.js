@@ -18,9 +18,9 @@ export class TrailManager {
     /**
      * @param {THREE.Scene} scene - The scene to add the trail system to.
      * @param {number} [maxTrails=5000] - Maximum number of objects that can have trails.
-     * @param {number} [pointsPerTrail=100] - Number of points (segments) per trail.
+     * @param {number} [pointsPerTrail=500] - Number of points (segments) per trail.
      */
-    constructor(scene, maxTrails = 5000, pointsPerTrail = 100) {
+    constructor(scene, maxTrails = 5000, pointsPerTrail = 500) {
         this.scene = scene;
         this.maxTrails = maxTrails;
         this.pointsPerTrail = pointsPerTrail;

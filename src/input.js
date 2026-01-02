@@ -130,10 +130,11 @@ export function setupInteraction(context, callbacks) {
     let width = window.innerWidth;
     let height = window.innerHeight;
 
-    window.addEventListener('resize', () => {
+    const onWindowResize = () => {
         width = window.innerWidth;
         height = window.innerHeight;
-    });
+    };
+    window.addEventListener('resize', onWindowResize);
 
     const onPointerUp = (event) => {
         if (event.button !== 0) return;
@@ -275,6 +276,8 @@ export function setupInteraction(context, callbacks) {
     const sliderSpeed = document.getElementById('slider-speed');
     if (sliderSpeed) sliderSpeed.addEventListener('input', onSpeedHandler);
 
+    const btnHelpHandler = openModal;
+    const btnStartHandler = closeModal;
 
     return {
         updateSelectionUI,
@@ -283,14 +286,20 @@ export function setupInteraction(context, callbacks) {
         dispose: () => {
              rendererDomElement.removeEventListener('pointerup', onPointerUp);
              window.removeEventListener('keydown', onKeyDown);
+             window.removeEventListener('resize', onWindowResize);
+
+             if (btnCamera) btnCamera.removeEventListener('click', callbacks.onToggleCamera);
+             if (btnTexture) btnTexture.removeEventListener('click', onToggleTextureHandler);
+             if (btnReset) btnReset.removeEventListener('click', callbacks.onResetCamera);
+             if (btnPause) btnPause.removeEventListener('click', onPauseHandler);
+             if (btnLabels) btnLabels.removeEventListener('click', callbacks.onToggleLabels);
+             if (btnOrbits) btnOrbits.removeEventListener('click', callbacks.onToggleOrbits);
+             if (sliderSpeed) sliderSpeed.removeEventListener('input', onSpeedHandler);
+             if (btnHelp) btnHelp.removeEventListener('click', btnHelpHandler);
+             if (btnStart) btnStart.removeEventListener('click', btnStartHandler);
 
              // Clean up components if they have dispose methods
              if (commandPalette && commandPalette.destroy) commandPalette.destroy();
-
-             // We don't need to manually remove button listeners if the DOM is about to be trashed,
-             // but strictly speaking we should.
-             // (Skipping individual button removeEventListener for brevity as they are anonymous/arrow functions mostly,
-             //  and in a real app we'd use AbortController or weak refs).
         }
     };
 }

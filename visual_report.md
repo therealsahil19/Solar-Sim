@@ -2,7 +2,7 @@
 
 | Screenshot | Viewport | Severity | Issue Type | Description |
 |------------|----------|----------|------------|-------------|
-| `desktop.png` | Desktop | 🟡 MED | Rendering | Orbit trails appear jagged/low-poly, particularly for larger orbits (Mars/Neptune). |
+| `desktop.png` | Desktop | 🟡 MED | Rendering | [FIXED] Orbit trails appear jagged/low-poly, particularly for larger orbits (Mars/Neptune). |
 | `mobile.png` | Mobile | 🟢 LOW | Density | Planet labels (Mercury/Venus) are visually close; potential for overlap in alignment scenarios. |
 | `mobile.png` | Mobile | 🟢 LOW | Spacing | Bottom dock elements are tightly packed; 'Speed' slider touch target could be small. |
 | `desktop.png` | Desktop | 🟢 LOW | Contrast | Orbit lines (blue/orange) against starfield have subtle aliasing artifacts. |
@@ -12,7 +12,7 @@
 ### 1. Jagged Orbit Trails (All Viewports)
 **Observation:** The orbital paths for planets (especially outer ones like Neptune) render as visible polygons rather than smooth curves.
 **Root Cause:** The `TrailManager` in `src/trails.js` uses `THREE.LineSegments` with a fixed number of segments (`pointsPerTrail`). As the orbit circumference increases, the linear distance between points grows, creating visible straight edges.
-**Recommendation:** Increase `pointsPerTrail` or implement a spline-based curve interpolation, though this may impact performance.
+**Status:** [FIXED] Increased `pointsPerTrail` from 100 to 500 in `src/trails.js` constructor. This creates a much higher resolution buffer for trail segments.
 
 ### 2. Label Density on Mobile
 **Observation:** In `mobile.png`, the labels for inner planets (Mercury, Venus, Earth) are clustered.
