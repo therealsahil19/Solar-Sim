@@ -158,7 +158,7 @@ export function setupInteraction(context, callbacks) {
                     userData = data;
                     const group = context.instanceRegistry.groups.get(mesh.userData.registryKey);
                     if (group) {
-                         mesh = group.instances[hit.instanceId].pivot;
+                        mesh = group.instances[hit.instanceId].pivot;
                     }
                 }
             }
@@ -190,7 +190,6 @@ export function setupInteraction(context, callbacks) {
     });
 
     const btnHelp = document.getElementById('btn-help');
-    const btnStart = document.getElementById('btn-start');
 
     function openModal() {
         if (welcomeModal) welcomeModal.open();
@@ -200,7 +199,6 @@ export function setupInteraction(context, callbacks) {
     }
 
     if (btnHelp) btnHelp.addEventListener('click', openModal);
-    if (btnStart) btnStart.addEventListener('click', closeModal);
 
     // --- Command Palette ---
     let commandPalette = null;
@@ -234,8 +232,8 @@ export function setupInteraction(context, callbacks) {
             const btn = document.getElementById('btn-texture');
             callbacks.onToggleTexture(btn);
         } else if (key === ' ' || key === 'spacebar') {
-             const btn = document.getElementById('btn-pause');
-             callbacks.onTogglePause(btn);
+            const btn = document.getElementById('btn-pause');
+            callbacks.onTogglePause(btn);
         } else if (key === 'escape') {
             callbacks.onResetCamera();
             infoPanel.hide();
@@ -283,30 +281,28 @@ export function setupInteraction(context, callbacks) {
     if (sliderSpeed) sliderSpeed.addEventListener('input', onSpeedHandler);
 
     const btnHelpHandler = openModal;
-    const btnStartHandler = closeModal;
 
     return {
         updateSelectionUI,
         openModal,
         closeModal,
         dispose: () => {
-             rendererDomElement.removeEventListener('pointerup', onPointerUp);
-             window.removeEventListener('keydown', onKeyDown);
-             window.removeEventListener('resize', onWindowResize);
+            rendererDomElement.removeEventListener('pointerup', onPointerUp);
+            window.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('resize', onWindowResize);
 
-             if (btnCamera) btnCamera.removeEventListener('click', callbacks.onToggleCamera);
-             if (btnTexture) btnTexture.removeEventListener('click', onToggleTextureHandler);
-             if (btnReset) btnReset.removeEventListener('click', callbacks.onResetCamera);
-             if (btnPause) btnPause.removeEventListener('click', onPauseHandler);
-             if (btnLabels) btnLabels.removeEventListener('click', callbacks.onToggleLabels);
-             if (btnOrbits) btnOrbits.removeEventListener('click', callbacks.onToggleOrbits);
-             if (sliderSpeed) sliderSpeed.removeEventListener('input', onSpeedHandler);
-             if (btnHelp) btnHelp.removeEventListener('click', btnHelpHandler);
-             if (btnStart) btnStart.removeEventListener('click', btnStartHandler);
+            if (btnCamera) btnCamera.removeEventListener('click', callbacks.onToggleCamera);
+            if (btnTexture) btnTexture.removeEventListener('click', onToggleTextureHandler);
+            if (btnReset) btnReset.removeEventListener('click', callbacks.onResetCamera);
+            if (btnPause) btnPause.removeEventListener('click', onPauseHandler);
+            if (btnLabels) btnLabels.removeEventListener('click', callbacks.onToggleLabels);
+            if (btnOrbits) btnOrbits.removeEventListener('click', callbacks.onToggleOrbits);
+            if (sliderSpeed) sliderSpeed.removeEventListener('input', onSpeedHandler);
+            if (btnHelp) btnHelp.removeEventListener('click', btnHelpHandler);
 
-             // Clean up components if they have dispose methods
-             if (commandPalette && commandPalette.destroy) commandPalette.destroy();
-             if (welcomeModal && welcomeModal.dispose) welcomeModal.dispose(); // Dispose Modal
+            // Clean up components if they have dispose methods
+            if (commandPalette && commandPalette.destroy) commandPalette.destroy();
+            if (welcomeModal && welcomeModal.dispose) welcomeModal.dispose(); // Dispose Modal
         }
     };
 }

@@ -135,14 +135,14 @@ export async function init() {
     let assetsLoaded = false;
     let initFailed = false;
 
-    manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
+    manager.onProgress = function (url, itemsLoaded, itemsTotal) {
         if (loadingBar) {
             const width = (itemsLoaded / itemsTotal) * 100;
             loadingBar.style.width = width + '%';
             loadingBar.setAttribute('aria-valuenow', Math.round(width));
         }
     };
-    manager.onLoad = function ( ) {
+    manager.onLoad = function () {
         if (initFailed) return;
         assetsLoaded = true;
         // Don't hide loading screen here. Wait for system data to load.
@@ -210,13 +210,13 @@ export async function init() {
 
             // Identify Primary Planet
             if (systemNode.animated.length > 0) {
-                 const primary = systemNode.animated[0];
-                 // primary.pivot is the Group
-                 // We want to focus on the Object that has the label/mesh
-                 // The interaction target is the InstancedMesh usually.
-                 // But we want to store the "System Root" (Pivot) for logic?
-                 // Let's store the Pivot.
-                 if (primary.pivot) planets.push(primary.pivot);
+                const primary = systemNode.animated[0];
+                // primary.pivot is the Group
+                // We want to focus on the Object that has the label/mesh
+                // The interaction target is the InstancedMesh usually.
+                // But we want to store the "System Root" (Pivot) for logic?
+                // Let's store the Pivot.
+                if (primary.pivot) planets.push(primary.pivot);
             }
         });
 
@@ -234,9 +234,6 @@ export async function init() {
                 if (initFailed) return;
                 loadingScreen.style.display = 'none';
                 loadingScreen.setAttribute('aria-hidden', 'true');
-                if (interactionHelpers && interactionHelpers.openModal) {
-                    interactionHelpers.openModal();
-                }
             }, 500);
         }
 
@@ -275,9 +272,6 @@ export async function init() {
 
     interactionHelpers = setupInteraction(context, callbacks);
 
-    if (assetsLoaded && interactionHelpers.openModal) {
-        interactionHelpers.openModal();
-    }
 
     if (textureLoader.lazyLoadQueue.length > 0) {
         setTimeout(() => {
@@ -479,16 +473,16 @@ function animate() {
                 // So Moon Pivot Position should be `renderPos_Moon - renderPos_Planet`.
 
                 if (obj.parent) {
-                     // We need the parent's render position to calculate the offset
-                     const parentPosPhys = getOrbitalPosition(obj.parent, simulationTime);
-                     const parentPosRender = physicsToRender(parentPosPhys);
+                    // We need the parent's render position to calculate the offset
+                    const parentPosPhys = getOrbitalPosition(obj.parent, simulationTime);
+                    const parentPosRender = physicsToRender(parentPosPhys);
 
-                     // Relative Offset
-                     const relativePos = renderPos.clone().sub(parentPosRender);
-                     obj.pivot.position.copy(relativePos);
+                    // Relative Offset
+                    const relativePos = renderPos.clone().sub(parentPosRender);
+                    obj.pivot.position.copy(relativePos);
                 } else {
-                     // Planet (Child of Scene)
-                     obj.pivot.position.copy(renderPos);
+                    // Planet (Child of Scene)
+                    obj.pivot.position.copy(renderPos);
                 }
 
                 // Self Rotation (Visual Mesh)
@@ -545,12 +539,12 @@ function animate() {
         const shipPos = playerShip.position;
 
         planets.forEach(p => {
-             tempVec.setFromMatrixPosition(p.matrixWorld);
-             const dist = shipPos.distanceToSquared(tempVec);
-             if (dist < closestDist) {
-                 closestDist = dist;
-                 closestObj = p;
-             }
+            tempVec.setFromMatrixPosition(p.matrixWorld);
+            const dist = shipPos.distanceToSquared(tempVec);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestObj = p;
+            }
         });
         closestObjectCache = closestObj;
     }

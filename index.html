@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,18 +34,23 @@
     </script>
 
     <!-- Sentinel: Subresource Integrity (SRI) for Dependencies -->
-    <link rel="modulepreload" href="https://unpkg.com/three@0.160.0/build/three.module.js" integrity="sha384-61S/Nu32S3E5+n+KpCOTb2eRYps6fVKm+9Gz1QBvSePFthb46f063Aa/qe/lykFZ" crossorigin="anonymous">
-    <link rel="modulepreload" href="https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js" integrity="sha384-qlO/ZugKPxAQUAvTlQoo0QECzxJIJySZmCF/DHdb2Xn/hHndFwX/vfUAC9Hbk6LP" crossorigin="anonymous">
-    <link rel="modulepreload" href="https://unpkg.com/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js" integrity="sha384-oxPlnJSeUCYU9W3RMQswb4S/vFd4Bhxuy1Ffx0V2KJakWeb6n1gaqUtSE9Ic/F72" crossorigin="anonymous">
+    <link rel="modulepreload" href="https://unpkg.com/three@0.160.0/build/three.module.js"
+        integrity="sha384-61S/Nu32S3E5+n+KpCOTb2eRYps6fVKm+9Gz1QBvSePFthb46f063Aa/qe/lykFZ" crossorigin="anonymous">
+    <link rel="modulepreload" href="https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js"
+        integrity="sha384-qlO/ZugKPxAQUAvTlQoo0QECzxJIJySZmCF/DHdb2Xn/hHndFwX/vfUAC9Hbk6LP" crossorigin="anonymous">
+    <link rel="modulepreload" href="https://unpkg.com/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js"
+        integrity="sha384-oxPlnJSeUCYU9W3RMQswb4S/vFd4Bhxuy1Ffx0V2KJakWeb6n1gaqUtSE9Ic/F72" crossorigin="anonymous">
 
 </head>
+
 <body>
 
     <!-- Loading Screen -->
     <div id="loading-screen" role="alert" aria-busy="true">
         <h2 class="font-light">Loading Simulation...</h2>
         <div id="loading-bar-container">
-            <div id="loading-bar" role="progressbar" aria-label="Loading assets" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+            <div id="loading-bar" role="progressbar" aria-label="Loading assets" aria-valuemin="0" aria-valuemax="100"
+                aria-valuenow="0"></div>
         </div>
     </div>
 
@@ -65,14 +71,14 @@
                 <button id="btn-close-nav" class="icon-btn-small" aria-label="Close Navigation">✕</button>
             </header>
             <input type="search" id="nav-search" placeholder="Find planet..." aria-label="Search Planets">
-        <nav id="nav-list" role="tree">
-            <!-- Skeleton State (Optimistic UI) -->
-            <div class="nav-btn skeleton" style="width: 100%; height: 32px; margin-bottom: 8px;"></div>
-            <div class="nav-btn skeleton" style="width: 85%; height: 32px; margin-bottom: 8px;"></div>
-            <div class="nav-btn skeleton" style="width: 90%; height: 32px; margin-bottom: 8px;"></div>
-            <div class="nav-btn skeleton" style="width: 75%; height: 32px; margin-bottom: 8px;"></div>
-            <div class="nav-btn skeleton" style="width: 80%; height: 32px; margin-bottom: 8px;"></div>
-        </nav>
+            <nav id="nav-list" role="tree">
+                <!-- Skeleton State (Optimistic UI) -->
+                <div class="nav-btn skeleton" style="width: 100%; height: 32px; margin-bottom: 8px;"></div>
+                <div class="nav-btn skeleton" style="width: 85%; height: 32px; margin-bottom: 8px;"></div>
+                <div class="nav-btn skeleton" style="width: 90%; height: 32px; margin-bottom: 8px;"></div>
+                <div class="nav-btn skeleton" style="width: 75%; height: 32px; margin-bottom: 8px;"></div>
+                <div class="nav-btn skeleton" style="width: 80%; height: 32px; margin-bottom: 8px;"></div>
+            </nav>
         </aside>
 
         <!-- Right Side: Info Panel -->
@@ -94,34 +100,57 @@
             <!-- Time Controls -->
             <div id="time-controls" class="glass-panel dock-group">
                 <button id="btn-pause" title="Pause/Play (Space)" aria-label="Pause Simulation">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    </svg>
                 </button>
                 <div style="display: flex; flex-direction: column; width: 100px;">
                     <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 2px;">
                         <label for="slider-speed">Speed</label>
                         <span id="speed-value">1.0x</span>
                     </div>
-                    <input type="range" id="slider-speed" min="0.1" max="5.0" step="0.1" value="1.0"
-                           aria-valuemin="0.1" aria-valuemax="5.0" aria-valuenow="1.0" aria-valuetext="1.0x">
+                    <input type="range" id="slider-speed" min="0.1" max="5.0" step="0.1" value="1.0" aria-valuemin="0.1"
+                        aria-valuemax="5.0" aria-valuenow="1.0" aria-valuetext="1.0x">
                 </div>
             </div>
 
             <!-- View Controls -->
             <div id="view-controls" class="glass-panel dock-group" role="toolbar" aria-label="Camera and View Controls">
-                <button id="btn-camera" class="icon-btn" aria-label="Toggle Camera View" aria-pressed="false" title="Toggle Ship View (C)" aria-keyshortcuts="c">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                <button id="btn-camera" class="icon-btn" aria-label="Toggle Camera View" aria-pressed="false"
+                    title="Toggle Ship View (C)" aria-keyshortcuts="c">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <path
+                            d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
+                    </svg>
                 </button>
-                <button id="btn-reset" class="icon-btn" aria-label="Reset View" title="Reset View (Esc)" aria-keyshortcuts="Escape">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                <button id="btn-reset" class="icon-btn" aria-label="Reset View" title="Reset View (Esc)"
+                    aria-keyshortcuts="Escape">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <path
+                            d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                    </svg>
                 </button>
-                <button id="btn-texture" class="icon-btn texture-toggle" aria-label="Toggle Textures" aria-pressed="true" title="Toggle Textures (T)" aria-keyshortcuts="t">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                <button id="btn-texture" class="icon-btn texture-toggle" aria-label="Toggle Textures"
+                    aria-pressed="true" title="Toggle Textures (T)" aria-keyshortcuts="t">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <path
+                            d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+                    </svg>
                 </button>
-                <button id="btn-labels" class="icon-btn" aria-label="Toggle Labels" aria-pressed="true" title="Toggle Labels (L)" aria-keyshortcuts="l">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/></svg>
+                <button id="btn-labels" class="icon-btn" aria-label="Toggle Labels" aria-pressed="true"
+                    title="Toggle Labels (L)" aria-keyshortcuts="l">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <path
+                            d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z" />
+                    </svg>
                 </button>
-                <button id="btn-orbits" class="icon-btn" aria-label="Toggle Orbits" aria-pressed="true" title="Toggle Orbits (O)" aria-keyshortcuts="o">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <button id="btn-orbits" class="icon-btn" aria-label="Toggle Orbits" aria-pressed="true"
+                    title="Toggle Orbits (O)" aria-keyshortcuts="o">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
                 </button>
             </div>
 
@@ -135,8 +164,7 @@
     <!-- Onboarding / Help Modal -->
     <dialog id="welcome-modal">
         <div class="modal-content glass-panel">
-            <h2 class="text-2xl mb-sm">Interactive Solar System</h2>
-            <p class="text-secondary mb-md">Explore the cosmos in real-time.</p>
+            <h2 class="text-2xl mb-sm">Controls & Shortcuts</h2>
 
             <div class="modal-grid">
                 <div class="modal-item">🖱️ <span><strong>Drag</strong> to Rotate</span></div>
@@ -147,17 +175,16 @@
                 <div class="modal-item"><kbd class="kbd">Cmd+K</kbd> <span>Command Palette</span></div>
                 <div class="modal-item"><kbd class="kbd">Space</kbd> <span>Pause / Play</span></div>
                 <div class="modal-item"><kbd class="kbd">C</kbd> <span>Ship Camera</span></div>
-                <div class="modal-item"><kbd class="kbd">Esc</kbd> <span>Reset View</span></div>
             </div>
-
-            <button id="btn-start" class="btn-primary" autofocus>Start Exploration</button>
         </div>
     </dialog>
 
     <div id="footer-credits">
-        Solar-Sim · Built with Three.js · <a href="https://github.com/therealsahil19/Solar-Sim" target="_blank" rel="noopener noreferrer">GitHub</a>
+        Solar-Sim · Built with Three.js · <a href="https://github.com/therealsahil19/Solar-Sim" target="_blank"
+            rel="noopener noreferrer">GitHub</a>
     </div>
 
     <script type="module" src="src/main.js"></script>
 </body>
+
 </html>
