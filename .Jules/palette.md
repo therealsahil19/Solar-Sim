@@ -14,3 +14,11 @@
 2. **Glass Component:** Standardized the `.glass-panel` class for consistent visual language.
 3. **Modal Pattern:** Implemented a persistent `<dialog id="welcome-modal">` for onboarding that opens on load and can be recalled via a "Help" button.
 **Standard:** WCAG 2.1 AA (Focus Trapping in Modals, ARIA Landmarks), Responsive Design (Mobile-First Grid).
+
+## 2026-01-03 - Systemic Transition to Motion Tokens & Semantic Themes
+**Problem:** Inconsistent interaction feedback (ad-hoc transitions), hardcoded JS theme strings, and lack of ARIA live updates for simulation state.
+**Solution:**
+1. **Motion Framework:** Unified CSS entry/exit animations based on physics tokens.
+2. **Semantic Live Regions:** Implementing `aria-live` for critical state changes (Simulation Pause/Resume).
+3. **Theme Fluidity:** Decoupling themes from JS arrays into CSS-driven attributes.
+**Standard:** WCAG 2.1 AA (Live Regions, Contrast), Motion for Meaning (State explanatory animations).
