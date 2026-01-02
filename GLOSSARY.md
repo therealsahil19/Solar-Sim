@@ -58,17 +58,21 @@ This document defines the domain-specific terminology, architectural patterns, a
 ### Keplerian Orbit
 **Definition:** An orbit calculated using Johannes Kepler's laws of planetary motion.
 **Parameters:**
-*   **Semi-Major Axis (a):** The size of the orbit.
-*   **Eccentricity (e):** How "oval" the orbit is.
-*   **Inclination (i):** The tilt of the orbit relative to the flat plane.
-**Usage:** `src/physics.js` calculates exact positions based on time.
+*   **Semi-Major Axis (a):** The average distance from the focal point (size of the orbit).
+*   **Eccentricity (e):** The "flatness" of the ellipse (0 = perfect circle).
+*   **Inclination (i):** Tilt relative to the ecliptic plane.
+*   **Argument of Periapsis (omega):** Orientation of the orbit's "closest point".
+*   **Longitude of Ascending Node (Omega):** Horizontal orientation of the orbit.
+*   **Mean Anomaly at Epoch (M0):** The starting position in the orbit at time 0.
+**Usage:** `src/physics.js` calculates high-precision positions using the Newton-Raphson method to solve Kepler's Equation ($M = E - e \sin E$).
 
 ### Multi-Zone Scaling
-**Definition:** A rendering trick to visualize vast astronomical distances on a computer screen without losing precision (z-fighting) or visibility.
+**Definition:** A rendering technique to visualize vast astronomical distances on a screen by compressing outer regions.
 **Logic:**
-*   **Inner System (0-30 AU):** Linear Scale (1 AU = 40 Units).
-*   **Outer System (>30 AU):** Logarithmic Scale (Distances are compressed).
-**Why:** Keeps Pluto visible even though it's incredibly far away.
+1.  **Inner Linear (0-30 AU):** 1:1 scale for inner planets (Mercury to Neptune).
+2.  **Kuiper Log (30-50 AU):** Mild logarithmic compression for the Kuiper belt.
+3.  **Oort Log (>50 AU):** Aggressive compression for far objects like the Oort Cloud.
+**Why:** Maintains visibility of distant objects (Pluto, Oort Cloud) without making the inner system too small to see.
 
 ---
 

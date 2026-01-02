@@ -48,3 +48,13 @@
     - **GLOSSARY.md**: Created a central dictionary for domain terms (Keplerian Orbit, Instancing) and internal codenames.
     - **src/procedural.js**: Added file-level JSDoc explaining the "Factory" role. Documented the complex recursive `createSystem` function and the "Lazy Loading" logic for textures.
     - **src/main.js**: Documented the "Conductor" role. Added JSDoc to `init` (Async/Await) and `animate` (Render Loop phases). Explains Global State variables.
+### 2026-01-02 - The Sync & Physics Discovery
+- **Focus:** `README.md`, `GLOSSARY.md`, `src/physics.js`.
+- **Standard:**
+    - "Schema Accuracy": Documentation must match the current JSON schema in `system.json`.
+    - "Physics Documentation": Orbital mechanics must be explained with mathematical clarity.
+- **Changes:**
+    - **README.md**: Updated the `system.json` schema section to reflect nested `physics` and `visual` objects. Added `src/physics.js` to the project structure.
+    - **GLOSSARY.md**: Added definitions for Keplerian orbital elements and expanded the explanation of Multi-Zone Scaling.
+    - **Troubleshooting**: Added a section to README for common setup issues.
+- **Gap:** UI components like `NavigationSidebar` could benefit from more detailed prop-type style documentation in JSDoc for future migrations to TS.

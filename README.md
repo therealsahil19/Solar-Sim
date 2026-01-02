@@ -79,6 +79,7 @@ The project is organized into a modular architecture:
 │   ├── main.js         # The "Conductor" - initializes scene and loop
 │   ├── procedural.js   # "Factory" - creates 3D objects (planets, stars)
 │   ├── input.js        # "Controller" - handles user input and UI events
+│   ├── physics.js      # "Engineer" - handles Keplerian orbits and multi-zone scaling
 │   ├── debris.js       # "Generator" - creates GPU-accelerated asteroid belt
 │   ├── instancing.js   # "Optimizer" - manages InstancedMesh groups
 │   ├── trails.js       # "Optimizer" - manages unified orbit trail geometry
@@ -133,13 +134,8 @@ The simulation is data-driven. `system.json` defines the hierarchy of celestial 
 | :--- | :--- | :--- |
 | `name` | String | The display name of the celestial body. |
 | `type` | String | The classification (e.g., "Planet", "Moon", "Star"). |
-| `color` | String | Hex color code (e.g., "#2233FF") used for Solid/LD mode. |
-| `texture` | String | Path to the texture image (e.g., "textures/earth.jpg"). |
-| `size` | Number | Radius of the object relative to Earth (Earth = 1.0). |
-| `distance` | Number | Distance from the parent object (orbit radius). |
-| `speed` | Number | Orbital speed around the parent. |
-| `rotationSpeed` | Number | Speed of rotation around its own axis. |
-| `hasRing` | Boolean | (Optional) If true, generates a procedural ring around the planet. |
+| `physics` | Object | **Orbital elements**: `a`, `e`, `i`, `omega`, `Omega`, `M0`. |
+| `visual` | Object | **Visual properties**: `size`, `color`, `texture`, `hasRing`. |
 | `description` | String | Text shown in the Info Panel when selected. |
 | `moons` | Array | (Optional) Recursive list of satellite objects (same schema). |
 
@@ -149,23 +145,21 @@ The simulation is data-driven. `system.json` defines the hierarchy of celestial 
   {
     "name": "Earth",
     "type": "Planet",
-    "color": "#2233FF",
-    "texture": "textures/earth.jpg",
-    "size": 1.0,
-    "distance": 15.0,
-    "speed": 0.01,
-    "rotationSpeed": 0.02,
-    "hasRing": false,
+    "physics": {
+      "a": 1.000,
+      "e": 0.0167,
+      "i": 0.00,
+      "omega": 288.06,
+      "Omega": 174.87,
+      "M0": 358.61
+    },
+    "visual": {
+      "size": 1.0,
+      "color": "#2233FF",
+      "texture": "textures/earth.jpg"
+    },
     "description": "Our home planet.",
-    "moons": [
-       {
-         "name": "Moon",
-         "type": "Moon",
-         "size": 0.27,
-         "distance": 2.5,
-         ...
-       }
-    ]
+    "moons": [ ... ]
   }
 ]
 ```
@@ -223,9 +217,25 @@ The application is designed to be accessible:
 -   **Keyboard Navigation**: All core actions are mapped to keyboard shortcuts.
 -   **Visuals**: High contrast UI text and support for disabling complex textures/labels for clarity.
 
+## Quality & Audit
+
+The project undergoes regular visual and logical audits to ensure high standards:
+- [Visual QA Report](file:///c:/Users/mehna/OneDrive/Desktop/Solar-Sim/visual_report.md): Tracking UI inconsistencies and layout shifts.
+- [Security & Logic Audit (Hunted)](file:///c:/Users/mehna/OneDrive/Desktop/Solar-Sim/hunted.md): Identifying code smells, logic flaws, and potential security risks.
+
+## Troubleshooting
+
+### Textures not loading?
+- Ensure you are running the project through an HTTP server (e.g., `python3 -m http.server`).
+- Check the console for 404 errors; you may need to run `python3 download_textures.py`.
+
+### Performance Lag?
+- **Bolt Optimization**: Toggle Textures (T key) or Labels (L key) to reduce GPU load.
+- **Instancing**: The project automatically uses instancing for moons and asteroids to save draw calls.
+
 ## Development
 
-This project maintains internal documentation for specific domains in the `.jules/` directory:
+This project maintains internal documentation for specific domains in the `.Jules/` directory:
 -   `bolt.md`: Performance logs and optimization details.
 -   `sentinel.md`: Security vulnerability tracking and fixes.
 -   `palette.md`: Design system and UI/UX decisions.
