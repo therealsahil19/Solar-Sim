@@ -887,6 +887,34 @@ dialog::backdrop {
     #footer-credits {
         display: none;
     }
+
+    .modal-content {
+        padding: var(--space-md);
+        width: 95%;
+        max-width: 100%;
+    }
+
+    .modal-content h2 {
+        font-size: var(--text-lg) !important;
+        margin-bottom: var(--space-sm) !important;
+    }
+
+    .modal-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-xs);
+        margin: var(--space-md) 0;
+    }
+
+    .modal-item {
+        font-size: var(--text-sm);
+    }
+
+    /* Ensure Command Palette button text doesn't overflow */
+    .modal-item span:last-child {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 }
 
 /* Tablet / Narrow Desktop */
