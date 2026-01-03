@@ -49,6 +49,12 @@
 | 045| [FIXED] | 🟢 LOW   | `src/procedural.js:30-33` | Memory Leak: `clearMaterialCache` never called |
 | 046| [FIXED] | 🟢 LOW   | `src/instancing.js:76-78` | Silent Failure: `group.mesh.dispose()` called on non-existent method |
 | 047| [FIXED] | 🟢 LOW   | `src/benchmark.js:75` | Logic Flaw: No return value in final else branch |
+| 048| [OPEN] | 🔴 HIGH  | `src/main.js:323` | Overlapping Animation Loops on Re-init |
+| 049| [OPEN] | 🟡 MED   | `src/components/SettingsPanel.js:332` | Incomplete Event Listener Cleanup |
+| 050| [OPEN] | 🟡 MED   | `src/main.js:740` | Missing Window Resize Listener Cleanup |
+| 051| [OPEN] | 🟡 MED   | `src/main.js:115` | Redundant CSS2DRenderer Creation |
+| 052| [OPEN] | 🟡 MED   | `src/main.js:107` | Redundant WebGLRenderer Creation |
+
 
 ## Details
 
@@ -371,4 +377,63 @@ The `benchmark.js:measure()` function has a return statement in the `else` branc
 
 ### 047 - Logic Flaw: No Return Value in Benchmark
 [FIXED] Added Promise-based API to `src/benchmark.js` - `startBenchmark()` now returns `{ promise, cancel }` where `promise` resolves with benchmark results.
+
+### 048 - Overlapping Animation Loops on Re-init
+The `init()` function calls `animate()` at the end (line 323). If `init()` is called multiple times (e.g., when the user re-triggers the simulation), a new `requestAnimationFrame` loop is started without stopping the old one. This leads to doubled (or N-tupled) physics updates and rendering calls, causing massive performance degradation and state corruption.
+
+```javascript
+// src/main.js:323
+animate();
+```
+
+**Recommendation:** Check if a loop is already running or utilize a `cancelAnimationFrame` with a stored ID before starting a new one.
+
+### 049 - Incomplete Event Listener Cleanup
+In `SettingsPanel.js`, the `dispose()` method only removes the `_keyHandler` (line 334). However, many other listeners are added in `bindEvents()` (lines 136-261) using anonymous arrow functions or instance methods that are never removed. This is a classic "Silent Killer" memory leak.
+
+```javascript
+// src/components/SettingsPanel.js:332
+dispose() {
+    if (this._keyHandler) {
+        document.removeEventListener('keydown', this._keyHandler);
+    }
+}
+```
+
+**Recommendation:** Store named references to all handlers or use an `AbortController` to clean up all listeners at once.
+
+### 050 - Missing Window Resize Listener Cleanup
+The `main.js` file adds a global `resize` listener (line 740). Unlike `input.js`, there is no `dispose` or `destroy` logic in `main.js` to remove this listener. If the simulation module is ever unloaded or reloaded, these listeners will accumulate on the `window` object.
+
+```javascript
+// src/main.js:740
+window.addEventListener('resize', onWindowResize);
+```
+
+### 051 - Redundant CSS2DRenderer Creation
+The `init()` function creates a `new CSS2DRenderer()` and appends it to the DOM (lines 115-120). If `init()` is called multiple times, multiple overlay divs will be created and stacked in `document.body`, each consuming memory and potentially interfering with one another.
+
+```javascript
+// src/main.js:115-120
+labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(window.innerWidth, window.innerHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0px';
+labelRenderer.domElement.style.pointerEvents = 'none';
+document.body.appendChild(labelRenderer.domElement);
+```
+
+### 052 - Redundant WebGLRenderer Creation
+Similar to the CSS2DRenderer, the `WebGLRenderer` is recreated and appended to the DOM on every `init()` call (lines 107-113). This results in multiple `<canvas>` elements being added to the body, and multiple WebGL contexts being created, which can quickly hit browser limits or crash the GPU process.
+
+```javascript
+// src/main.js:107-113
+renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.domElement.setAttribute('role', 'application');
+renderer.domElement.setAttribute('aria-label', '3D Solar System Simulation');
+document.body.appendChild(renderer.domElement);
+```
 
