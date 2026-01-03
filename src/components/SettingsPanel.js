@@ -129,22 +129,30 @@ export class SettingsPanel {
 
     /**
      * Binds event listeners to UI controls.
+     * Bug 049 Fix: All handlers stored as named references for proper cleanup.
      */
     bindEvents() {
+        // Bug 049 Fix: Use AbortController for bulk cleanup
+        this._abortController = new AbortController();
+        const signal = this._abortController.signal;
+
         // Panel open/close
         if (this.dom.btnOpen) {
-            this.dom.btnOpen.addEventListener('click', () => this.toggle());
+            this._btnOpenHandler = () => this.toggle();
+            this.dom.btnOpen.addEventListener('click', this._btnOpenHandler, { signal });
         }
         if (this.dom.btnClose) {
-            this.dom.btnClose.addEventListener('click', () => this.close());
+            this._btnCloseHandler = () => this.close();
+            this.dom.btnClose.addEventListener('click', this._btnCloseHandler, { signal });
         }
 
         // Close on click outside
-        this.dom.panel.addEventListener('click', (e) => {
+        this._panelClickHandler = (e) => {
             if (e.target === this.dom.panel) {
                 this.close();
             }
-        });
+        };
+        this.dom.panel.addEventListener('click', this._panelClickHandler, { signal });
 
         /**
          * Keydown listener for global shortcuts.
@@ -167,89 +175,98 @@ export class SettingsPanel {
                 }
             }
         };
-        document.addEventListener('keydown', this._keyHandler);
+        document.addEventListener('keydown', this._keyHandler, { signal });
 
         // Toggle: Textures
         if (this.dom.toggleTextures) {
-            this.dom.toggleTextures.addEventListener('change', (e) => {
+            this._texturesHandler = (e) => {
                 const value = e.target.checked;
                 this.settingsManager.set('textures', value);
                 if (this.callbacks.onToggleTextures) {
                     this.callbacks.onToggleTextures(value);
                 }
-            });
+            };
+            this.dom.toggleTextures.addEventListener('change', this._texturesHandler, { signal });
         }
 
         // Toggle: Labels
         if (this.dom.toggleLabels) {
-            this.dom.toggleLabels.addEventListener('change', (e) => {
+            this._labelsHandler = (e) => {
                 const value = e.target.checked;
                 this.settingsManager.set('labels', value);
                 if (this.callbacks.onToggleLabels) {
                     this.callbacks.onToggleLabels(value);
                 }
-            });
+            };
+            this.dom.toggleLabels.addEventListener('change', this._labelsHandler, { signal });
         }
 
         // Toggle: Orbits
         if (this.dom.toggleOrbits) {
-            this.dom.toggleOrbits.addEventListener('change', (e) => {
+            this._orbitsHandler = (e) => {
                 const value = e.target.checked;
                 this.settingsManager.set('orbits', value);
                 if (this.callbacks.onToggleOrbits) {
                     this.callbacks.onToggleOrbits(value);
                 }
-            });
+            };
+            this.dom.toggleOrbits.addEventListener('change', this._orbitsHandler, { signal });
         }
 
         // Toggle: Asteroid Belt
         if (this.dom.toggleAsteroidBelt) {
-            this.dom.toggleAsteroidBelt.addEventListener('change', (e) => {
+            this._asteroidBeltHandler = (e) => {
                 const value = e.target.checked;
                 this.settingsManager.set('asteroidBelt', value);
                 if (this.callbacks.onToggleBelt) {
                     this.callbacks.onToggleBelt('asteroid_belt', value);
                 }
-            });
+            };
+            this.dom.toggleAsteroidBelt.addEventListener('change', this._asteroidBeltHandler, { signal });
         }
 
         // Toggle: Kuiper Belt
         if (this.dom.toggleKuiperBelt) {
-            this.dom.toggleKuiperBelt.addEventListener('change', (e) => {
+            this._kuiperBeltHandler = (e) => {
                 const value = e.target.checked;
                 this.settingsManager.set('kuiperBelt', value);
                 if (this.callbacks.onToggleBelt) {
                     this.callbacks.onToggleBelt('kuiper_belt', value);
                 }
-            });
+            };
+            this.dom.toggleKuiperBelt.addEventListener('change', this._kuiperBeltHandler, { signal });
         }
 
         // Toggle: Oort Cloud
         if (this.dom.toggleOortCloud) {
-            this.dom.toggleOortCloud.addEventListener('change', (e) => {
+            this._oortCloudHandler = (e) => {
                 const value = e.target.checked;
                 this.settingsManager.set('oortCloud', value);
                 if (this.callbacks.onToggleBelt) {
                     this.callbacks.onToggleBelt('oort_cloud', value);
                 }
-            });
+            };
+            this.dom.toggleOortCloud.addEventListener('change', this._oortCloudHandler, { signal });
         }
 
-        // Theme buttons
+        // Theme buttons - store handlers in a Map for cleanup
+        this._themeHandlers = new Map();
         this.dom.themeButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
+            const handler = () => {
                 const theme = btn.dataset.theme;
                 this.settingsManager.set('theme', theme);
                 this.updateThemeButtons(theme);
                 if (this.callbacks.onChangeTheme) {
                     this.callbacks.onChangeTheme(theme);
                 }
-            });
+            };
+            this._themeHandlers.set(btn, handler);
+            btn.addEventListener('click', handler, { signal });
         });
 
         // Speed slider
         if (this.dom.sliderSpeed) {
-            this.dom.sliderSpeed.addEventListener('input', (e) => {
+            this._speedHandler = (e) => {
                 const value = parseFloat(e.target.value);
                 if (this.dom.speedValue) {
                     this.dom.speedValue.textContent = `${value.toFixed(1)}x`;
@@ -258,7 +275,8 @@ export class SettingsPanel {
                 if (this.callbacks.onChangeSpeed) {
                     this.callbacks.onChangeSpeed(value);
                 }
-            });
+            };
+            this.dom.sliderSpeed.addEventListener('input', this._speedHandler, { signal });
         }
     }
 
@@ -328,10 +346,30 @@ export class SettingsPanel {
 
     /**
      * Cleans up event listeners.
+     * Bug 049 Fix: Use AbortController to remove all listeners at once.
      */
     dispose() {
-        if (this._keyHandler) {
-            document.removeEventListener('keydown', this._keyHandler);
+        // Abort all listeners bound via signal
+        if (this._abortController) {
+            this._abortController.abort();
+            this._abortController = null;
+        }
+
+        // Clear handler references
+        this._keyHandler = null;
+        this._btnOpenHandler = null;
+        this._btnCloseHandler = null;
+        this._panelClickHandler = null;
+        this._texturesHandler = null;
+        this._labelsHandler = null;
+        this._orbitsHandler = null;
+        this._asteroidBeltHandler = null;
+        this._kuiperBeltHandler = null;
+        this._oortCloudHandler = null;
+        this._speedHandler = null;
+        if (this._themeHandlers) {
+            this._themeHandlers.clear();
+            this._themeHandlers = null;
         }
     }
 }

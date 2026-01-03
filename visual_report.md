@@ -8,12 +8,12 @@
 
 ## 📊 Summary Table
 
-| Screenshot | Viewport | Severity | Issue Type | Description |
-|------------|----------|----------|------------|-------------|
-| `desktop_audit.png` | Desktop | 🟢 LOW | Alignment | Header title "Solar-Sim" still has minor asymmetric padding (~2px) |
-| `mobile_audit.png` | Mobile | 🟡 MED | Overlap | Earth and Venus labels overlap when planets are in close proximity |
-| `mobile_audit.png` | Mobile | 🟢 LOW | Density | Label font-size (9px) remains large relative to planet bodies at 375px |
-| `tablet_audit.png` | Tablet | 🟢 LOW | Spacing | Bottom dock buttons have slightly inconsistent horizontal spacing (~1px difference) |
+| Screenshot | Viewport | Severity | Issue Type | Description | Status |
+|------------|----------|----------|------------|-------------|--------|
+| `desktop_audit.png` | Desktop | 🟢 LOW | Alignment | Header title "Solar-Sim" still has minor asymmetric padding (~2px) | [FIXED] |
+| `mobile_audit.png` | Mobile | 🟡 MED | Overlap | Earth and Venus labels overlap when planets are in close proximity | [FIXED] |
+| `mobile_audit.png` | Mobile | 🟢 LOW | Density | Label font-size (9px) remains large relative to planet bodies at 375px | N/A |
+| `tablet_audit.png` | Tablet | 🟢 LOW | Spacing | Bottom dock buttons have slightly inconsistent horizontal spacing (~1px difference) | [FIXED] |
 
 ---
 
@@ -40,6 +40,8 @@
 
 **Impact:** Reduced usability on mobile devices.
 
+**[FIXED]** Added label collision detection in `main.js` render loop. When labels overlap on mobile viewports (<768px), the lower-priority label is hidden to prevent overlap.
+
 ---
 
 ### 2. 🟢 LOW: Header Padding Asymmetry
@@ -50,6 +52,8 @@
 
 **Impact:** Minor visual jank; pixel-peeping priority.
 
+**[FIXED]** Added `line-height: 1`, `display: flex`, and `align-items: center` to `#top-bar h1` in CSS for perfect vertical centering.
+
 ---
 
 ### 3. 🟢 LOW: Tablet Dock Button Spacing
@@ -59,6 +63,8 @@
 **Observation:** The spacing between the 'Reset View' and 'Toggle Trails' icons appears to be 1px wider than the spacing between other icons in the dock.
 
 **Impact:** Inconsistent rhythm in control group.
+
+**[FIXED]** Changed `.dock-group` gap from `var(--space-lg)` to `var(--space-md)` for consistent, uniform spacing between all buttons.
 
 ---
 

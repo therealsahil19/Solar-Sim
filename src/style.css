@@ -650,6 +650,10 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     font-size: var(--text-xl);
     font-weight: 700;
     letter-spacing: -0.02em;
+    /* Visual Bug Fix: Ensure perfect vertical centering */
+    line-height: 1;
+    display: flex;
+    align-items: center;
     background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-text-tertiary) 100%);
     -webkit-background-clip: text;
     background-clip: text;
@@ -1084,7 +1088,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     padding: var(--space-xs) var(--space-xl);
     display: flex;
     align-items: center;
-    gap: var(--space-lg);
+    /* Visual Bug Fix: Use explicit gap for consistent spacing */
+    gap: var(--space-md);
     height: var(--layout-dock-height);
     border-radius: var(--radius-full);
     background: var(--color-surface-glass);

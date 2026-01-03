@@ -12,153 +12,153 @@
         - button "Controls & Help" [ref=e9] [cursor=pointer]: "?"
     - complementary [ref=e10]:
       - generic [ref=e11]:
-        - heading [level=2] [ref=e12]: Planets
-        - button [ref=e13] [cursor=pointer]: ✕
-      - searchbox [ref=e14]
+        - heading "Planets" [level=2] [ref=e12]
+        - button "Close Navigation" [ref=e13] [cursor=pointer]: ✕
+      - searchbox "Search Planets" [active] [ref=e14]
       - tree [ref=e15]:
         - group [ref=e16]:
-          - treeitem [ref=e17]:
-            - button [ref=e18] [cursor=pointer]:
+          - treeitem "Sun" [ref=e17]:
+            - button "☀️ Sun Star" [ref=e18] [cursor=pointer]:
               - generic [ref=e19]: ☀️ Sun
               - generic [ref=e20]: Star
         - group [ref=e21]:
-          - treeitem [ref=e22]:
-            - button [ref=e23] [cursor=pointer]:
+          - treeitem "Mercury" [ref=e22]:
+            - button "🪐 Mercury Planet" [ref=e23] [cursor=pointer]:
               - generic [ref=e24]: 🪐 Mercury
               - generic [ref=e25]: Planet
-          - treeitem [ref=e26]:
-            - button [ref=e27] [cursor=pointer]:
+          - treeitem "Venus" [ref=e26]:
+            - button "🪐 Venus Planet" [ref=e27] [cursor=pointer]:
               - generic [ref=e28]: 🪐 Venus
               - generic [ref=e29]: Planet
-          - treeitem [ref=e30]:
-            - button [ref=e31] [cursor=pointer]:
+          - treeitem "Earth" [ref=e30]:
+            - button "🪐 Earth Planet" [ref=e31] [cursor=pointer]:
               - generic [ref=e32]: 🪐 Earth
               - generic [ref=e33]: Planet
             - group [ref=e35]:
-              - treeitem [ref=e36]:
-                - button [ref=e37] [cursor=pointer]:
+              - treeitem "Moon" [ref=e36]:
+                - button "🌑 Moon Moon" [ref=e37] [cursor=pointer]:
                   - generic [ref=e38]: 🌑 Moon
                   - generic [ref=e39]: Moon
-          - treeitem [ref=e40]:
-            - button [ref=e41] [cursor=pointer]:
+          - treeitem "Mars" [ref=e40]:
+            - button "🪐 Mars Planet" [ref=e41] [cursor=pointer]:
               - generic [ref=e42]: 🪐 Mars
               - generic [ref=e43]: Planet
             - group [ref=e45]:
-              - treeitem [ref=e46]:
-                - button [ref=e47] [cursor=pointer]:
+              - treeitem "Phobos" [ref=e46]:
+                - button "🌑 Phobos Moon" [ref=e47] [cursor=pointer]:
                   - generic [ref=e48]: 🌑 Phobos
                   - generic [ref=e49]: Moon
-              - treeitem [ref=e50]:
-                - button [ref=e51] [cursor=pointer]:
+              - treeitem "Deimos" [ref=e50]:
+                - button "🌑 Deimos Moon" [ref=e51] [cursor=pointer]:
                   - generic [ref=e52]: 🌑 Deimos
                   - generic [ref=e53]: Moon
-          - treeitem [ref=e54]:
-            - button [ref=e55] [cursor=pointer]:
+          - treeitem "Jupiter" [ref=e54]:
+            - button "🪐 Jupiter Planet" [ref=e55] [cursor=pointer]:
               - generic [ref=e56]: 🪐 Jupiter
               - generic [ref=e57]: Planet
             - group [ref=e59]:
-              - treeitem [ref=e60]:
-                - button [ref=e61] [cursor=pointer]:
+              - treeitem "Io" [ref=e60]:
+                - button "🌑 Io Moon" [ref=e61] [cursor=pointer]:
                   - generic [ref=e62]: 🌑 Io
                   - generic [ref=e63]: Moon
-              - treeitem [ref=e64]:
-                - button [ref=e65] [cursor=pointer]:
+              - treeitem "Europa" [ref=e64]:
+                - button "🌑 Europa Moon" [ref=e65] [cursor=pointer]:
                   - generic [ref=e66]: 🌑 Europa
                   - generic [ref=e67]: Moon
-              - treeitem [ref=e68]:
-                - button [ref=e69] [cursor=pointer]:
+              - treeitem "Ganymede" [ref=e68]:
+                - button "🌑 Ganymede Moon" [ref=e69] [cursor=pointer]:
                   - generic [ref=e70]: 🌑 Ganymede
                   - generic [ref=e71]: Moon
-              - treeitem [ref=e72]:
-                - button [ref=e73] [cursor=pointer]:
+              - treeitem "Callisto" [ref=e72]:
+                - button "🌑 Callisto Moon" [ref=e73] [cursor=pointer]:
                   - generic [ref=e74]: 🌑 Callisto
                   - generic [ref=e75]: Moon
-          - treeitem [ref=e76]:
-            - button [ref=e77] [cursor=pointer]:
+          - treeitem "Saturn" [ref=e76]:
+            - button "🪐 Saturn Planet" [ref=e77] [cursor=pointer]:
               - generic [ref=e78]: 🪐 Saturn
               - generic [ref=e79]: Planet
             - group [ref=e81]:
-              - treeitem [ref=e82]:
-                - button [ref=e83] [cursor=pointer]:
+              - treeitem "Enceladus" [ref=e82]:
+                - button "🌑 Enceladus Moon" [ref=e83] [cursor=pointer]:
                   - generic [ref=e84]: 🌑 Enceladus
                   - generic [ref=e85]: Moon
-              - treeitem [ref=e86]:
-                - button [ref=e87] [cursor=pointer]:
+              - treeitem "Dione" [ref=e86]:
+                - button "🌑 Dione Moon" [ref=e87] [cursor=pointer]:
                   - generic [ref=e88]: 🌑 Dione
                   - generic [ref=e89]: Moon
-              - treeitem [ref=e90]:
-                - button [ref=e91] [cursor=pointer]:
+              - treeitem "Rhea" [ref=e90]:
+                - button "🌑 Rhea Moon" [ref=e91] [cursor=pointer]:
                   - generic [ref=e92]: 🌑 Rhea
                   - generic [ref=e93]: Moon
-              - treeitem [ref=e94]:
-                - button [ref=e95] [cursor=pointer]:
+              - treeitem "Titan" [ref=e94]:
+                - button "🌑 Titan Moon" [ref=e95] [cursor=pointer]:
                   - generic [ref=e96]: 🌑 Titan
                   - generic [ref=e97]: Moon
-          - treeitem [ref=e98]:
-            - button [ref=e99] [cursor=pointer]:
+          - treeitem "Uranus" [ref=e98]:
+            - button "🪐 Uranus Planet" [ref=e99] [cursor=pointer]:
               - generic [ref=e100]: 🪐 Uranus
               - generic [ref=e101]: Planet
-          - treeitem [ref=e102]:
-            - button [ref=e103] [cursor=pointer]:
+          - treeitem "Neptune" [ref=e102]:
+            - button "🪐 Neptune Planet" [ref=e103] [cursor=pointer]:
               - generic [ref=e104]: 🪐 Neptune
               - generic [ref=e105]: Planet
-          - treeitem [ref=e106]:
-            - button [ref=e107] [cursor=pointer]:
+          - treeitem "Pluto" [ref=e106]:
+            - button "🌑 Pluto Dwarf Planet" [ref=e107] [cursor=pointer]:
               - generic [ref=e108]: 🌑 Pluto
               - generic [ref=e109]: Dwarf Planet
-          - treeitem [ref=e110]:
-            - button [ref=e111] [cursor=pointer]:
+          - treeitem "Asteroid Belt" [ref=e110]:
+            - button "🌑 Asteroid Belt Belt" [ref=e111] [cursor=pointer]:
               - generic [ref=e112]: 🌑 Asteroid Belt
               - generic [ref=e113]: Belt
-          - treeitem [ref=e114]:
-            - button [ref=e115] [cursor=pointer]:
+          - treeitem "Kuiper Belt" [ref=e114]:
+            - button "🌑 Kuiper Belt Belt" [ref=e115] [cursor=pointer]:
               - generic [ref=e116]: 🌑 Kuiper Belt
               - generic [ref=e117]: Belt
-          - treeitem [ref=e118]:
-            - button [ref=e119] [cursor=pointer]:
+          - treeitem "Oort Cloud" [ref=e118]:
+            - button "🌑 Oort Cloud Belt" [ref=e119] [cursor=pointer]:
               - generic [ref=e120]: 🌑 Oort Cloud
               - generic [ref=e121]: Belt
-    - complementary "Settings" [ref=e122]:
+    - complementary [ref=e122]:
       - generic [ref=e123]:
-        - heading "Settings" [level=2] [ref=e124]
-        - button "Close Settings" [ref=e125] [cursor=pointer]: ✕
+        - heading [level=2] [ref=e124]: Settings
+        - button [ref=e125] [cursor=pointer]: ✕
       - generic [ref=e126]:
         - generic [ref=e127]:
-          - heading "Visual" [level=3] [ref=e128]
+          - heading [level=3] [ref=e128]: Visual
           - generic [ref=e129] [cursor=pointer]:
             - generic [ref=e130]: Textures (T)
-            - checkbox "Textures (T)" [checked] [ref=e131]
+            - checkbox [checked] [ref=e131]
           - generic [ref=e132] [cursor=pointer]:
             - generic [ref=e133]: Labels (L)
-            - checkbox "Labels (L)" [checked] [ref=e134]
+            - checkbox [checked] [ref=e134]
           - generic [ref=e135] [cursor=pointer]:
             - generic [ref=e136]: Orbits (O)
-            - checkbox "Orbits (O)" [checked] [ref=e137]
+            - checkbox [checked] [ref=e137]
           - generic [ref=e138] [cursor=pointer]:
             - generic [ref=e139]: Asteroid Belt
-            - checkbox "Asteroid Belt" [active] [ref=e140]
+            - checkbox [checked] [ref=e140]
           - generic [ref=e141] [cursor=pointer]:
             - generic [ref=e142]: Kuiper Belt
-            - checkbox "Kuiper Belt" [checked] [ref=e143]
+            - checkbox [checked] [ref=e143]
           - generic [ref=e144] [cursor=pointer]:
             - generic [ref=e145]: Oort Cloud
-            - checkbox "Oort Cloud" [checked] [ref=e146]
+            - checkbox [checked] [ref=e146]
         - generic [ref=e147]:
-          - heading "Theme" [level=3] [ref=e148]
+          - heading [level=3] [ref=e148]: Theme
           - generic [ref=e149]:
-            - button "Default" [pressed] [ref=e150] [cursor=pointer]:
+            - button [pressed] [ref=e150] [cursor=pointer]:
               - generic [ref=e152]: Default
-            - button "Blueprint" [ref=e153] [cursor=pointer]:
+            - button [ref=e153] [cursor=pointer]:
               - generic [ref=e155]: Blueprint
-            - button "OLED" [ref=e156] [cursor=pointer]:
+            - button [ref=e156] [cursor=pointer]:
               - generic [ref=e158]: OLED
         - generic [ref=e159]:
-          - heading "Simulation" [level=3] [ref=e160]
+          - heading [level=3] [ref=e160]: Simulation
           - generic [ref=e161]:
             - generic [ref=e162]:
               - generic [ref=e163]: Speed
               - generic [ref=e164]: 1.0x
-            - slider "Speed" [ref=e165] [cursor=pointer]: "1"
+            - slider [ref=e165] [cursor=pointer]: "1"
     - generic:
       - generic [ref=e166]:
         - button "Pause Simulation" [ref=e167] [cursor=pointer]:
@@ -180,7 +180,7 @@
         - button "Toggle Orbits" [pressed] [ref=e188] [cursor=pointer]:
           - img [ref=e189]
   - status
-  - status [ref=e192]: Settings panel opened
+  - status [ref=e192]
   - generic:
     - text: Solar-Sim · Built with Three.js ·
     - link "GitHub" [ref=e193] [cursor=pointer]:

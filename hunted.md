@@ -49,11 +49,11 @@
 | 045| [FIXED] | 🟢 LOW   | `src/procedural.js:30-33` | Memory Leak: `clearMaterialCache` never called |
 | 046| [FIXED] | 🟢 LOW   | `src/instancing.js:76-78` | Silent Failure: `group.mesh.dispose()` called on non-existent method |
 | 047| [FIXED] | 🟢 LOW   | `src/benchmark.js:75` | Logic Flaw: No return value in final else branch |
-| 048| [OPEN] | 🔴 HIGH  | `src/main.js:323` | Overlapping Animation Loops on Re-init |
-| 049| [OPEN] | 🟡 MED   | `src/components/SettingsPanel.js:332` | Incomplete Event Listener Cleanup |
-| 050| [OPEN] | 🟡 MED   | `src/main.js:740` | Missing Window Resize Listener Cleanup |
-| 051| [OPEN] | 🟡 MED   | `src/main.js:115` | Redundant CSS2DRenderer Creation |
-| 052| [OPEN] | 🟡 MED   | `src/main.js:107` | Redundant WebGLRenderer Creation |
+| 048| [FIXED] | 🔴 HIGH  | `src/main.js:323` | Overlapping Animation Loops on Re-init |
+| 049| [FIXED] | 🟡 MED   | `src/components/SettingsPanel.js:332` | Incomplete Event Listener Cleanup |
+| 050| [FIXED] | 🟡 MED   | `src/main.js:740` | Missing Window Resize Listener Cleanup |
+| 051| [FIXED] | 🟡 MED   | `src/main.js:115` | Redundant CSS2DRenderer Creation |
+| 052| [FIXED] | 🟡 MED   | `src/main.js:107` | Redundant WebGLRenderer Creation |
 
 
 ## Details
@@ -436,4 +436,20 @@ renderer.domElement.setAttribute('role', 'application');
 renderer.domElement.setAttribute('aria-label', '3D Solar System Simulation');
 document.body.appendChild(renderer.domElement);
 ```
+
+### 048 - Overlapping Animation Loops on Re-init
+[FIXED] Added `animationFrameId` tracking at module level. `animate()` now stores the RAF ID. Before starting a new animation loop in `init()`, any existing loop is cancelled via `cancelAnimationFrame()`.
+
+### 049 - Incomplete Event Listener Cleanup
+[FIXED] Refactored `SettingsPanel.bindEvents()` to use `AbortController`. All event listeners now receive `{ signal }` options. `dispose()` calls `this._abortController.abort()` for bulk cleanup.
+
+### 050 - Missing Window Resize Listener Cleanup
+[FIXED] Exported new `dispose()` function from `main.js` that removes the resize listener and cleans up renderers, trail manager, and instance registry.
+
+### 051 - Redundant CSS2DRenderer Creation
+[FIXED] Added conditional check `if (!labelRenderer)` before creating new renderer. Existing renderer is reused and only resized.
+
+### 052 - Redundant WebGLRenderer Creation
+[FIXED] Added conditional check `if (!renderer)` before creating new WebGL context. Existing renderer is reused and only resized.
+
 

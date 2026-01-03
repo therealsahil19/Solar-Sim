@@ -1,13 +1,13 @@
 # Page snapshot
 
 ```yaml
-- generic [ref=e1]:
+- generic [active] [ref=e1]:
   - generic:
     - navigation [ref=e2]:
       - button "Open Navigation" [ref=e3] [cursor=pointer]: ☰
       - heading "Solar-Sim" [level=1] [ref=e4]
       - generic [ref=e5]:
-        - button "Open Settings" [active] [ref=e6] [cursor=pointer]:
+        - button "Open Settings" [ref=e6] [cursor=pointer]:
           - img [ref=e7]
         - button "Controls & Help" [ref=e9] [cursor=pointer]: "?"
     - complementary [ref=e10]:
@@ -180,12 +180,46 @@
         - button "Toggle Orbits" [pressed] [ref=e188] [cursor=pointer]:
           - img [ref=e189]
   - status
-  - status [ref=e192]: Settings panel closed
+  - status [ref=e192]
+  - dialog [ref=e193]:
+    - generic [ref=e194]:
+      - button "Close dialog" [ref=e195] [cursor=pointer]: ✕
+      - heading "Controls & Shortcuts" [level=2] [ref=e196]
+      - generic [ref=e197]:
+        - generic [ref=e198]:
+          - text: 🖱️
+          - generic [ref=e199]:
+            - strong [ref=e200]: Drag
+            - text: to Rotate
+        - generic [ref=e201]:
+          - text: 🖱️
+          - generic [ref=e202]:
+            - strong [ref=e203]: Scroll
+            - text: to Zoom
+        - generic [ref=e204]:
+          - text: 🖱️
+          - generic [ref=e205]:
+            - strong [ref=e206]: Click
+            - text: to Select
+        - generic [ref=e207]:
+          - text: 🖱️
+          - generic [ref=e208]:
+            - strong [ref=e209]: Double Click
+            - text: to Focus
+        - generic [ref=e210]:
+          - generic [ref=e211]: Cmd+K
+          - generic [ref=e212]: Command Palette
+        - generic [ref=e213]:
+          - generic [ref=e214]: Space
+          - generic [ref=e215]: Pause / Play
+        - generic [ref=e216]:
+          - generic [ref=e217]: C
+          - generic [ref=e218]: Ship Camera
   - generic:
     - text: Solar-Sim · Built with Three.js ·
-    - link "GitHub" [ref=e193] [cursor=pointer]:
+    - link "GitHub" [ref=e219] [cursor=pointer]:
       - /url: https://github.com/therealsahil19/Solar-Sim
-  - application "3D Solar System Simulation" [ref=e194]
+  - application "3D Solar System Simulation" [ref=e220]
   - generic:
     - generic: Mercury
     - generic: Venus

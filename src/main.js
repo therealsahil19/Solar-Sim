@@ -69,6 +69,9 @@ const belts = [];
 let instanceRegistry = null;
 let trailManager = null;
 
+// Bug 048 Fix: Track animation frame ID to prevent overlapping loops
+let animationFrameId = null;
+
 window.scene = null;
 window.playerShip = null;
 window.controls = null;
@@ -104,20 +107,32 @@ export async function init() {
     // Earth is at ~43 units. Sun is at 0.
     camera.position.set(0, 60, 100);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
-    renderer.domElement.setAttribute('role', 'application');
-    renderer.domElement.setAttribute('aria-label', '3D Solar System Simulation');
-    document.body.appendChild(renderer.domElement);
+    // Bug 048 Fix: Cancel any existing animation loop before starting fresh
+    if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
 
-    labelRenderer = new CSS2DRenderer();
+    // Bug 052 Fix: Reuse existing WebGLRenderer if it exists
+    if (!renderer) {
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFShadowMap;
+        renderer.domElement.setAttribute('role', 'application');
+        renderer.domElement.setAttribute('aria-label', '3D Solar System Simulation');
+        document.body.appendChild(renderer.domElement);
+    }
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Bug 051 Fix: Reuse existing CSS2DRenderer if it exists
+    if (!labelRenderer) {
+        labelRenderer = new CSS2DRenderer();
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+    }
     labelRenderer.setSize(window.innerWidth, window.innerHeight);
-    labelRenderer.domElement.style.position = 'absolute';
-    labelRenderer.domElement.style.top = '0px';
-    labelRenderer.domElement.style.pointerEvents = 'none';
-    document.body.appendChild(labelRenderer.domElement);
 
     // 2. Lighting
     const pointLight = new THREE.PointLight(0xffffff, 1.5, 0, 0);
@@ -544,7 +559,8 @@ const _renderPos = new THREE.Vector3();
  * Handles Physics, Animation, and Rendering.
  */
 function animate() {
-    requestAnimationFrame(animate);
+    // Bug 048 Fix: Store animation frame ID to allow cancellation
+    animationFrameId = requestAnimationFrame(animate);
 
     const now = performance.now();
     const rawDt = (now - lastFrameTime) / 1000;
@@ -681,6 +697,9 @@ function animate() {
             const edgeMargin = 40; // px from edge to start fading
             const fadeZone = 60;   // px fade transition zone
 
+            // Collect visible label rects for collision detection (Visual Bug Fix: Mobile label overlap)
+            const visibleLabels = [];
+
             allLabels.forEach(label => {
                 // Moon visibility logic
                 if (label.userData.isMoon) {
@@ -715,8 +734,34 @@ function animate() {
                     }
 
                     label.element.style.opacity = opacity;
+
+                    // Visual Bug Fix: Label collision detection for mobile
+                    // Only check non-moon labels on smaller screens
+                    if (opacity > 0 && !label.userData.isMoon && viewportWidth < 768) {
+                        visibleLabels.push({ label, rect });
+                    }
                 }
             });
+
+            // Visual Bug Fix: Hide overlapping labels on mobile (Earth/Venus overlap)
+            if (viewportWidth < 768) {
+                for (let i = 0; i < visibleLabels.length; i++) {
+                    for (let j = i + 1; j < visibleLabels.length; j++) {
+                        const a = visibleLabels[i].rect;
+                        const b = visibleLabels[j].rect;
+
+                        // Check for overlap
+                        const overlap = !(a.right < b.left || a.left > b.right ||
+                            a.bottom < b.top || a.top > b.bottom);
+
+                        if (overlap) {
+                            // Hide the label with lower z-position (further from camera)
+                            // For simplicity, hide the second one in the array
+                            visibleLabels[j].label.element.style.opacity = 0;
+                        }
+                    }
+                }
+            }
 
             labelRenderer.render(scene, camera);
             if (!showLabels) labelsNeedUpdate = false;
@@ -738,6 +783,32 @@ const onWindowResize = () => {
     }
 };
 window.addEventListener('resize', onWindowResize);
+
+// Bug 050 Fix: Export dispose function for cleanup
+export function dispose() {
+    if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    window.removeEventListener('resize', onWindowResize);
+    if (renderer) {
+        renderer.dispose();
+        renderer.domElement.remove();
+        renderer = null;
+    }
+    if (labelRenderer) {
+        labelRenderer.domElement.remove();
+        labelRenderer = null;
+    }
+    if (trailManager) {
+        trailManager.dispose();
+        trailManager = null;
+    }
+    if (instanceRegistry) {
+        instanceRegistry.dispose();
+        instanceRegistry = null;
+    }
+}
 
 if (!window.__SKIP_INIT__) {
     init().catch(err => {
