@@ -113,15 +113,22 @@ export function setupInteraction(context, callbacks) {
     function updateSelectionUI(mesh) {
         if (!mesh) return;
 
-        // Update Toast (Legacy lightweight feedback, keep for "Palette" visual)
         const d = mesh.userData;
-        let text = `Selected: ${d.name}`;
-        if (d.type && d.size !== undefined) {
-            text += ` (${d.type}) – ${d.size.toFixed(2)} × Earth size`;
+        let toastText = `Selected: ${d.name}`;
+
+        if (d.type) {
+            const typeLabel = d.type.charAt(0).toUpperCase() + d.type.slice(1);
+            if (d.size !== undefined && d.type !== 'Star') {
+                const sizeType = d.type === 'Moon' ? 'Moon' : 'Earth';
+                toastText += ` (${typeLabel}) – ${d.size.toFixed(2)} × ${sizeType} size`;
+            } else {
+                toastText += ` (${typeLabel})`;
+            }
         }
+
         const toast = document.getElementById('toast');
         if (toast) {
-            toast.textContent = text;
+            toast.textContent = toastText;
             toast.classList.add('visible');
             if (toast.timeout) clearTimeout(toast.timeout);
             toast.timeout = setTimeout(() => toast.classList.remove('visible'), 2000);

@@ -35,3 +35,15 @@ This creates a fragmented UX where power users discover features accidentally.
 - Audio settings (ambient space music)
 - Accessibility preferences (reduced motion, high contrast)
 - Performance profiles (quality presets)
+## 2026-01-03 - Jupiter's Moons & UI Refinement
+
+**Context:** The simulation was missing Jupiter's iconic Galilean moons, leaving a significant gap in the accuracy of the Jovian system. Additionally, the selection feedback was semi-hardcoded, comparing all object sizes to "Earth size" regardless of type (e.g., calling a tiny moon "0.01x Earth size" is less intuitive than comparing it to our Moon).
+
+**Tech Stack:**
+- **Data Layer:** Updated `system.json` with Io, Europa, Ganymede, and Callisto.
+- **UI Layer:** Refactored `updateSelectionUI` in `src/input.js` for dynamic context-aware labels.
+
+**Next Steps:** This unlocks:
+- Specialized rendering for volcanic Io (glow effects).
+- Subsurface exploration data for Europa.
+- Improved collision/physics detection for dense satellite clusters.

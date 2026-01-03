@@ -2,31 +2,75 @@
     {
         "name": "Mercury",
         "type": "Planet",
-        "physics": { "a": 0.387, "e": 0.2056, "i": 7.00, "omega": 29.12, "Omega": 48.33, "M0": 174.79 },
-        "visual": { "size": 0.38, "color": "#AAAAAA", "texture": "textures/mercury.jpg" },
+        "physics": {
+            "a": 0.387,
+            "e": 0.2056,
+            "i": 7.00,
+            "omega": 29.12,
+            "Omega": 48.33,
+            "M0": 174.79
+        },
+        "visual": {
+            "size": 0.38,
+            "color": "#AAAAAA",
+            "texture": "textures/mercury.jpg"
+        },
         "description": "The smallest planet in our solar system and closest to the Sun.",
         "moons": []
     },
     {
         "name": "Venus",
         "type": "Planet",
-        "physics": { "a": 0.723, "e": 0.0068, "i": 3.39, "omega": 54.88, "Omega": 76.68, "M0": 50.11 },
-        "visual": { "size": 0.95, "color": "#E3BB76", "texture": "textures/venus.jpg" },
+        "physics": {
+            "a": 0.723,
+            "e": 0.0068,
+            "i": 3.39,
+            "omega": 54.88,
+            "Omega": 76.68,
+            "M0": 50.11
+        },
+        "visual": {
+            "size": 0.95,
+            "color": "#E3BB76",
+            "texture": "textures/venus.jpg"
+        },
         "description": "Second planet from the Sun, named after the Roman goddess of love and beauty.",
         "moons": []
     },
     {
         "name": "Earth",
         "type": "Planet",
-        "physics": { "a": 1.000, "e": 0.0167, "i": 0.00, "omega": 288.06, "Omega": 174.87, "M0": 358.61 },
-        "visual": { "size": 1.0, "color": "#2233FF", "texture": "textures/earth.jpg" },
+        "physics": {
+            "a": 1.000,
+            "e": 0.0167,
+            "i": 0.00,
+            "omega": 288.06,
+            "Omega": 174.87,
+            "M0": 358.61
+        },
+        "visual": {
+            "size": 1.0,
+            "color": "#2233FF",
+            "texture": "textures/earth.jpg"
+        },
         "description": "Our home planet, the third from the Sun and the only place known to inhabit life.",
         "moons": [
             {
                 "name": "Moon",
                 "type": "Moon",
-                "physics": { "a": 0.00257, "e": 0.0549, "i": 5.14, "omega": 318, "Omega": 125, "M0": 135 },
-                "visual": { "size": 0.27, "color": "#888888", "texture": "textures/moon.jpg" },
+                "physics": {
+                    "a": 0.00257,
+                    "e": 0.0549,
+                    "i": 5.14,
+                    "omega": 318,
+                    "Omega": 125,
+                    "M0": 135
+                },
+                "visual": {
+                    "size": 0.27,
+                    "color": "#888888",
+                    "texture": "textures/moon.jpg"
+                },
                 "description": "Earth's only natural satellite."
             }
         ]
@@ -34,22 +78,53 @@
     {
         "name": "Mars",
         "type": "Planet",
-        "physics": { "a": 1.524, "e": 0.0934, "i": 1.85, "omega": 286.50, "Omega": 49.57, "M0": 19.41 },
-        "visual": { "size": 0.53, "color": "#FF4500", "texture": "textures/mars.jpg" },
+        "physics": {
+            "a": 1.524,
+            "e": 0.0934,
+            "i": 1.85,
+            "omega": 286.50,
+            "Omega": 49.57,
+            "M0": 19.41
+        },
+        "visual": {
+            "size": 0.53,
+            "color": "#FF4500",
+            "texture": "textures/mars.jpg"
+        },
         "description": "The dusty, red fourth planet, home to the largest volcano in the solar system.",
         "moons": [
             {
                 "name": "Phobos",
                 "type": "Moon",
-                "physics": { "a": 0.00006, "e": 0.0151, "i": 1.09, "omega": 0, "Omega": 0, "M0": 0 },
-                "visual": { "size": 0.1, "color": "#555555" },
+                "physics": {
+                    "a": 0.00006,
+                    "e": 0.0151,
+                    "i": 1.09,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.1,
+                    "color": "#555555"
+                },
                 "description": "The larger and inner of the two moons of Mars."
             },
             {
                 "name": "Deimos",
                 "type": "Moon",
-                "physics": { "a": 0.00016, "e": 0.0002, "i": 0.93, "omega": 0, "Omega": 0, "M0": 0 },
-                "visual": { "size": 0.08, "color": "#555555" },
+                "physics": {
+                    "a": 0.00016,
+                    "e": 0.0002,
+                    "i": 0.93,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.08,
+                    "color": "#555555"
+                },
                 "description": "The smaller and outer of the two moons of Mars."
             }
         ]
@@ -57,40 +132,170 @@
     {
         "name": "Jupiter",
         "type": "Planet",
-        "physics": { "a": 5.203, "e": 0.0489, "i": 1.30, "omega": 273.86, "Omega": 100.55, "M0": 20.02 },
-        "visual": { "size": 3.5, "color": "#D8CA9D", "texture": "textures/jupiter.jpg" },
+        "physics": {
+            "a": 5.203,
+            "e": 0.0489,
+            "i": 1.30,
+            "omega": 273.86,
+            "Omega": 100.55,
+            "M0": 20.02
+        },
+        "visual": {
+            "size": 3.5,
+            "color": "#D8CA9D",
+            "texture": "textures/jupiter.jpg"
+        },
         "description": "The largest planet in the solar system, a gas giant with a Great Red Spot.",
-        "moons": []
+        "moons": [
+            {
+                "name": "Io",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00282,
+                    "e": 0.0041,
+                    "i": 0.05,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.28,
+                    "color": "#F3E5AB",
+                    "texture": "textures/io.jpg"
+                },
+                "description": "The most volcanically active body in the solar system."
+            },
+            {
+                "name": "Europa",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00449,
+                    "e": 0.009,
+                    "i": 0.47,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.24,
+                    "color": "#E5E4E2",
+                    "texture": "textures/europa.jpg"
+                },
+                "description": "An icy moon with a subsurface ocean that may harbor life."
+            },
+            {
+                "name": "Ganymede",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00715,
+                    "e": 0.0013,
+                    "i": 0.20,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.41,
+                    "color": "#9F8170",
+                    "texture": "textures/ganymede.jpg"
+                },
+                "description": "The largest moon in the solar system, even bigger than Mercury."
+            },
+            {
+                "name": "Callisto",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.01258,
+                    "e": 0.0074,
+                    "i": 0.20,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.37,
+                    "color": "#4B3621",
+                    "texture": "textures/callisto.jpg"
+                },
+                "description": "A heavily cratered moon, one of the oldest surfaces in the solar system."
+            }
+        ]
     },
     {
         "name": "Saturn",
         "type": "Planet",
-        "physics": { "a": 9.537, "e": 0.0565, "i": 2.49, "omega": 339.39, "Omega": 113.71, "M0": 317.02 },
-        "visual": { "size": 3.0, "color": "#D2C0A5", "texture": "textures/saturn.jpg", "hasRing": true },
+        "physics": {
+            "a": 9.537,
+            "e": 0.0565,
+            "i": 2.49,
+            "omega": 339.39,
+            "Omega": 113.71,
+            "M0": 317.02
+        },
+        "visual": {
+            "size": 3.0,
+            "color": "#D2C0A5",
+            "texture": "textures/saturn.jpg",
+            "hasRing": true
+        },
         "description": "Adorned with a complex system of icy rings, Saturn is unique in our solar system.",
         "moons": []
     },
     {
         "name": "Uranus",
         "type": "Planet",
-        "physics": { "a": 19.191, "e": 0.0472, "i": 0.77, "omega": 96.99, "Omega": 74.00, "M0": 142.23 },
-        "visual": { "size": 2.0, "color": "#93B8BE", "texture": "textures/uranus.jpg", "hasRing": true },
+        "physics": {
+            "a": 19.191,
+            "e": 0.0472,
+            "i": 0.77,
+            "omega": 96.99,
+            "Omega": 74.00,
+            "M0": 142.23
+        },
+        "visual": {
+            "size": 2.0,
+            "color": "#93B8BE",
+            "texture": "textures/uranus.jpg",
+            "hasRing": true
+        },
         "description": "The seventh planet from the Sun, rotating on its side.",
         "moons": []
     },
     {
         "name": "Neptune",
         "type": "Planet",
-        "physics": { "a": 30.070, "e": 0.0086, "i": 1.77, "omega": 273.18, "Omega": 131.78, "M0": 256.22 },
-        "visual": { "size": 1.9, "color": "#4B70DD", "texture": "textures/neptune.jpg" },
+        "physics": {
+            "a": 30.070,
+            "e": 0.0086,
+            "i": 1.77,
+            "omega": 273.18,
+            "Omega": 131.78,
+            "M0": 256.22
+        },
+        "visual": {
+            "size": 1.9,
+            "color": "#4B70DD",
+            "texture": "textures/neptune.jpg"
+        },
         "description": "The eighth and farthest-known Solar planet from the Sun, dark, cold, and whipped by supersonic winds.",
         "moons": []
     },
     {
         "name": "Pluto",
         "type": "Dwarf Planet",
-        "physics": { "a": 39.480, "e": 0.2488, "i": 17.16, "omega": 113.83, "Omega": 110.30, "M0": 14.53 },
-        "visual": { "size": 0.3, "color": "#E3C9A6", "texture": "textures/pluto.jpg" },
+        "physics": {
+            "a": 39.480,
+            "e": 0.2488,
+            "i": 17.16,
+            "omega": 113.83,
+            "Omega": 110.30,
+            "M0": 14.53
+        },
+        "visual": {
+            "size": 0.3,
+            "color": "#E3C9A6",
+            "texture": "textures/pluto.jpg"
+        },
         "description": "A dwarf planet in the Kuiper belt, known for its high eccentricity and inclination.",
         "moons": []
     }
