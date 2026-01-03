@@ -79,15 +79,14 @@
 - **Gap:** The `CONTRIBUTING.md` could be expanded with component architecture diagrams (Mermaid) to help new contributors understand UI component relationships.
 
 
-### 2026-01-03 - The Component Chronicles
-- **Focus:** `src/components/*.js`, `CONTRIBUTING.md`.
+### 2026-01-03 - The State of Documentation
+- **Focus:** `src/managers/SettingsManager.js`, `src/managers/ThemeManager.js`, `CONTRIBUTING.md`, `README.md`.
 - **Standard:**
-    - "Component Architecture": Decoupled UI components must define their "Callbacks" interface clearly in JSDoc.
-    - "Data Schema": Methods accepting raw objects (like `update(mesh)`) must define the expected schema usage.
+    - "Manager Standard": State managers must document their Subscription/Observer interface and persistence logic (`localStorage`).
+    - "Visual Architecture": Critical architectural boundaries must be visualized with Mermaid diagrams in onboarding docs.
 - **Changes:**
-    - **NavigationSidebar**: Explicitly defined `config` object and callback signatures.
-    - **InfoPanel**: Documented `userData` schema requirements for the `update` method.
-    - **CommandPalette**: Listed all 9 callbacks in the constructor JSDoc.
-    - **Modal**: Added lifecycle JSDoc (`onOpen`, `onClose`) and `dispose` cleanup.
-    - **CONTRIBUTING.md**: Added "Component Architecture" section with a Mermaid diagram and Responsibility table.
-- **Gap:** `src/managers/ThemeManager.js` is still relatively lightly documented compared to the new standard for Components.
+    - **SettingsManager**: Upgraded to full JSDoc with `@typedef` for Settings and `@example` for subscriptions. Clarified the merge-on-load logic.
+    - **ThemeManager**: Added class-level JSDoc explaining its role in the decoupled architecture.
+    - **CONTRIBUTING.md**: Added a Mermaid diagram visualizing the interaction between Conductor, Controller, and Managers. Added a "State Management" section.
+    - **README.md**: Updated Project Structure and Architecture sections to include the new managers.
+- **Gap:** Core physics logic in `physics.js` still contains some inline "Thinking aloud" notes from the Debugger role that could be cleaned up into formal JSDoc.

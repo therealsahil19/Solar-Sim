@@ -70,6 +70,45 @@ The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D 
 | **CommandPalette** | "Cmd+K" power menu. | Executes callbacks for global actions (e.g., `onToggleOrbits`). |
 | **Modal** | Accessible `<dialog>` wrapper. | Manages focus trapping and lifecycle (`open`/`close`). |
 
+### Architecture Visualization
+
+The following diagram illustrates the flow of data and events between the core modules:
+
+```mermaid
+graph TD
+    User([User Interaction]) --> CONTROLLERS["Controllers (input.js)"]
+    
+    subgraph "Logic & State"
+        MANAGERS["Managers (Settings, Theme)"]
+        JSON[(system.json)]
+    end
+    
+    subgraph "Visual Engine"
+        CONDUCTOR["Conductor (main.js)"]
+        FACTORY["Factory (procedural.js)"]
+        OPTIMIZERS["Optimizers (instancing, trails)"]
+    end
+    
+    subgraph "User Interface"
+        UI_COMP["UI Components (Sidebar, Palette)"]
+    end
+    
+    CONTROLLERS -->|Update Preference| MANAGERS
+    CONTROLLERS -->|Raycast/Select| CONDUCTOR
+    MANAGERS -->|Notify Change| UI_COMP
+    MANAGERS -->|Apply Setting| CONDUCTOR
+    JSON -->|Build Scene| FACTORY
+    FACTORY -->|Return Meshes| CONDUCTOR
+    CONDUCTOR -->|Draw| OPTIMIZERS
+    UI_COMP -->|Trigger Action| CONTROLLERS
+```
+
+### State Management
+
+We avoid global state objects. Instead, we use dedicated **Managers** (`src/managers/`) that follow the Observer pattern.
+- **SettingsManager**: The source of truth for user preferences (speed, textures, visibility). Components `subscribe()` to changes.
+- **ThemeManager**: Orchestrates visual themes by updating CSS variables via the `data-theme` attribute.
+
 ---
 
 ## Coding Standards

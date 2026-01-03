@@ -4,19 +4,31 @@
  * Persists the user's choice in localStorage.
  */
 
+/**
+ * ThemeManager maintains the visual aesthetic state of the application.
+ * It coordinates between CSS variable themes and logical states.
+ * 
+ * Architectural Role: Decoupled State Manager.
+ * Dependency: document.documentElement (for data-theme attribute).
+ */
 export class ThemeManager {
     constructor() {
-        // Detect themes from CSS or use a standard set (Default, Blueprint, OLED)
+        /** @type {string[]} Valid theme identifiers matching CSS [data-theme] selectors. */
         this.themes = ['default', 'blueprint', 'oled'];
+
+        /** @type {number} Index of the currently active theme. */
         this.currentThemeIndex = 0;
 
-        // Load initial theme
+        // Load thermal preference from persistent storage
         this.loadPreference();
     }
 
     /**
-     * Sets the application theme by updating the 'data-theme' attribute on the root element.
+     * Sets the application theme by updating the 'data-theme' attribute on <html>.
+     * This triggers CSS variable shifts defined in style.css.
+     * 
      * @param {string} themeName - The name of the theme to set ('default', 'blueprint', 'oled').
+     * @returns {void}
      */
     setTheme(themeName) {
         if (!this.themes.includes(themeName)) return;
@@ -32,9 +44,12 @@ export class ThemeManager {
     }
 
     /**
-     * Cycles to the next available theme in the list.
-     * @returns {string} The name of the new active theme.
-     * @example cycleTheme() // returns 'blueprint'
+     * Cycles to the next available theme in the sequence.
+     * 
+     * @returns {string} The name of the newly activated theme.
+     * @example 
+     * themeManager.cycleTheme(); // 'blueprint'
+     * themeManager.cycleTheme(); // 'oled'
      */
     cycleTheme() {
         this.currentThemeIndex = (this.currentThemeIndex + 1) % this.themes.length;
@@ -44,7 +59,8 @@ export class ThemeManager {
     }
 
     /**
-     * Loads the persisted theme preference from localStorage, or defaults to 'default'.
+     * Initializes theme state from localStorage or defaults to 'default'.
+     * @private
      */
     loadPreference() {
         let stored = null;
@@ -57,14 +73,13 @@ export class ThemeManager {
         if (stored && this.themes.includes(stored)) {
             this.setTheme(stored);
         } else {
-            // Default
             this.setTheme('default');
         }
     }
 
     /**
-     * Gets the current active theme name.
-     * @returns {string} The current theme name.
+     * Returns the name of the current active theme.
+     * @returns {string} One of 'default', 'blueprint', or 'oled'.
      */
     getTheme() {
         return this.themes[this.currentThemeIndex];

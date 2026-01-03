@@ -89,8 +89,9 @@ The project is organized into a modular architecture:
 │   │   ├── InfoPanel.js         # Object details overlay panel
 │   │   ├── Modal.js             # Reusable accessible <dialog> wrapper
 │   │   └── NavigationSidebar.js # Hierarchical planet navigation tree
-│   └── managers/
-│       └── ThemeManager.js      # Visual themes and persistence
+│   ├── managers/
+│   │   ├── SettingsManager.js   # "State" - persists user preferences
+│   │   └── ThemeManager.js      # "State" - handles visual themes
 └── README.md             # This documentation
 ```
 
