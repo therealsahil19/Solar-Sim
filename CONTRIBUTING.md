@@ -69,6 +69,7 @@ The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D 
 | **InfoPanel** | Displays details of the selected object. | Updates via `update(mesh)` method. No internal state. |
 | **CommandPalette** | "Cmd+K" power menu. | Executes callbacks for global actions (e.g., `onToggleOrbits`). |
 | **Modal** | Accessible `<dialog>` wrapper. | Manages focus trapping and lifecycle (`open`/`close`). |
+| **SettingsPanel** | Slide-out preferences menu. | Subscribes to `SettingsManager` and triggers callbacks. |
 
 ### Architecture Visualization
 

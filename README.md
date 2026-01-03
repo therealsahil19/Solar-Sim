@@ -30,6 +30,7 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
     -   **Responsive Design**: The interface (Glassmorphism panels, CSS Grid/Flexbox) adapts gracefully to mobile and desktop screens.
     -   **Toast Notifications**: Quick feedback for actions (e.g., "Textures: OFF", "View Reset").
     -   **On-Screen Controls**: Accessible buttons for camera, textures, pause, and speed.
+    -   **Settings Panel**: A slide-out panel (`comma` key) to manage all simulation preferences in one place (Textures, Labels, Orbits, Themes, Speed).
     -   **Speed Control**: Slider to adjust the time scale of the simulation.
     -   **Onboarding**: Loading screen with progress bar and an initial "Welcome" modal.
 
@@ -88,7 +89,8 @@ The project is organized into a modular architecture:
 │   │   ├── CommandPalette.js    # Searchable command menu (Cmd+K)
 │   │   ├── InfoPanel.js         # Object details overlay panel
 │   │   ├── Modal.js             # Reusable accessible <dialog> wrapper
-│   │   └── NavigationSidebar.js # Hierarchical planet navigation tree
+│   │   ├── NavigationSidebar.js # Hierarchical planet navigation tree
+│   │   └── SettingsPanel.js    # Slide-out simulation preferences panel
 │   ├── managers/
 │   │   ├── SettingsManager.js   # "State" - persists user preferences
 │   │   └── ThemeManager.js      # "State" - handles visual themes
@@ -142,6 +144,11 @@ The project is organized into a modular architecture:
 
 10. **`src/managers/ThemeManager.js`**:
     -   **State Management**: Handles theme switching and persistence via localStorage.
+
+11. **`src/components/SettingsPanel.js`**:
+    -   **Unified UI**: Provides a single interface for all simulation settings.
+    -   **Persistence**: Interfaces with `SettingsManager` to save/load user preferences.
+    -   **Accessibility**: Implements keyboard shortcuts (`,`) and focus management.
 
 ## Configuration (`system.json`)
 
@@ -228,6 +235,7 @@ Open your browser to: `http://localhost:8000`
 | **L** | Toggle Labels (Show/Hide) |
 | **O** | Toggle Orbits & Trails (Show/Hide) |
 | **T** | Toggle Textures (HD / LD) |
+| **,** (Comma) | Toggle Settings Panel |
 | **Esc** | Reset View |
 | **1-9** | Focus on Planet 1-9 |
 

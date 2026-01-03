@@ -13,21 +13,37 @@ import { SettingsManager } from '../managers/SettingsManager.js';
 
 export class SettingsPanel {
     /**
-     * Creates a new SettingsPanel instance.
+     * Creates a new SettingsPanel instance. 
+     * Initializes state, caches DOM elements, and binds events.
      * 
      * @param {Object} config - Configuration object.
-     * @param {Object} config.callbacks - Interaction callbacks.
-     * @param {Function} config.callbacks.onToggleTextures - Called when textures toggle changes.
-     * @param {Function} config.callbacks.onToggleLabels - Called when labels toggle changes.
-     * @param {Function} config.callbacks.onToggleOrbits - Called when orbits toggle changes.
-     * @param {Function} config.callbacks.onChangeTheme - Called with theme name when theme changes.
-     * @param {Function} config.callbacks.onChangeSpeed - Called with speed value when speed changes.
+     * @param {Object} config.callbacks - Interaction callbacks for the simulation controllers.
+     * @param {Function} [config.callbacks.onToggleTextures] - Called when textures toggle changes. `(enabled: boolean) => void`
+     * @param {Function} [config.callbacks.onToggleLabels] - Called when labels toggle changes. `(enabled: boolean) => void`
+     * @param {Function} [config.callbacks.onToggleOrbits] - Called when orbits toggle changes. `(enabled: boolean) => void`
+     * @param {Function} [config.callbacks.onChangeTheme] - Called with theme name when theme changes. `(theme: string) => void`
+     * @param {Function} [config.callbacks.onChangeSpeed] - Called with speed value when speed changes. `(speed: number) => void`
+     * 
+     * @example
+     * const settings = new SettingsPanel({
+     *   callbacks: {
+     *     onToggleTextures: (val) => console.log('Textures:', val),
+     *     onChangeTheme: (theme) => applyTheme(theme)
+     *   }
+     * });
      */
     constructor({ callbacks }) {
-        /** @type {Object} External callbacks */
+        /** 
+         * @type {Object} 
+         * @private
+         */
         this.callbacks = callbacks;
 
-        /** @type {SettingsManager} Settings persistence */
+        /** 
+         * @type {SettingsManager} 
+         * @description Manages persistence of settings in localStorage.
+         * @private
+         */
         this.settingsManager = new SettingsManager();
 
         /** @type {boolean} Panel visibility state */
@@ -118,15 +134,22 @@ export class SettingsPanel {
             }
         });
 
-        // Keyboard: Escape to close, comma to toggle
+        /**
+         * Keydown listener for global shortcuts.
+         * - Escape: Close panel.
+         * - Comma (,): Toggle panel visibility.
+         * @param {KeyboardEvent} e - The key event.
+         * @private
+         */
         this._keyHandler = (e) => {
             if (e.key === 'Escape' && this.isOpen) {
                 e.preventDefault();
                 this.close();
             }
             if (e.key === ',' && !e.metaKey && !e.ctrlKey) {
-                // Don't trigger if in input field
-                if (document.activeElement.tagName !== 'INPUT') {
+                // Don't trigger if in input field (search box, etc.)
+                if (document.activeElement.tagName !== 'INPUT' &&
+                    document.activeElement.tagName !== 'TEXTAREA') {
                     e.preventDefault();
                     this.toggle();
                 }

@@ -90,13 +90,24 @@
     - **CONTRIBUTING.md**: Added a Mermaid diagram visualizing the interaction between Conductor, Controller, and Managers. Added a "State Management" section.
     - **README.md**: Updated Project Structure and Architecture sections to include the new managers.
 - **Gap:** Core physics logic in `physics.js` still contains some inline "Thinking aloud" notes from the Debugger role that could be cleaned up into formal JSDoc.
-93: 
-94: ### 2026-01-03 - [Docs Update] **Focus:** `physics.js`, `README.md`, `CONTRIBUTING.md`
-95: - **Standard:**
-96:     - "Clean Documentation": Remove historical debugging notes (e.g., "CRITICAL FIX", "Bug XXX") from production comments.
-97:     - "Schema Transparency": Document every field in configuration files to lower the barrier for data contributors.
-98: - **Changes:**
-99:     - **physics.js**: Scrubbed all references to "Debugger" fixes and thinking-aloud notes. Formalized "wrapTime" and "Multi-Zone" technical explanations.
-100:    - **README.md**: Added comprehensive documentation for the `system.json` schema, including all Keplerian and visual properties.
-101:    - **CONTRIBUTING.md**: Added a physical "Data Flow" section explaining the transformation pipeline from JSON to the 3D Scene.
-102: - **Gap:** The `procedural.js` file-level JSDoc is good, but individual internal helper functions for asteroid generation could be more explicit about their mathematical constants.
+
+### 2026-01-03 - [Docs Update] **Focus:** `physics.js`, `README.md`, `CONTRIBUTING.md`
+- **Standard:**
+    - "Clean Documentation": Remove historical debugging notes (e.g., "CRITICAL FIX", "Bug XXX") from production comments.
+    - "Schema Transparency": Document every field in configuration files to lower the barrier for data contributors.
+- **Changes:**
+    - **physics.js**: Scrubbed all references to "Debugger" fixes and thinking-aloud notes. Formalized "wrapTime" and "Multi-Zone" technical explanations.
+    - **README.md**: Added comprehensive documentation for the `system.json` schema, including all Keplerian and visual properties.
+    - **CONTRIBUTING.md**: Added a physical "Data Flow" section explaining the transformation pipeline from JSON to the 3D Scene.
+- **Gap:** The `procedural.js` file-level JSDoc is good, but individual internal helper functions for asteroid generation could be more explicit about their mathematical constants.
+
+### 2026-01-03 - The Settings & Standards Sync
+- **Focus:** `src/components/SettingsPanel.js`, `README.md`, `CONTRIBUTING.md`.
+- **Standard:**
+    - "Component: Callback Pattern": UI components must be decoupled from global state or 3D scene logic. Communication should happen via constructor-injected callbacks.
+    - "Shortcut Documentation": Global keyboard shortcuts must be documented in both code (as JSDoc) and project-level documentation (`README.md`).
+- **Changes:**
+    - **SettingsPanel**: Added extensive JSDoc including `@example` and `@private` markers. Clarified the relationship between the UI and `SettingsManager`.
+    - **README.md**: Integrated the Settings Panel into the feature list, project structure, and architecture. Documented the `,` shortcut.
+    - **CONTRIBUTING.md**: Updated the Core Components table to include `SettingsPanel`.
+- **Gap:** The `src/debris.js` asteroid generation logic is technically documented, but could benefit from a "Physics Note" explaining the GPU-side orbital math more formally.
