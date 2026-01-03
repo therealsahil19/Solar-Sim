@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Playwright E2E Test Configuration for Solar-Sim
+ * Updated for Vite development server
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
@@ -28,8 +29,8 @@ export default defineConfig({
 
     /* Shared settings for all tests */
     use: {
-        /* Base URL for navigation */
-        baseURL: 'http://127.0.0.1:8080',
+        /* Base URL for Vite dev server */
+        baseURL: 'http://localhost:5173',
 
         /* Collect trace on first retry */
         trace: 'on-first-retry',
@@ -49,11 +50,12 @@ export default defineConfig({
         },
     ],
 
-    /* Run local dev server before starting tests */
+    /* Run Vite dev server before starting tests */
     webServer: {
-        command: 'npx serve -p 8080 .',
-        url: 'http://127.0.0.1:8080',
+        command: 'npx vite --host localhost --port 5173',
+        url: 'http://localhost:5173',
         reuseExistingServer: !process.env.CI,
-        timeout: 30 * 1000,
+        timeout: 60 * 1000,
     },
 });
+
