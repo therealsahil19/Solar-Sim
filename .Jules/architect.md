@@ -108,3 +108,17 @@ This creates a fragmented UX where power users discover features accidentally.
 - Specialized rendering for the binary Pluto-Charon barycenter.
 - Detailed surface maps for Ceres (Occator Crater).
 - Inclusion of Eris, Haumea, and Makemake in the outer system.
+
+## 2026-01-04 - Eris, Haumea & Makemake Expansion
+
+**Context:** While Pluto and Ceres were already present, the Solar-Sim was missing the remaining three IAU-recognized dwarf planets. This feature completes the dwarf planet tier, providing a more comprehensive view of the outer solar system and the Kuiper Belt's diversity.
+
+**Tech Stack:**
+- **Data Layer:** Updated `system.json` with Haumea (Hi'iaka, Namaka), Makemake (MK2), and Eris (Dysnomia).
+- **Physics Layer:** Applied accurate Keplerian elements with significant inclinations (e.g., Eris at 44°) and eccentricities to visualize their unique orbital paths.
+- **UI Layer:** Leveraged the existing `Dwarf Planet` icon (☄️) and recursive satellite system rendering.
+
+**Next Steps:** This unlocks:
+- Specialized rendering for Haumea's ellipsoidal shape (non-spherical mesh).
+- Trans-Neptunian object (TNO) clustering and Kuiper Belt object classifications.
+- Enhanced distance-based label scaling for extremely distant objects.

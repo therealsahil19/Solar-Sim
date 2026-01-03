@@ -1,7 +1,7 @@
 # Page snapshot
 
 ```yaml
-- generic [ref=e1]:
+- generic [active] [ref=e1]:
   - generic:
     - navigation [ref=e2]:
       - button "Open Navigation" [ref=e3] [cursor=pointer]: ☰
@@ -159,84 +159,149 @@
                   - generic [ref=e163]: Moon
           - treeitem [ref=e164]:
             - button [ref=e165] [cursor=pointer]:
-              - generic [ref=e166]: 🌑 Asteroid Belt
-              - generic [ref=e167]: Belt
-          - treeitem [ref=e168]:
-            - button [ref=e169] [cursor=pointer]:
-              - generic [ref=e170]: 🌑 Kuiper Belt
-              - generic [ref=e171]: Belt
-          - treeitem [ref=e172]:
-            - button [ref=e173] [cursor=pointer]:
-              - generic [ref=e174]: 🌑 Oort Cloud
-              - generic [ref=e175]: Belt
-    - complementary [ref=e176]:
-      - generic [ref=e177]:
-        - heading [level=2] [ref=e178]: Settings
-        - button [ref=e179] [cursor=pointer]: ✕
-      - generic [ref=e180]:
-        - generic [ref=e181]:
-          - heading [level=3] [ref=e182]: Visual
-          - generic [ref=e183] [cursor=pointer]:
-            - generic [ref=e184]: Textures (T)
-            - checkbox [checked] [ref=e185]
-          - generic [ref=e186] [cursor=pointer]:
-            - generic [ref=e187]: Labels (L)
-            - checkbox [checked] [ref=e188]
-          - generic [ref=e189] [cursor=pointer]:
-            - generic [ref=e190]: Orbits (O)
-            - checkbox [checked] [ref=e191]
-          - generic [ref=e192] [cursor=pointer]:
-            - generic [ref=e193]: Asteroid Belt
-            - checkbox [checked] [ref=e194]
-          - generic [ref=e195] [cursor=pointer]:
-            - generic [ref=e196]: Kuiper Belt
-            - checkbox [checked] [ref=e197]
-          - generic [ref=e198] [cursor=pointer]:
-            - generic [ref=e199]: Oort Cloud
-            - checkbox [checked] [ref=e200]
-        - generic [ref=e201]:
-          - heading [level=3] [ref=e202]: Theme
-          - generic [ref=e203]:
-            - button [pressed] [ref=e204] [cursor=pointer]:
-              - generic [ref=e206]: Default
+              - generic [ref=e166]: ☄️ Haumea
+              - generic [ref=e167]: Dwarf Planet
+            - group [ref=e169]:
+              - treeitem [ref=e170]:
+                - button [ref=e171] [cursor=pointer]:
+                  - generic [ref=e172]: 🌑 Hi'iaka
+                  - generic [ref=e173]: Moon
+              - treeitem [ref=e174]:
+                - button [ref=e175] [cursor=pointer]:
+                  - generic [ref=e176]: 🌑 Namaka
+                  - generic [ref=e177]: Moon
+          - treeitem [ref=e178]:
+            - button [ref=e179] [cursor=pointer]:
+              - generic [ref=e180]: ☄️ Makemake
+              - generic [ref=e181]: Dwarf Planet
+            - group [ref=e183]:
+              - treeitem [ref=e184]:
+                - button [ref=e185] [cursor=pointer]:
+                  - generic [ref=e186]: 🌑 MK2
+                  - generic [ref=e187]: Moon
+          - treeitem [ref=e188]:
+            - button [ref=e189] [cursor=pointer]:
+              - generic [ref=e190]: ☄️ Eris
+              - generic [ref=e191]: Dwarf Planet
+            - group [ref=e193]:
+              - treeitem [ref=e194]:
+                - button [ref=e195] [cursor=pointer]:
+                  - generic [ref=e196]: 🌑 Dysnomia
+                  - generic [ref=e197]: Moon
+          - treeitem [ref=e198]:
+            - button [ref=e199] [cursor=pointer]:
+              - generic [ref=e200]: 🌑 Asteroid Belt
+              - generic [ref=e201]: Belt
+          - treeitem [ref=e202]:
+            - button [ref=e203] [cursor=pointer]:
+              - generic [ref=e204]: 🌑 Kuiper Belt
+              - generic [ref=e205]: Belt
+          - treeitem [ref=e206]:
             - button [ref=e207] [cursor=pointer]:
-              - generic [ref=e209]: Blueprint
-            - button [ref=e210] [cursor=pointer]:
-              - generic [ref=e212]: OLED
-        - generic [ref=e213]:
-          - heading [level=3] [ref=e214]: Simulation
-          - generic [ref=e215]:
-            - generic [ref=e216]:
-              - generic [ref=e217]: Speed
-              - generic [ref=e218]: 1.0x
-            - slider [ref=e219] [cursor=pointer]: "1"
+              - generic [ref=e208]: 🌑 Oort Cloud
+              - generic [ref=e209]: Belt
+    - complementary [ref=e210]:
+      - generic [ref=e211]:
+        - heading [level=2] [ref=e212]: Settings
+        - button [ref=e213] [cursor=pointer]: ✕
+      - generic [ref=e214]:
+        - generic [ref=e215]:
+          - heading [level=3] [ref=e216]: Visual
+          - generic [ref=e217] [cursor=pointer]:
+            - generic [ref=e218]: Textures (T)
+            - checkbox [checked] [ref=e219]
+          - generic [ref=e220] [cursor=pointer]:
+            - generic [ref=e221]: Labels (L)
+            - checkbox [checked] [ref=e222]
+          - generic [ref=e223] [cursor=pointer]:
+            - generic [ref=e224]: Orbits (O)
+            - checkbox [checked] [ref=e225]
+          - generic [ref=e226] [cursor=pointer]:
+            - generic [ref=e227]: Asteroid Belt
+            - checkbox [checked] [ref=e228]
+          - generic [ref=e229] [cursor=pointer]:
+            - generic [ref=e230]: Kuiper Belt
+            - checkbox [checked] [ref=e231]
+          - generic [ref=e232] [cursor=pointer]:
+            - generic [ref=e233]: Oort Cloud
+            - checkbox [checked] [ref=e234]
+        - generic [ref=e235]:
+          - heading [level=3] [ref=e236]: Theme
+          - generic [ref=e237]:
+            - button [pressed] [ref=e238] [cursor=pointer]:
+              - generic [ref=e240]: Default
+            - button [ref=e241] [cursor=pointer]:
+              - generic [ref=e243]: Blueprint
+            - button [ref=e244] [cursor=pointer]:
+              - generic [ref=e246]: OLED
+        - generic [ref=e247]:
+          - heading [level=3] [ref=e248]: Simulation
+          - generic [ref=e249]:
+            - generic [ref=e250]:
+              - generic [ref=e251]: Speed
+              - generic [ref=e252]: 1.0x
+            - slider [ref=e253] [cursor=pointer]: "1"
     - generic:
-      - generic [ref=e220]:
-        - button "Pause Simulation" [active] [ref=e221] [cursor=pointer]:
-          - img [ref=e222]
-        - generic [ref=e224]:
-          - generic [ref=e225]:
-            - generic [ref=e226]: Speed
-            - generic [ref=e227]: 1.0x
-          - slider "Speed" [ref=e228] [cursor=pointer]: "1"
-      - toolbar "Camera and View Controls" [ref=e229]:
-        - button "Toggle Camera View" [ref=e230] [cursor=pointer]:
-          - img [ref=e231]
-        - button "Reset View" [ref=e233] [cursor=pointer]:
-          - img [ref=e234]
-        - button "Toggle Textures" [pressed] [ref=e236] [cursor=pointer]:
-          - img [ref=e237]
-        - button "Toggle Labels" [pressed] [ref=e239] [cursor=pointer]:
-          - img [ref=e240]
-        - button "Toggle Orbits" [pressed] [ref=e242] [cursor=pointer]:
-          - img [ref=e243]
-  - status: Simulation Resumed
-  - status [ref=e246]: Simulation resumed
+      - generic [ref=e254]:
+        - button "Pause Simulation" [ref=e255] [cursor=pointer]:
+          - img [ref=e256]
+        - generic [ref=e258]:
+          - generic [ref=e259]:
+            - generic [ref=e260]: Speed
+            - generic [ref=e261]: 1.0x
+          - slider "Speed" [ref=e262] [cursor=pointer]: "1"
+      - toolbar "Camera and View Controls" [ref=e263]:
+        - button "Toggle Camera View" [ref=e264] [cursor=pointer]:
+          - img [ref=e265]
+        - button "Reset View" [ref=e267] [cursor=pointer]:
+          - img [ref=e268]
+        - button "Toggle Textures" [pressed] [ref=e270] [cursor=pointer]:
+          - img [ref=e271]
+        - button "Toggle Labels" [pressed] [ref=e273] [cursor=pointer]:
+          - img [ref=e274]
+        - button "Toggle Orbits" [pressed] [ref=e276] [cursor=pointer]:
+          - img [ref=e277]
+  - status
+  - status [ref=e280]
+  - dialog [ref=e281]:
+    - generic [ref=e282]:
+      - button "Close dialog" [ref=e283] [cursor=pointer]: ✕
+      - heading "Controls & Shortcuts" [level=2] [ref=e284]
+      - generic [ref=e285]:
+        - generic [ref=e286]:
+          - text: 🖱️
+          - generic [ref=e287]:
+            - strong [ref=e288]: Drag
+            - text: to Rotate
+        - generic [ref=e289]:
+          - text: 🖱️
+          - generic [ref=e290]:
+            - strong [ref=e291]: Scroll
+            - text: to Zoom
+        - generic [ref=e292]:
+          - text: 🖱️
+          - generic [ref=e293]:
+            - strong [ref=e294]: Click
+            - text: to Select
+        - generic [ref=e295]:
+          - text: 🖱️
+          - generic [ref=e296]:
+            - strong [ref=e297]: Double Click
+            - text: to Focus
+        - generic [ref=e298]:
+          - generic [ref=e299]: Cmd+K
+          - generic [ref=e300]: Command Palette
+        - generic [ref=e301]:
+          - generic [ref=e302]: Space
+          - generic [ref=e303]: Pause / Play
+        - generic [ref=e304]:
+          - generic [ref=e305]: C
+          - generic [ref=e306]: Ship Camera
   - generic:
     - text: Solar-Sim · Built with Three.js ·
-    - link "GitHub" [ref=e247] [cursor=pointer]:
+    - link "GitHub" [ref=e307] [cursor=pointer]:
       - /url: https://github.com/therealsahil19/Solar-Sim
-  - application "3D Solar System Simulation" [ref=e248]
+  - application "3D Solar System Simulation" [ref=e308]
   - generic:
     - generic: Mercury
     - generic: Venus

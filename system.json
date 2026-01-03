@@ -582,6 +582,134 @@
         ]
     },
     {
+        "name": "Haumea",
+        "type": "Dwarf Planet",
+        "physics": {
+            "a": 43.13,
+            "e": 0.1912,
+            "i": 28.22,
+            "omega": 239.5,
+            "Omega": 121.1,
+            "M0": 165.5
+        },
+        "visual": {
+            "size": 0.13,
+            "color": "#E5E4E2",
+            "texture": "textures/placeholder.jpg"
+        },
+        "description": "An ellipsoidal dwarf planet in the Kuiper belt, known for its rapid rotation and two moons.",
+        "moons": [
+            {
+                "name": "Hi'iaka",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00033,
+                    "e": 0.0513,
+                    "i": 126,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.03,
+                    "color": "#CCCCCC"
+                },
+                "description": "The larger, outer moon of Haumea."
+            },
+            {
+                "name": "Namaka",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00017,
+                    "e": 0.249,
+                    "i": 113,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 180
+                },
+                "visual": {
+                    "size": 0.015,
+                    "color": "#AAAAAA"
+                },
+                "description": "The smaller, inner moon of Haumea."
+            }
+        ]
+    },
+    {
+        "name": "Makemake",
+        "type": "Dwarf Planet",
+        "physics": {
+            "a": 45.71,
+            "e": 0.1558,
+            "i": 29.00,
+            "omega": 295.1,
+            "Omega": 79.6,
+            "M0": 165.5
+        },
+        "visual": {
+            "size": 0.11,
+            "color": "#FF8C00",
+            "texture": "textures/placeholder.jpg"
+        },
+        "description": "The second-largest Kuiper belt object, with a reddish-brown surface.",
+        "moons": [
+            {
+                "name": "MK2",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00014,
+                    "e": 0,
+                    "i": 0,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.014,
+                    "color": "#444444"
+                },
+                "description": "A small, dark moon orbiting Makemake."
+            }
+        ]
+    },
+    {
+        "name": "Eris",
+        "type": "Dwarf Planet",
+        "physics": {
+            "a": 67.78,
+            "e": 0.4406,
+            "i": 44.04,
+            "omega": 150.9,
+            "Omega": 35.9,
+            "M0": 197.6
+        },
+        "visual": {
+            "size": 0.18,
+            "color": "#F0EAD6",
+            "texture": "textures/placeholder.jpg"
+        },
+        "description": "One of the largest known dwarf planets, its discovery led to the reclassification of Pluto.",
+        "moons": [
+            {
+                "name": "Dysnomia",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00025,
+                    "e": 0.01,
+                    "i": 61,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.05,
+                    "color": "#999999"
+                },
+                "description": "The only known moon of Eris."
+            }
+        ]
+    },
+    {
         "name": "Asteroid Belt",
         "type": "Belt",
         "distribution": {
