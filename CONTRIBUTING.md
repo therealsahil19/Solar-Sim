@@ -52,6 +52,24 @@ We follow a modular architecture without bundlers.
 - **`src/managers/`**: State managers (e.g., `ThemeManager.js`).
 - **`system.json`**: The data source for the solar system hierarchy.
 
+### Component Architecture
+
+The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D scene (Three.js) remains performant and independent of the DOM.
+
+**Separation of Concerns:**
+1.  **Scene (`main.js`)**: The "Conductor". It knows nothing about the UI. It exposes methods to manipulate the camera or focus on objects.
+2.  **Input (`input.js`)**: The "Controller". It bridges the gap. It listens for user actions (clicks, keys) and updates the UI or the Scene accordingly.
+3.  **Components (`src/components/`)**: Pure UI classes. They do not import Three.js directly (mostly). They receive data and callbacks via their constructors.
+
+**Core Components:**
+
+| Component | Responsibility | Communication |
+| :--- | :--- | :--- |
+| **NavigationSidebar** | Renders the recursive planet tree. | Calls `onSelect(name)` when a planet is clicked. |
+| **InfoPanel** | Displays details of the selected object. | Updates via `update(mesh)` method. No internal state. |
+| **CommandPalette** | "Cmd+K" power menu. | Executes callbacks for global actions (e.g., `onToggleOrbits`). |
+| **Modal** | Accessible `<dialog>` wrapper. | Manages focus trapping and lifecycle (`open`/`close`). |
+
 ---
 
 ## Coding Standards

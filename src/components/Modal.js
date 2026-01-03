@@ -63,6 +63,7 @@ export class Modal {
 
     /**
      * Opens the modal.
+     * Triggers the `onOpen` callback if provided and manages body classes for scroll locking.
      */
     open() {
         if (!this.element.open) {
@@ -75,6 +76,7 @@ export class Modal {
 
     /**
      * Closes the modal.
+     * Uses the native `dialog.close()` method.
      */
     close() {
         if (this.element.open) {

@@ -6,17 +6,17 @@
 
 export class CommandPalette {
     /**
-     * @param {Array} planetData - The hierarchical system data.
+     * @param {Array<Object>} planetData - The hierarchical system data.
      * @param {Object} callbacks - Functions to execute actions.
-     * @param {Function} callbacks.onSelectByName - (name) => void
-     * @param {Function} callbacks.onToggleOrbits - () => void
-     * @param {Function} callbacks.onToggleLabels - () => void
-     * @param {Function} callbacks.onToggleTexture - () => void
-     * @param {Function} callbacks.onToggleCamera - () => void
-     * @param {Function} callbacks.onResetCamera - () => void
-     * @param {Function} callbacks.onTogglePause - () => void
-     * @param {Function} callbacks.openModal - () => void
-     * @param {Function} callbacks.onToggleTheme - () => void
+     * @param {Function} callbacks.onSelectByName - Selects an object by name. Signature: `(name: string) => void`.
+     * @param {Function} callbacks.onToggleOrbits - Toggles orbit lines visibility.
+     * @param {Function} callbacks.onToggleLabels - Toggles label visibility.
+     * @param {Function} callbacks.onToggleTexture - Toggles texture quality (HD/LD).
+     * @param {Function} callbacks.onToggleCamera - Cycles camera modes.
+     * @param {Function} callbacks.onResetCamera - Resets camera to initial position.
+     * @param {Function} callbacks.onTogglePause - Toggles simulation pause state.
+     * @param {Function} callbacks.openModal - Opens the help modal.
+     * @param {Function} callbacks.onToggleTheme - Cycles visual themes.
      */
     constructor(planetData, callbacks) {
         this.callbacks = callbacks;
@@ -189,7 +189,8 @@ export class CommandPalette {
     }
 
     /**
-     * Destroys the command palette and removes event listeners.
+     * Destroys the command palette and removes global event listeners (e.g., KeyDown).
+     * This is crucial to prevent memory leaks in Single Page Applications (SPA).
      */
     destroy() {
         if (this._globalKeyDownHandler) {

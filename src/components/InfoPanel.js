@@ -15,7 +15,7 @@ export class InfoPanel {
      *
      * @param {Object} config - Configuration object.
      * @param {Object} config.callbacks - Interaction callbacks.
-     * @param {Function} config.callbacks.onFollow - Callback triggered when "Follow" is clicked. Receives (mesh).
+     * @param {Function} config.callbacks.onFollow - Callback triggered when "Follow" is clicked. Signature: `(mesh: THREE.Object3D) => void`.
      */
     constructor({ callbacks }) {
         /** @type {Object} External callbacks */
@@ -72,7 +72,12 @@ export class InfoPanel {
      * Updates the panel with new object data and reveals it.
      *
      * @param {THREE.Object3D} mesh - The selected object.
-     *   Must contain a `userData` object with keys: `name`, `type`, `description`, `size`, `distance`.
+     * @param {Object} mesh.userData - The data object attached to the mesh.
+     * @param {string} mesh.userData.name - Display name (e.g., "Earth").
+     * @param {string} mesh.userData.type - Classification (e.g., "Planet").
+     * @param {string} [mesh.userData.description] - Description text.
+     * @param {number} [mesh.userData.size] - Radius relative to Earth.
+     * @param {number} [mesh.userData.distance] - Orbital distance in AU.
      */
     update(mesh) {
         if (!mesh) return;

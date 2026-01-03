@@ -17,7 +17,7 @@ export class NavigationSidebar {
      * @param {Object} config - Configuration object.
      * @param {Array<Object>} config.planetData - The hierarchical system data (from system.json).
      * @param {Object} config.callbacks - Interaction callbacks.
-     * @param {Function} config.callbacks.onSelect - Callback invoked when an item is clicked. Receives (name).
+     * @param {Function} config.callbacks.onSelect - Callback invoked when an item is clicked. Signature: `(name: string) => void`.
      * @param {Function} [config.callbacks.onClose] - Optional callback when sidebar is closed.
      */
     constructor({ planetData, callbacks }) {
