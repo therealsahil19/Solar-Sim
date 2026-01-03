@@ -109,6 +109,17 @@ We avoid global state objects. Instead, we use dedicated **Managers** (`src/mana
 - **SettingsManager**: The source of truth for user preferences (speed, textures, visibility). Components `subscribe()` to changes.
 - **ThemeManager**: Orchestrates visual themes by updating CSS variables via the `data-theme` attribute.
 
+### Data Flow: From JSON to Scene
+
+Understanding how `system.json` turns into a 3D orbit:
+
+1.  **Loading**: `main.js` fetches `system.json`.
+2.  **Factory**: `procedural.js` (`createSystem`) iterates through the data.
+3.  **Physics**: For each body, the `physics` elements are stored in `mesh.userData.orbit`.
+4.  **Integration**: In the `animate` loop (in `main.js`), `physics.getOrbitalPosition(orbit, time)` calculates the AU position.
+5.  **Scaling**: `physics.physicsToRender(auVector)` applies Multi-Zone Scaling to transform AU into Three.js units.
+6.  **Rendering**: The mesh position is updated, and `trails.js` adds a vertex to the trail.
+
 ---
 
 ## Coding Standards

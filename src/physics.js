@@ -45,11 +45,11 @@ export function getOrbitalPosition(orbit, time, out = null) {
     // Kepler's 3rd Law: T^2 = a^3 -> T = a^1.5 (for mass of Sun = 1)
     const period = Math.pow(a, 1.5);
 
-    // CRITICAL FIX: Wrap time within one orbital period BEFORE any calculation.
-    // This prevents precision loss when simulationTime becomes very large.
-    // NOTE: Direct `time % period` fails for very large time values due to
-    // floating-point precision limits. Instead, we extract the fractional part
-    // of (time / period) which is more numerically stable.
+    // wrapTime: ensures simulation time stays within one orbital period (0 to T).
+    // This prevents precision loss in subsequent calculations that occur when
+    // simulationTime becomes very large.
+    // Note: Direct `time % period` can lose precision for extremely large values;
+    // extracting the fractional part of (time / period) is numerically more stable.
     let phaseFraction = (time / period) % 1;
     if (phaseFraction < 0) phaseFraction += 1;
     const wrappedTime = phaseFraction * period;
@@ -125,8 +125,6 @@ export function getOrbitalPosition(orbit, time, out = null) {
  * 1. Inner System (0-30 AU): Linear. Accurate for relative spacing of planets.
  * 2. Kuiper Belt (30-50 AU): Mild Logarithmic. Compresses the gap between Neptune and Pluto.
  * 3. Oort Cloud (>50 AU): Aggressive Logarithmic. Brings the far reaches (100k AU) into viewable range.
- *
- * Bug 043 Fix: Extracted constants into a documented configuration object for maintainability.
  */
 
 /** @type {Object} Scale configuration for the multi-zone rendering system */

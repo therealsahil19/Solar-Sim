@@ -152,11 +152,21 @@ The simulation is data-driven. `system.json` defines the hierarchy of celestial 
 | Property | Type | Description |
 | :--- | :--- | :--- |
 | `name` | String | The display name of the celestial body. |
-| `type` | String | The classification (e.g., "Planet", "Moon", "Star"). |
-| `physics` | Object | **Orbital elements**: `a`, `e`, `i`, `omega`, `Omega`, `M0`. |
-| `visual` | Object | **Visual properties**: `size`, `color`, `texture`, `hasRing`. |
-| `description` | String | Text shown in the Info Panel when selected. |
-| `moons` | Array | (Optional) Recursive list of satellite objects (same schema). |
+| `type` | String | Classification: "Planet", "Moon", "Dwarf Planet", or "Star". |
+| `physics` | Object | **Orbital elements (Keplerian)**: |
+| `physics.a` | Number | Semi-major axis in AU (defines orbital size/distance). |
+| `physics.e` | Number | Eccentricity (0.0 = circle, 0.99 = highly elliptical). |
+| `physics.i` | Number | Inclination in degrees (tilt relative to ecliptic plane). |
+| `physics.omega`| Number | Argument of Periapsis in degrees (orientation of the ellipse).|
+| `physics.Omega`| Number | Longitude of Ascending Node in degrees. |
+| `physics.M0` | Number| Mean Anomaly at Epoch (starting position in degrees). |
+| `visual` | Object | **Visual rendering properties**: |
+| `visual.size` | Number | Relative diameter (compared to Earth = 1.0). |
+| `visual.color` | String | Hex code for the fallback solid color. |
+| `visual.texture`| String | Path to the JPG texture (e.g., `textures/earth.jpg`). |
+| `visual.hasRing`| Bool | (Optional) Whether to render Saturn-like rings. |
+| `description` | String | Background info shown in the Info Panel. |
+| `moons` | Array | (Optional) Nested list of satellite objects (recursive schema). |
 
 **Example Schema:**
 ```json
