@@ -47,3 +47,16 @@ This creates a fragmented UX where power users discover features accidentally.
 - Specialized rendering for volcanic Io (glow effects).
 - Subsurface exploration data for Europa.
 - Improved collision/physics detection for dense satellite clusters.
+## 2026-01-03 - Saturn's Moons & Enhanced Rings
+
+**Context:** Saturn's system was previously represented by a simple solid-color ring and no moons. To match the detail level of the Jupiter upgrade, this feature introduces major Saturnian moons and high-fidelity textured rings.
+
+**Tech Stack:**
+- **Data Layer:** Updated `system.json` with Titan, Rhea, Enceladus, and Dione; added ring dimensions and texture paths.
+- **Logic Layer:** Enhanced `createSystem` in `src/procedural.js` with custom UV mapping for circular ring textures and transparency support.
+- **UI Layer:** Refined `updateSelectionUI` in `src/input.js` for Moon-relative size comparisons for satellites.
+
+**Next Steps:** This unlocks:
+- Atmospheric rendering for Titan (hazes).
+- Plume/Geyser effects for Enceladus.
+- Ring shadow casting on the planetary body.

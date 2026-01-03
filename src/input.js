@@ -119,8 +119,11 @@ export function setupInteraction(context, callbacks) {
         if (d.type) {
             const typeLabel = d.type.charAt(0).toUpperCase() + d.type.slice(1);
             if (d.size !== undefined && d.type !== 'Star') {
-                const sizeType = d.type === 'Moon' ? 'Moon' : 'Earth';
-                toastText += ` (${typeLabel}) – ${d.size.toFixed(2)} × ${sizeType} size`;
+                const isMoon = d.type === 'Moon';
+                const sizeType = isMoon ? 'Moon' : 'Earth';
+                // Comparison: Planets to Earth (1.0), Moons to Moon (0.27)
+                const displaySize = isMoon ? (d.size / 0.27) : d.size;
+                toastText += ` (${typeLabel}) – ${displaySize.toFixed(2)} × ${sizeType} size`;
             } else {
                 toastText += ` (${typeLabel})`;
             }

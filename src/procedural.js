@@ -305,18 +305,45 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
     }
 
     // 4. Rings (Saturn/Uranus)
-    if (data.visual.hasRing) {
-        const inner = 1.4;
-        const outer = 2.2;
-        const ringGeo = new THREE.RingGeometry(inner, outer, 64);
-        const ringMat = new THREE.MeshStandardMaterial({
-            color: 0xcfb096,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.6,
-            roughness: 0.8,
-            metalness: 0.2
-        });
+    const ringData = data.visual.ring || (data.visual.hasRing ? { inner: 1.4, outer: 2.2 } : null);
+    if (ringData) {
+        const inner = ringData.inner || 1.4;
+        const outer = ringData.outer || 2.2;
+        const ringGeo = new THREE.RingGeometry(inner, outer, 128);
+
+        // Fix UVs to map circular texture correctly
+        const pos = ringGeo.attributes.position;
+        const uv = ringGeo.attributes.uv;
+        const v3 = new THREE.Vector3();
+        for (let i = 0; i < pos.count; i++) {
+            v3.fromBufferAttribute(pos, i);
+            // Map x,y to 0..1 UV based on the square layout
+            // Normalizing v3.x/y from [-outer, outer] to [0, 1]
+            uv.setXY(i, (v3.x / (outer * 2)) + 0.5, (v3.y / (outer * 2)) + 0.5);
+        }
+
+        let ringMat;
+        if (ringData.texture && useTextures) {
+            const ringTexture = textureLoader.load(ringData.texture);
+            ringMat = new THREE.MeshStandardMaterial({
+                map: ringTexture,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.9,
+                roughness: 0.5,
+                metalness: 0.1
+            });
+        } else {
+            ringMat = new THREE.MeshStandardMaterial({
+                color: ringData.color || 0xcfb096,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.6,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+        }
+
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.castShadow = true;
         ring.receiveShadow = true;
