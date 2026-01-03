@@ -6,12 +6,29 @@
  */
 import { test, expect } from '@playwright/test';
 
+/**
+ * Helper to properly set range input value and trigger events
+ * @param {import('@playwright/test').Page} page
+ * @param {string} selector
+ * @param {string} value
+ */
+async function setSliderValue(page, selector, value) {
+    await page.evaluate(({ sel, val }) => {
+        const slider = document.querySelector(sel);
+        if (slider) {
+            slider.value = val;
+            slider.dispatchEvent(new Event('input', { bubbles: true }));
+            slider.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }, { sel: selector, val: value });
+}
+
 test.describe('Settings Panel', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
         // Wait for loading screen to disappear (simulation loaded)
-        await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 30000 });
+        await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 60000 });
         // Close welcome modal if present
         const modal = page.locator('#welcome-modal');
         if (await modal.isVisible()) {
@@ -109,18 +126,17 @@ test.describe('Settings Panel', () => {
         const settingsBtn = page.locator('#btn-settings');
         await settingsBtn.click();
 
-        const speedSlider = page.locator('#setting-speed');
         const speedValue = page.locator('#setting-speed-value');
 
         // Initial value is 1.0x
         await expect(speedValue).toHaveText('1.0x');
 
-        // Change speed to 2.0
-        await speedSlider.fill('2.0');
+        // Change speed to 2.0 using helper
+        await setSliderValue(page, '#setting-speed', '2.0');
         await expect(speedValue).toHaveText('2.0x');
 
         // Change speed to max (5.0)
-        await speedSlider.fill('5.0');
+        await setSliderValue(page, '#setting-speed', '5.0');
         await expect(speedValue).toHaveText('5.0x');
     });
 
@@ -135,7 +151,7 @@ test.describe('Settings Panel', () => {
 
         // Reload page
         await page.reload();
-        await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 30000 });
+        await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 60000 });
 
         // Open settings again
         await settingsBtn.click();

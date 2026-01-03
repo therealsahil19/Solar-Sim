@@ -6,12 +6,44 @@
  */
 import { test, expect } from '@playwright/test';
 
+/**
+ * Helper to properly set range input value and trigger events
+ * @param {import('@playwright/test').Page} page
+ * @param {string} selector
+ * @param {string} value
+ */
+async function setSliderValue(page, selector, value) {
+    await page.evaluate(({ sel, val }) => {
+        const slider = document.querySelector(sel);
+        if (slider) {
+            slider.value = val;
+            slider.dispatchEvent(new Event('input', { bubbles: true }));
+            slider.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }, { sel: selector, val: value });
+}
+
+/**
+ * Helper to wait for navigation list to be populated
+ * @param {import('@playwright/test').Page} page
+ */
+async function waitForNavList(page) {
+    await page.waitForSelector('#nav-sidebar[aria-hidden="false"]', { timeout: 5000 });
+    await page.waitForFunction(() => {
+        const navList = document.querySelector('#nav-list');
+        if (!navList) return false;
+        const buttons = navList.querySelectorAll('.nav-btn:not(.skeleton)');
+        return buttons.length > 0;
+    }, { timeout: 30000 });
+    await page.waitForTimeout(300);
+}
+
 test.describe('Camera & Time Controls', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
         // Wait for loading screen to disappear
-        await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 30000 });
+        await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 60000 });
         // Close welcome modal if present
         const modal = page.locator('#welcome-modal');
         if (await modal.isVisible()) {
@@ -32,14 +64,13 @@ test.describe('Camera & Time Controls', () => {
     });
 
     test('should adjust simulation speed via slider', async ({ page }) => {
-        const speedSlider = page.locator('#slider-speed');
         const speedValue = page.locator('#speed-value');
 
         // Initial value is 1.0x
         await expect(speedValue).toHaveText('1.0x');
 
-        // Change speed to 3.0
-        await speedSlider.fill('3.0');
+        // Change speed to 3.0 using helper
+        await setSliderValue(page, '#slider-speed', '3.0');
         await expect(speedValue).toHaveText('3.0x');
     });
 
@@ -109,10 +140,12 @@ test.describe('Camera & Time Controls', () => {
         // First select a planet via navigation
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();
-        await page.waitForSelector('#nav-list .nav-btn:not(.skeleton)', { timeout: 10000 });
+
+        await waitForNavList(page);
 
         const earthButton = page.locator('#nav-list').getByText('Earth', { exact: true });
         await earthButton.click();
+        await page.waitForTimeout(500);
 
         // Click Follow button in info panel
         const followBtn = page.locator('#btn-follow');

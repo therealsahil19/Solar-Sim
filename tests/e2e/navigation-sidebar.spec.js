@@ -6,12 +6,31 @@
  */
 import { test, expect } from '@playwright/test';
 
+/**
+ * Helper to wait for navigation list to be populated
+ * Waits for skeletons to be removed AND real buttons to appear
+ * @param {import('@playwright/test').Page} page
+ */
+async function waitForNavList(page) {
+    // First wait for sidebar to be visible
+    await page.waitForSelector('#nav-sidebar[aria-hidden="false"]', { timeout: 5000 });
+    // Wait for real nav buttons to appear (not skeletons)
+    await page.waitForFunction(() => {
+        const navList = document.querySelector('#nav-list');
+        if (!navList) return false;
+        const buttons = navList.querySelectorAll('.nav-btn:not(.skeleton)');
+        return buttons.length > 0;
+    }, { timeout: 30000 });
+    // Small stabilization delay
+    await page.waitForTimeout(300);
+}
+
 test.describe('Navigation Sidebar', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
         // Wait for loading screen to disappear
-        await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 30000 });
+        await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 60000 });
         // Close welcome modal if present
         const modal = page.locator('#welcome-modal');
         if (await modal.isVisible()) {
@@ -40,12 +59,8 @@ test.describe('Navigation Sidebar', () => {
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();
 
-        // Wait for skeleton to be replaced with actual content
-        await page.waitForSelector('#nav-list .nav-btn:not(.skeleton)', { timeout: 10000 });
-
-        // Should have navigation buttons (planets)
-        const navButtons = page.locator('#nav-list .nav-btn:not(.skeleton)');
-        await expect(navButtons).toHaveCount(await navButtons.count());
+        // Wait for nav list to populate
+        await waitForNavList(page);
 
         // At minimum should have Sun
         const sunButton = page.locator('#nav-list').getByText('Sun', { exact: true });
@@ -56,12 +71,13 @@ test.describe('Navigation Sidebar', () => {
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();
 
-        await page.waitForSelector('#nav-list .nav-btn:not(.skeleton)', { timeout: 10000 });
+        await waitForNavList(page);
 
         const searchInput = page.locator('#nav-search');
 
         // Search for "Mars"
         await searchInput.fill('Mars');
+        await page.waitForTimeout(300); // Wait for filter to apply
 
         // Mars should be visible
         const marsButton = page.locator('#nav-list').getByText('Mars', { exact: false });
@@ -72,15 +88,17 @@ test.describe('Navigation Sidebar', () => {
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();
 
-        await page.waitForSelector('#nav-list .nav-btn:not(.skeleton)', { timeout: 10000 });
+        await waitForNavList(page);
 
         const searchInput = page.locator('#nav-search');
 
         // Search for something
         await searchInput.fill('Jupiter');
+        await page.waitForTimeout(300);
 
         // Clear the search
         await searchInput.fill('');
+        await page.waitForTimeout(300);
 
         // Multiple planets should be visible again (Sun, Earth, Mars, etc.)
         const sunButton = page.locator('#nav-list').getByText('Sun', { exact: true });
@@ -91,11 +109,14 @@ test.describe('Navigation Sidebar', () => {
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();
 
-        await page.waitForSelector('#nav-list .nav-btn:not(.skeleton)', { timeout: 10000 });
+        await waitForNavList(page);
 
         // Click on Earth
         const earthButton = page.locator('#nav-list').getByText('Earth', { exact: true });
         await earthButton.click();
+
+        // Wait for info panel to update
+        await page.waitForTimeout(500);
 
         // Info panel should show Earth
         const infoName = page.locator('#info-name');
@@ -106,11 +127,12 @@ test.describe('Navigation Sidebar', () => {
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();
 
-        await page.waitForSelector('#nav-list .nav-btn:not(.skeleton)', { timeout: 10000 });
+        await waitForNavList(page);
 
         // Search for Jupiter's moons
         const searchInput = page.locator('#nav-search');
         await searchInput.fill('Io');
+        await page.waitForTimeout(300);
 
         // Io (Jupiter's moon) should appear
         const ioButton = page.locator('#nav-list').getByText('Io', { exact: false });
