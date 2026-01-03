@@ -60,3 +60,23 @@ This creates a fragmented UX where power users discover features accidentally.
 - Atmospheric rendering for Titan (hazes).
 - Plume/Geyser effects for Enceladus.
 - Ring shadow casting on the planetary body.
+
+## 2026-01-03 - Asteroid Belts & Procedural Debris System
+
+**Context:** The solar system lacked its iconic debris fields (Asteroid Belt, Kuiper Belt, Oort Cloud), which are crucial for both visual scale and scientific accuracy. Previous debris systems were hardcoded and inflexible.
+
+**Feature:** A dynamic, data-driven belt system that procedurally generates millions of particles (asteroids/comets) based on orbital density distributions.
+- **Configurable Belts:** Parameters defined in `system.json` (inclination, eccentricity, semi-major axis ranges).
+- **GPU Acceleration:** Uses `THREE.InstancedMesh` and GPU-calculated updates for high performance.
+- **UI Integration:** Unified toggles in the Settings Panel for individual belt visibility.
+- **Dynamic Loading:** Belts are initialized automatically from the simulation's data layer.
+
+**Tech Stack:**
+- **Logic Layer:** Refactored `src/debris.js` into a generic GPU particle factory (`createBelt`).
+- **Data Layer:** Centralized belt definitions in `system.json`.
+- **UI Layer:** New toggles in `index.html` and `src/components/SettingsPanel.js`.
+
+**Next Steps:** This unlocks:
+- Collisions with debris fields.
+- Scientific "missions" to specific asteroid clusters.
+- High-fidelity asteroid geometry for close-up views.

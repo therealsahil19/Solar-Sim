@@ -58,6 +58,9 @@ export class SettingsPanel {
             toggleTextures: document.getElementById('setting-textures'),
             toggleLabels: document.getElementById('setting-labels'),
             toggleOrbits: document.getElementById('setting-orbits'),
+            toggleAsteroidBelt: document.getElementById('setting-asteroid-belt'),
+            toggleKuiperBelt: document.getElementById('setting-kuiper-belt'),
+            toggleOortCloud: document.getElementById('setting-oort-cloud'),
             // Theme buttons
             themeButtons: document.querySelectorAll('.theme-btn'),
             // Speed
@@ -89,6 +92,15 @@ export class SettingsPanel {
         }
         if (this.dom.toggleOrbits) {
             this.dom.toggleOrbits.checked = settings.orbits;
+        }
+        if (this.dom.toggleAsteroidBelt) {
+            this.dom.toggleAsteroidBelt.checked = settings.asteroidBelt !== false;
+        }
+        if (this.dom.toggleKuiperBelt) {
+            this.dom.toggleKuiperBelt.checked = settings.kuiperBelt !== false;
+        }
+        if (this.dom.toggleOortCloud) {
+            this.dom.toggleOortCloud.checked = settings.oortCloud !== false;
         }
 
         // Theme selection
@@ -186,6 +198,39 @@ export class SettingsPanel {
                 this.settingsManager.set('orbits', value);
                 if (this.callbacks.onToggleOrbits) {
                     this.callbacks.onToggleOrbits(value);
+                }
+            });
+        }
+
+        // Toggle: Asteroid Belt
+        if (this.dom.toggleAsteroidBelt) {
+            this.dom.toggleAsteroidBelt.addEventListener('change', (e) => {
+                const value = e.target.checked;
+                this.settingsManager.set('asteroidBelt', value);
+                if (this.callbacks.onToggleBelt) {
+                    this.callbacks.onToggleBelt('asteroid_belt', value);
+                }
+            });
+        }
+
+        // Toggle: Kuiper Belt
+        if (this.dom.toggleKuiperBelt) {
+            this.dom.toggleKuiperBelt.addEventListener('change', (e) => {
+                const value = e.target.checked;
+                this.settingsManager.set('kuiperBelt', value);
+                if (this.callbacks.onToggleBelt) {
+                    this.callbacks.onToggleBelt('kuiper_belt', value);
+                }
+            });
+        }
+
+        // Toggle: Oort Cloud
+        if (this.dom.toggleOortCloud) {
+            this.dom.toggleOortCloud.addEventListener('change', (e) => {
+                const value = e.target.checked;
+                this.settingsManager.set('oortCloud', value);
+                if (this.callbacks.onToggleBelt) {
+                    this.callbacks.onToggleBelt('oort_cloud', value);
                 }
             });
         }

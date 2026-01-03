@@ -19,7 +19,10 @@ const DEFAULT_SETTINGS = {
     labels: true,
     orbits: true,
     theme: 'default',
-    speed: 1.0
+    speed: 1.0,
+    asteroidBelt: true,
+    kuiperBelt: true,
+    oortCloud: true
 };
 
 const STORAGE_KEY = 'solar-sim-settings';

@@ -1,0 +1,92 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]:
+    - generic [ref=e3]:
+      - heading "Simulation Error" [level=1] [ref=e4]
+      - paragraph [ref=e5]: planetConfig is not defined
+      - button "🔄 Reload Simulation" [ref=e6] [cursor=pointer]
+  - generic:
+    - navigation [ref=e7]:
+      - button "Open Navigation" [ref=e8] [cursor=pointer]: ☰
+      - heading "Solar-Sim" [level=1] [ref=e9]
+      - generic [ref=e10]:
+        - button "Open Settings" [ref=e11] [cursor=pointer]:
+          - img [ref=e12]
+        - button "Controls & Help" [ref=e14] [cursor=pointer]: "?"
+    - complementary [ref=e15]:
+      - generic [ref=e16]:
+        - heading [level=2] [ref=e17]: Planets
+        - button [ref=e18] [cursor=pointer]: ✕
+      - searchbox [ref=e19]
+      - tree [ref=e20]
+    - complementary [ref=e21]:
+      - generic [ref=e22]:
+        - heading [level=2] [ref=e23]: Settings
+        - button [ref=e24] [cursor=pointer]: ✕
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - heading [level=3] [ref=e27]: Visual
+          - generic [ref=e28] [cursor=pointer]:
+            - generic [ref=e29]: Textures (T)
+            - checkbox [checked] [ref=e30]
+          - generic [ref=e31] [cursor=pointer]:
+            - generic [ref=e32]: Labels (L)
+            - checkbox [checked] [ref=e33]
+          - generic [ref=e34] [cursor=pointer]:
+            - generic [ref=e35]: Orbits (O)
+            - checkbox [checked] [ref=e36]
+          - generic [ref=e37] [cursor=pointer]:
+            - generic [ref=e38]: Asteroid Belt
+            - checkbox [checked] [ref=e39]
+          - generic [ref=e40] [cursor=pointer]:
+            - generic [ref=e41]: Kuiper Belt
+            - checkbox [checked] [ref=e42]
+          - generic [ref=e43] [cursor=pointer]:
+            - generic [ref=e44]: Oort Cloud
+            - checkbox [checked] [ref=e45]
+        - generic [ref=e46]:
+          - heading [level=3] [ref=e47]: Theme
+          - generic [ref=e48]:
+            - button [pressed] [ref=e49] [cursor=pointer]:
+              - generic [ref=e51]: Default
+            - button [ref=e52] [cursor=pointer]:
+              - generic [ref=e54]: Blueprint
+            - button [ref=e55] [cursor=pointer]:
+              - generic [ref=e57]: OLED
+        - generic [ref=e58]:
+          - heading [level=3] [ref=e59]: Simulation
+          - generic [ref=e60]:
+            - generic [ref=e61]:
+              - generic [ref=e62]: Speed
+              - generic [ref=e63]: 1.0x
+            - slider [ref=e64] [cursor=pointer]: "1"
+    - generic:
+      - generic [ref=e65]:
+        - button "Pause Simulation" [ref=e66] [cursor=pointer]:
+          - img [ref=e67]
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - generic [ref=e71]: Speed
+            - generic [ref=e72]: 1.0x
+          - slider "Speed" [ref=e73] [cursor=pointer]: "1"
+      - toolbar "Camera and View Controls" [ref=e74]:
+        - button "Toggle Camera View" [ref=e75] [cursor=pointer]:
+          - img [ref=e76]
+        - button "Reset View" [ref=e78] [cursor=pointer]:
+          - img [ref=e79]
+        - button "Toggle Textures" [pressed] [ref=e81] [cursor=pointer]:
+          - img [ref=e82]
+        - button "Toggle Labels" [pressed] [ref=e84] [cursor=pointer]:
+          - img [ref=e85]
+        - button "Toggle Orbits" [pressed] [ref=e87] [cursor=pointer]:
+          - img [ref=e88]
+  - status
+  - status [ref=e91]
+  - generic:
+    - text: Solar-Sim · Built with Three.js ·
+    - link "GitHub" [ref=e92] [cursor=pointer]:
+      - /url: https://github.com/therealsahil19/Solar-Sim
+  - application "3D Solar System Simulation" [ref=e93]
+```

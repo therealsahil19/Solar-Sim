@@ -247,29 +247,69 @@
             {
                 "name": "Enceladus",
                 "type": "Moon",
-                "physics": { "a": 0.00159, "e": 0.0047, "i": 0.019, "omega": 0, "Omega": 0, "M0": 0 },
-                "visual": { "size": 0.04, "color": "#FFFFFF" },
+                "physics": {
+                    "a": 0.00159,
+                    "e": 0.0047,
+                    "i": 0.019,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.04,
+                    "color": "#FFFFFF"
+                },
                 "description": "A small, icy moon known for its active geysers."
             },
             {
                 "name": "Dione",
                 "type": "Moon",
-                "physics": { "a": 0.00252, "e": 0.0022, "i": 0.019, "omega": 0, "Omega": 0, "M0": 0 },
-                "visual": { "size": 0.08, "color": "#C0C0C0" },
+                "physics": {
+                    "a": 0.00252,
+                    "e": 0.0022,
+                    "i": 0.019,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.08,
+                    "color": "#C0C0C0"
+                },
                 "description": "A heavily cratered moon with bright wispy terrain."
             },
             {
                 "name": "Rhea",
                 "type": "Moon",
-                "physics": { "a": 0.00352, "e": 0.0012, "i": 0.345, "omega": 0, "Omega": 0, "M0": 0 },
-                "visual": { "size": 0.12, "color": "#D3D3D3" },
+                "physics": {
+                    "a": 0.00352,
+                    "e": 0.0012,
+                    "i": 0.345,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.12,
+                    "color": "#D3D3D3"
+                },
                 "description": "Saturn's second-largest moon, covered in impact craters."
             },
             {
                 "name": "Titan",
                 "type": "Moon",
-                "physics": { "a": 0.00817, "e": 0.0288, "i": 0.348, "omega": 0, "Omega": 0, "M0": 0 },
-                "visual": { "size": 0.4, "color": "#D2B48C" },
+                "physics": {
+                    "a": 0.00817,
+                    "e": 0.0288,
+                    "i": 0.348,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.4,
+                    "color": "#D2B48C"
+                },
                 "description": "The largest moon of Saturn, with a thick atmosphere and liquid methane lakes."
             }
         ]
@@ -331,5 +371,59 @@
         },
         "description": "A dwarf planet in the Kuiper belt, known for its high eccentricity and inclination.",
         "moons": []
+    },
+    {
+        "name": "Asteroid Belt",
+        "type": "Belt",
+        "distribution": {
+            "minA": 2.1,
+            "maxA": 3.3,
+            "minE": 0.05,
+            "maxE": 0.15,
+            "minI": 0,
+            "maxI": 20
+        },
+        "visual": {
+            "count": 2000,
+            "color": "#888888",
+            "size": 0.2
+        }
+    },
+    {
+        "name": "Kuiper Belt",
+        "type": "Belt",
+        "distribution": {
+            "minA": 30,
+            "maxA": 50,
+            "minE": 0.0,
+            "maxE": 0.3,
+            "minI": 0,
+            "maxI": 30
+        },
+        "visual": {
+            "count": 2000,
+            "color": "#BFD6FF",
+            "size": 0.25,
+            "opacity": 0.8
+        }
+    },
+    {
+        "name": "Oort Cloud",
+        "type": "Belt",
+        "distribution": {
+            "minA": 2000,
+            "maxA": 100000,
+            "minE": 0.7,
+            "maxE": 0.999,
+            "minI": 0,
+            "maxI": 180
+        },
+        "visual": {
+            "count": 300,
+            "color": "#F2F5FF",
+            "size": 0.15,
+            "opacity": 0.15,
+            "isSpherical": true
+        }
     }
 ]

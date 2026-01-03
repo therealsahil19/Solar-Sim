@@ -8,7 +8,7 @@
 import * as THREE from 'three';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 import { createStarfield, createSun, createPlayerShip, createSystem, clearMaterialCache } from './procedural.js';
-import { createAsteroidBelt, createKuiperBelt, createOortCloud } from './debris.js';
+import { createBelt } from './debris.js';
 import { setupControls, setupInteraction } from './input.js';
 import { InstanceRegistry } from './instancing.js';
 import { TrailManager } from './trails.js';
@@ -65,9 +65,7 @@ let interactionHelpers = null;
 
 let frameCount = 0;
 let closestObjectCache = null;
-let asteroidBelt = null;
-let kuiperBelt = null;
-let oortCloud = null;
+const belts = [];
 let instanceRegistry = null;
 let trailManager = null;
 
@@ -175,17 +173,6 @@ export async function init() {
 
     // Asteroid Belt (CPU)
     // Range 2.1 - 3.3 AU
-    asteroidBelt = createAsteroidBelt();
-    scene.add(asteroidBelt);
-
-    // Kuiper Belt (30 - 50 AU)
-    kuiperBelt = createKuiperBelt();
-    scene.add(kuiperBelt);
-
-    // Oort Cloud (2000 - 100000 AU)
-    oortCloud = createOortCloud();
-    scene.add(oortCloud);
-
     // 5. Load System Data
     let planetData = null;
     try {
@@ -199,7 +186,14 @@ export async function init() {
             throw new Error('Invalid configuration: planetData must be an array.');
         }
 
-        planetData.forEach(planetConfig => {
+        planetData.forEach(config => {
+            if (config.type === 'Belt') {
+                const belt = createBelt(config);
+                scene.add(belt);
+                belts.push(belt);
+                return;
+            }
+
             // Root System Creation
             const systemNode = createSystem(planetConfig, textureLoader, useTextures, null);
 
@@ -271,7 +265,8 @@ export async function init() {
         onUpdateTimeScale: updateTimeScale,
         onObjectSelected: handleObjectSelection,
         onToggleLabels: toggleLabels,
-        onToggleOrbits: toggleOrbits
+        onToggleOrbits: toggleOrbits,
+        onToggleBelt: toggleBelt
     };
 
     interactionHelpers = setupInteraction(context, callbacks);
@@ -303,6 +298,11 @@ export async function init() {
             if (dockSlider) dockSlider.value = savedSettings.speed;
             if (dockValue) dockValue.textContent = `${savedSettings.speed.toFixed(1)}x`;
         }
+
+        // Apply belt settings
+        toggleBelt('asteroid_belt', savedSettings.asteroidBelt !== false);
+        toggleBelt('kuiper_belt', savedSettings.kuiperBelt !== false);
+        toggleBelt('oort_cloud', savedSettings.oortCloud !== false);
     }
 
     if (textureLoader.lazyLoadQueue.length > 0) {
@@ -429,6 +429,19 @@ function toggleLabels() {
     if (btn) btn.setAttribute('aria-pressed', showLabels);
     allLabels.forEach(label => label.visible = showLabels);
     showToast(`Labels: ${showLabels ? "ON" : "OFF"}`);
+}
+
+/**
+ * Toggles the visibility of a specific belt system by its type.
+ * @param {string} type - The belt identifier (e.g., 'asteroid_belt').
+ * @param {boolean} visible - Whether the belt should be visible.
+ */
+function toggleBelt(type, visible) {
+    belts.forEach(belt => {
+        if (belt.userData && belt.userData.type === type) {
+            belt.visible = visible;
+        }
+    });
 }
 
 /**
@@ -589,20 +602,8 @@ function animate() {
             instanceRegistry.update();
         }
 
-        // Update Asteroid Belt
-        if (asteroidBelt && asteroidBelt.update) {
-            asteroidBelt.update(simulationTime);
-        }
-
-        // Update Kuiper Belt
-        if (kuiperBelt && kuiperBelt.update) {
-            kuiperBelt.update(simulationTime);
-        }
-
-        // Update Oort Cloud (Static Physics - Rotate Only)
-        if (oortCloud && oortCloud.update) {
-            oortCloud.update(simulationTime);
-        }
+        // Update Belts
+        belts.forEach(belt => belt.update && belt.update(simulationTime));
 
         // Rotate Starfield
         if (starfield) starfield.rotation.y += 0.02 * dt;

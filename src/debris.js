@@ -131,7 +131,7 @@ function createDebrisSystem(config) {
     const {
         count = 1000,
         distribution,
-        isSpherical = false,
+        isSpherical = config.distribution.isSpherical || false,
         material: matConfig
         // Bug 037 Fix: Removed unused `staticPhysics` parameter (was dead code)
     } = config;
@@ -217,6 +217,7 @@ function createDebrisSystem(config) {
     };
 
     const mesh = new THREE.InstancedMesh(geometry, material, count);
+    mesh.userData.type = config.type; // Store type for toggling
     mesh.castShadow = !matConfig.transparent;
     mesh.receiveShadow = true;
     mesh.frustumCulled = false; // Important: bounds are dynamic
@@ -286,30 +287,16 @@ function createDebrisSystem(config) {
     return mesh;
 }
 
-export function createAsteroidBelt() {
+export function createBelt(config) {
     return createDebrisSystem({
-        type: 'asteroid',
-        count: 2000,
-        distribution: { minA: 2.1, maxA: 3.3, minE: 0.05, maxE: 0.15, minI: 0, maxI: 20 },
-        material: { color: 0x888888, size: 0.2 }
-    });
-}
-
-export function createKuiperBelt() {
-    return createDebrisSystem({
-        type: 'kuiper',
-        count: 2000,
-        distribution: { minA: 30, maxA: 50, minE: 0.0, maxE: 0.3, minI: 0, maxI: 30 },
-        material: { color: 0xbfd6ff, size: 0.25, opacity: 0.8 }
-    });
-}
-
-export function createOortCloud() {
-    return createDebrisSystem({
-        type: 'oort',
-        count: 300,
-        distribution: { minA: 2000, maxA: 100000, minE: 0.7, maxE: 0.999, minI: 0, maxI: 180 },
-        isSpherical: true,
-        material: { color: 0xf2f5ff, size: 0.15, opacity: 0.15 }
+        type: config.name.toLowerCase().replace(' ', '_'),
+        count: config.visual.count,
+        distribution: config.distribution,
+        isSpherical: config.visual.isSpherical || false,
+        material: {
+            color: config.visual.color,
+            size: config.visual.size,
+            opacity: config.visual.opacity
+        }
     });
 }

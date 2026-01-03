@@ -99,6 +99,32 @@ test.describe('Settings Panel', () => {
         await expect(orbitsToggle).not.toBeChecked();
     });
 
+    test('should toggle belt settings', async ({ page }) => {
+        const settingsBtn = page.locator('#btn-settings');
+        await settingsBtn.click();
+
+        const asteroidToggle = page.locator('#setting-asteroid-belt');
+        const kuiperToggle = page.locator('#setting-kuiper-belt');
+        const oortToggle = page.locator('#setting-oort-cloud');
+
+        // Initially checked
+        await expect(asteroidToggle).toBeChecked();
+        await expect(kuiperToggle).toBeChecked();
+        await expect(oortToggle).toBeChecked();
+
+        // Toggle asteroid off
+        await asteroidToggle.click();
+        await expect(asteroidToggle).not.toBeChecked();
+
+        // Toggle kuiper off
+        await kuiperToggle.click();
+        await expect(kuiperToggle).not.toBeChecked();
+
+        // Toggle oort off
+        await oortToggle.click();
+        await expect(oortToggle).not.toBeChecked();
+    });
+
     test('should change theme', async ({ page }) => {
         const settingsBtn = page.locator('#btn-settings');
         await settingsBtn.click();
