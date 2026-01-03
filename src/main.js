@@ -195,7 +195,7 @@ export async function init() {
             }
 
             // Root System Creation
-            const systemNode = createSystem(planetConfig, textureLoader, useTextures, null);
+            const systemNode = createSystem(config, textureLoader, useTextures, null);
 
             scene.add(systemNode.pivot);
             if (systemNode.orbit) scene.add(systemNode.orbit);
