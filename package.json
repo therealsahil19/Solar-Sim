@@ -1,0 +1,27 @@
+{
+  "name": "solar-sim",
+  "version": "1.0.0",
+  "description": "A web-based 3D simulation of a solar system built with [Three.js](https://threejs.org/).",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:headed": "npx playwright test --headed",
+    "dev": "npx serve -p 8080 ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/therealsahil19/Solar-Sim.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/therealsahil19/Solar-Sim/issues"
+  },
+  "homepage": "https://github.com/therealsahil19/Solar-Sim#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0"
+  }
+}
