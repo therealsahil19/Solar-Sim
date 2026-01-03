@@ -102,6 +102,7 @@ export class NavigationSidebar {
             // Determine Icon
             let icon = '🌑'; // Default for Moon
             if (item.type === 'Planet') icon = '🪐';
+            if (item.type === 'Dwarf Planet') icon = '☄️';
             if (item.type === 'Star') icon = '☀️';
 
             // Construct Content (Safe DOM creation to prevent XSS)

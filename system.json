@@ -130,6 +130,25 @@
         ]
     },
     {
+        "name": "Ceres",
+        "type": "Dwarf Planet",
+        "physics": {
+            "a": 2.767,
+            "e": 0.0758,
+            "i": 10.59,
+            "omega": 73.5,
+            "Omega": 80.3,
+            "M0": 70.3
+        },
+        "visual": {
+            "size": 0.25,
+            "color": "#777777",
+            "texture": "textures/ceres.jpg"
+        },
+        "description": "The largest object in the asteroid belt and the only dwarf planet in the inner solar system.",
+        "moons": []
+    },
+    {
         "name": "Jupiter",
         "type": "Planet",
         "physics": {
@@ -474,7 +493,93 @@
             "texture": "textures/pluto.jpg"
         },
         "description": "A dwarf planet in the Kuiper belt, known for its high eccentricity and inclination.",
-        "moons": []
+        "moons": [
+            {
+                "name": "Charon",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00013,
+                    "e": 0.00005,
+                    "i": 0.001,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 0
+                },
+                "visual": {
+                    "size": 0.12,
+                    "color": "#AAAABB"
+                },
+                "description": "Pluto's largest moon, so large it forms a binary system with Pluto."
+            },
+            {
+                "name": "Styx",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00028,
+                    "e": 0.005,
+                    "i": 0.8,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 45
+                },
+                "visual": {
+                    "size": 0.02,
+                    "color": "#888888"
+                },
+                "description": "A small moon of Pluto, discovered in 2012."
+            },
+            {
+                "name": "Nix",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00032,
+                    "e": 0.002,
+                    "i": 0.1,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 90
+                },
+                "visual": {
+                    "size": 0.03,
+                    "color": "#999999"
+                },
+                "description": "A small satellite of Pluto with a highly elongated shape."
+            },
+            {
+                "name": "Kerberos",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00039,
+                    "e": 0.003,
+                    "i": 0.4,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 180
+                },
+                "visual": {
+                    "size": 0.02,
+                    "color": "#777777"
+                },
+                "description": "Smallest of Pluto's moons, discovered in 2011."
+            },
+            {
+                "name": "Hydra",
+                "type": "Moon",
+                "physics": {
+                    "a": 0.00043,
+                    "e": 0.005,
+                    "i": 0.2,
+                    "omega": 0,
+                    "Omega": 0,
+                    "M0": 270
+                },
+                "visual": {
+                    "size": 0.03,
+                    "color": "#BBBBBB"
+                },
+                "description": "The outermost known moon of Pluto."
+            }
+        ]
     },
     {
         "name": "Asteroid Belt",

@@ -1,0 +1,249 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic:
+    - navigation [ref=e2]:
+      - button "Open Navigation" [ref=e3] [cursor=pointer]: ☰
+      - heading "Solar-Sim" [level=1] [ref=e4]
+      - generic [ref=e5]:
+        - button "Open Settings" [ref=e6] [cursor=pointer]:
+          - img [ref=e7]
+        - button "Controls & Help" [ref=e9] [cursor=pointer]: "?"
+    - complementary [ref=e10]:
+      - generic [ref=e11]:
+        - heading [level=2] [ref=e12]: Planets
+        - button [ref=e13] [cursor=pointer]: ✕
+      - searchbox [ref=e14]
+      - tree [ref=e15]:
+        - group [ref=e16]:
+          - treeitem [ref=e17]:
+            - button [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: ☀️ Sun
+              - generic [ref=e20]: Star
+        - group [ref=e21]:
+          - treeitem [ref=e22]:
+            - button [ref=e23] [cursor=pointer]:
+              - generic [ref=e24]: 🪐 Mercury
+              - generic [ref=e25]: Planet
+          - treeitem [ref=e26]:
+            - button [ref=e27] [cursor=pointer]:
+              - generic [ref=e28]: 🪐 Venus
+              - generic [ref=e29]: Planet
+          - treeitem [ref=e30]:
+            - button [ref=e31] [cursor=pointer]:
+              - generic [ref=e32]: 🪐 Earth
+              - generic [ref=e33]: Planet
+            - group [ref=e35]:
+              - treeitem [ref=e36]:
+                - button [ref=e37] [cursor=pointer]:
+                  - generic [ref=e38]: 🌑 Moon
+                  - generic [ref=e39]: Moon
+          - treeitem [ref=e40]:
+            - button [ref=e41] [cursor=pointer]:
+              - generic [ref=e42]: 🪐 Mars
+              - generic [ref=e43]: Planet
+            - group [ref=e45]:
+              - treeitem [ref=e46]:
+                - button [ref=e47] [cursor=pointer]:
+                  - generic [ref=e48]: 🌑 Phobos
+                  - generic [ref=e49]: Moon
+              - treeitem [ref=e50]:
+                - button [ref=e51] [cursor=pointer]:
+                  - generic [ref=e52]: 🌑 Deimos
+                  - generic [ref=e53]: Moon
+          - treeitem [ref=e54]:
+            - button [ref=e55] [cursor=pointer]:
+              - generic [ref=e56]: ☄️ Ceres
+              - generic [ref=e57]: Dwarf Planet
+          - treeitem [ref=e58]:
+            - button [ref=e59] [cursor=pointer]:
+              - generic [ref=e60]: 🪐 Jupiter
+              - generic [ref=e61]: Planet
+            - group [ref=e63]:
+              - treeitem [ref=e64]:
+                - button [ref=e65] [cursor=pointer]:
+                  - generic [ref=e66]: 🌑 Io
+                  - generic [ref=e67]: Moon
+              - treeitem [ref=e68]:
+                - button [ref=e69] [cursor=pointer]:
+                  - generic [ref=e70]: 🌑 Europa
+                  - generic [ref=e71]: Moon
+              - treeitem [ref=e72]:
+                - button [ref=e73] [cursor=pointer]:
+                  - generic [ref=e74]: 🌑 Ganymede
+                  - generic [ref=e75]: Moon
+              - treeitem [ref=e76]:
+                - button [ref=e77] [cursor=pointer]:
+                  - generic [ref=e78]: 🌑 Callisto
+                  - generic [ref=e79]: Moon
+          - treeitem [ref=e80]:
+            - button [ref=e81] [cursor=pointer]:
+              - generic [ref=e82]: 🪐 Saturn
+              - generic [ref=e83]: Planet
+            - group [ref=e85]:
+              - treeitem [ref=e86]:
+                - button [ref=e87] [cursor=pointer]:
+                  - generic [ref=e88]: 🌑 Enceladus
+                  - generic [ref=e89]: Moon
+              - treeitem [ref=e90]:
+                - button [ref=e91] [cursor=pointer]:
+                  - generic [ref=e92]: 🌑 Dione
+                  - generic [ref=e93]: Moon
+              - treeitem [ref=e94]:
+                - button [ref=e95] [cursor=pointer]:
+                  - generic [ref=e96]: 🌑 Rhea
+                  - generic [ref=e97]: Moon
+              - treeitem [ref=e98]:
+                - button [ref=e99] [cursor=pointer]:
+                  - generic [ref=e100]: 🌑 Titan
+                  - generic [ref=e101]: Moon
+          - treeitem [ref=e102]:
+            - button [ref=e103] [cursor=pointer]:
+              - generic [ref=e104]: 🪐 Uranus
+              - generic [ref=e105]: Planet
+            - group [ref=e107]:
+              - treeitem [ref=e108]:
+                - button [ref=e109] [cursor=pointer]:
+                  - generic [ref=e110]: 🌑 Miranda
+                  - generic [ref=e111]: Moon
+              - treeitem [ref=e112]:
+                - button [ref=e113] [cursor=pointer]:
+                  - generic [ref=e114]: 🌑 Ariel
+                  - generic [ref=e115]: Moon
+              - treeitem [ref=e116]:
+                - button [ref=e117] [cursor=pointer]:
+                  - generic [ref=e118]: 🌑 Umbriel
+                  - generic [ref=e119]: Moon
+              - treeitem [ref=e120]:
+                - button [ref=e121] [cursor=pointer]:
+                  - generic [ref=e122]: 🌑 Titania
+                  - generic [ref=e123]: Moon
+              - treeitem [ref=e124]:
+                - button [ref=e125] [cursor=pointer]:
+                  - generic [ref=e126]: 🌑 Oberon
+                  - generic [ref=e127]: Moon
+          - treeitem [ref=e128]:
+            - button [ref=e129] [cursor=pointer]:
+              - generic [ref=e130]: 🪐 Neptune
+              - generic [ref=e131]: Planet
+            - group [ref=e133]:
+              - treeitem [ref=e134]:
+                - button [ref=e135] [cursor=pointer]:
+                  - generic [ref=e136]: 🌑 Triton
+                  - generic [ref=e137]: Moon
+          - treeitem [ref=e138]:
+            - button [ref=e139] [cursor=pointer]:
+              - generic [ref=e140]: ☄️ Pluto
+              - generic [ref=e141]: Dwarf Planet
+            - group [ref=e143]:
+              - treeitem [ref=e144]:
+                - button [ref=e145] [cursor=pointer]:
+                  - generic [ref=e146]: 🌑 Charon
+                  - generic [ref=e147]: Moon
+              - treeitem [ref=e148]:
+                - button [ref=e149] [cursor=pointer]:
+                  - generic [ref=e150]: 🌑 Styx
+                  - generic [ref=e151]: Moon
+              - treeitem [ref=e152]:
+                - button [ref=e153] [cursor=pointer]:
+                  - generic [ref=e154]: 🌑 Nix
+                  - generic [ref=e155]: Moon
+              - treeitem [ref=e156]:
+                - button [ref=e157] [cursor=pointer]:
+                  - generic [ref=e158]: 🌑 Kerberos
+                  - generic [ref=e159]: Moon
+              - treeitem [ref=e160]:
+                - button [ref=e161] [cursor=pointer]:
+                  - generic [ref=e162]: 🌑 Hydra
+                  - generic [ref=e163]: Moon
+          - treeitem [ref=e164]:
+            - button [ref=e165] [cursor=pointer]:
+              - generic [ref=e166]: 🌑 Asteroid Belt
+              - generic [ref=e167]: Belt
+          - treeitem [ref=e168]:
+            - button [ref=e169] [cursor=pointer]:
+              - generic [ref=e170]: 🌑 Kuiper Belt
+              - generic [ref=e171]: Belt
+          - treeitem [ref=e172]:
+            - button [ref=e173] [cursor=pointer]:
+              - generic [ref=e174]: 🌑 Oort Cloud
+              - generic [ref=e175]: Belt
+    - complementary [ref=e176]:
+      - generic [ref=e177]:
+        - heading [level=2] [ref=e178]: Settings
+        - button [ref=e179] [cursor=pointer]: ✕
+      - generic [ref=e180]:
+        - generic [ref=e181]:
+          - heading [level=3] [ref=e182]: Visual
+          - generic [ref=e183] [cursor=pointer]:
+            - generic [ref=e184]: Textures (T)
+            - checkbox [checked] [ref=e185]
+          - generic [ref=e186] [cursor=pointer]:
+            - generic [ref=e187]: Labels (L)
+            - checkbox [checked] [ref=e188]
+          - generic [ref=e189] [cursor=pointer]:
+            - generic [ref=e190]: Orbits (O)
+            - checkbox [checked] [ref=e191]
+          - generic [ref=e192] [cursor=pointer]:
+            - generic [ref=e193]: Asteroid Belt
+            - checkbox [checked] [ref=e194]
+          - generic [ref=e195] [cursor=pointer]:
+            - generic [ref=e196]: Kuiper Belt
+            - checkbox [checked] [ref=e197]
+          - generic [ref=e198] [cursor=pointer]:
+            - generic [ref=e199]: Oort Cloud
+            - checkbox [checked] [ref=e200]
+        - generic [ref=e201]:
+          - heading [level=3] [ref=e202]: Theme
+          - generic [ref=e203]:
+            - button [pressed] [ref=e204] [cursor=pointer]:
+              - generic [ref=e206]: Default
+            - button [ref=e207] [cursor=pointer]:
+              - generic [ref=e209]: Blueprint
+            - button [ref=e210] [cursor=pointer]:
+              - generic [ref=e212]: OLED
+        - generic [ref=e213]:
+          - heading [level=3] [ref=e214]: Simulation
+          - generic [ref=e215]:
+            - generic [ref=e216]:
+              - generic [ref=e217]: Speed
+              - generic [ref=e218]: 1.0x
+            - slider [ref=e219] [cursor=pointer]: "1"
+    - generic:
+      - generic [ref=e220]:
+        - button "Pause Simulation" [active] [ref=e221] [cursor=pointer]:
+          - img [ref=e222]
+        - generic [ref=e224]:
+          - generic [ref=e225]:
+            - generic [ref=e226]: Speed
+            - generic [ref=e227]: 1.0x
+          - slider "Speed" [ref=e228] [cursor=pointer]: "1"
+      - toolbar "Camera and View Controls" [ref=e229]:
+        - button "Toggle Camera View" [ref=e230] [cursor=pointer]:
+          - img [ref=e231]
+        - button "Reset View" [ref=e233] [cursor=pointer]:
+          - img [ref=e234]
+        - button "Toggle Textures" [pressed] [ref=e236] [cursor=pointer]:
+          - img [ref=e237]
+        - button "Toggle Labels" [pressed] [ref=e239] [cursor=pointer]:
+          - img [ref=e240]
+        - button "Toggle Orbits" [pressed] [ref=e242] [cursor=pointer]:
+          - img [ref=e243]
+  - status: Simulation Resumed
+  - status [ref=e246]: Simulation resumed
+  - generic:
+    - text: Solar-Sim · Built with Three.js ·
+    - link "GitHub" [ref=e247] [cursor=pointer]:
+      - /url: https://github.com/therealsahil19/Solar-Sim
+  - application "3D Solar System Simulation" [ref=e248]
+  - generic:
+    - generic: Mercury
+    - generic: Venus
+    - generic: Earth
+    - generic: Mars
+    - generic: Ceres
+    - generic: Uranus
+    - generic: Neptune
+    - generic: Pluto
+```

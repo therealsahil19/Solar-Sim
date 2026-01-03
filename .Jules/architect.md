@@ -94,3 +94,17 @@ This creates a fragmented UX where power users discover features accidentally.
 - Specialized rendering for Triton's retrograde orbit.
 - Surface detail exploration for Miranda's extreme topography.
 - Improved gravitational clustering for outer solar system bodies.
+- Added major moons for Uranus and Neptune system.
+## 2026-01-03 - Ceres & Pluto's Satellites
+
+**Context:** While Pluto was present as a dwarf planet, it lacked its charismatic satellite system (Charon and the four smaller moons). Additionally, Ceres, the largest object in the Asteroid Belt and the only dwarf planet in the inner solar system, was missing.
+
+**Tech Stack:**
+- **Data Layer:** Updated `system.json` with Ceres and Pluto's 5 moons (Charon, Styx, Nix, Kerberos, Hydra).
+- **UI Layer:** Added `Dwarf Planet` icon (☄️) support in `src/components/NavigationSidebar.js`.
+- **Logic Layer:** Leveraged existing recursive `createSystem` logic to handle dwarf planet moon systems.
+
+**Next Steps:** This unlocks:
+- Specialized rendering for the binary Pluto-Charon barycenter.
+- Detailed surface maps for Ceres (Occator Crater).
+- Inclusion of Eris, Haumea, and Makemake in the outer system.
