@@ -35,3 +35,15 @@
 
 **Result:** Zero-allocation animate loop deployed. Benchmark tool available via `boltBenchmark()`.
 
+## 2026-01-04 - [Resource Hints & Performance Testing Infrastructure]
+**Bottleneck:** Network latency for CDN assets (Three.js from unpkg.com) and render-blocking CSS (39KB).
+**Strategy:**
+1.  **DNS Prefetch + Preconnect:** Added hints in `index.html` to reduce TTFB for unpkg.com.
+2.  **CSS Preload:** Added `rel="preload"` for `style.css` to prioritize critical rendering path.
+3.  **Automated Performance E2E Test:** Created `tests/e2e/performance.spec.js` that:
+    - Runs `boltBenchmark()` for 5 seconds
+    - Asserts FPS > 30, jankPercent < 25%, P99 < 50ms
+    - Validates resource hints are present in DOM
+    - Measures initialization time
+**Result:** Performance regression testing now automated. Resource loading optimized via browser hints.
+
