@@ -1,20 +1,49 @@
 /**
- * @file SettingsManager.js
+ * @file SettingsManager.ts
  * @description Manages user preferences persistence via localStorage.
- * Follows the same pattern as ThemeManager.js for consistency.
+ * Follows the same pattern as ThemeManager.ts for consistency.
  */
+
+import type { ThemeName } from '../types';
 
 /**
- * @typedef {Object} Settings
- * @property {boolean} textures - Whether high-definition textures are enabled. If false, solid colors are used.
- * @property {boolean} labels - Whether celestial body labels (CSS2D) are visible in the scene.
- * @property {boolean} orbits - Whether orbit lines and trails are rendered.
- * @property {string} theme - The active visual theme identifier ('default' | 'blueprint' | 'oled').
- * @property {number} speed - The simulation time scale multiplier. Range: 0.1 (slow) to 5.0 (fast).
+ * Settings configuration object.
  */
+export interface Settings {
+    /** Whether high-definition textures are enabled */
+    textures: boolean;
+    /** Whether celestial body labels are visible */
+    labels: boolean;
+    /** Whether orbit lines and trails are rendered */
+    orbits: boolean;
+    /** The active visual theme identifier */
+    theme: ThemeName;
+    /** The simulation time scale multiplier (0.1 to 5.0) */
+    speed: number;
+    /** Whether the asteroid belt is visible */
+    asteroidBelt: boolean;
+    /** Whether the Kuiper belt is visible */
+    kuiperBelt: boolean;
+    /** Whether the Oort cloud is visible */
+    oortCloud: boolean;
+}
 
-/** @type {Settings} */
-const DEFAULT_SETTINGS = {
+/**
+ * Valid setting keys.
+ */
+export type SettingKey = keyof Settings;
+
+/**
+ * Setting value types.
+ */
+export type SettingValue = Settings[SettingKey];
+
+/**
+ * Listener callback signature.
+ */
+export type SettingsListener = (key: SettingKey, value: SettingValue) => void;
+
+const DEFAULT_SETTINGS: Settings = {
     textures: true,
     labels: true,
     orbits: true,
@@ -30,10 +59,10 @@ const STORAGE_KEY = 'solar-sim-settings';
 /**
  * SettingsManager handles the persistence and distribution of user preferences.
  * It uses an Observer pattern (Subscription) to notify parts of the app when settings change.
- * 
+ *
  * Technical Note: Data is persisted to localStorage. On load, it merges stored values
  * with DEFAULT_SETTINGS to ensure forward compatibility with new setting keys.
- * 
+ *
  * @example
  * const settings = new SettingsManager();
  * settings.subscribe((key, value) => {
@@ -42,26 +71,27 @@ const STORAGE_KEY = 'solar-sim-settings';
  * settings.set('theme', 'oled');
  */
 export class SettingsManager {
+    /** The current active settings state */
+    private settings: Settings;
+
+    /** A set of callback functions to notify on change */
+    private listeners: Set<SettingsListener>;
+
     constructor() {
-        /** @type {Settings} The current active settings state. */
         this.settings = { ...DEFAULT_SETTINGS };
-
-        /** @type {Set<Function>} A set of callback functions to notify on change. */
         this.listeners = new Set();
-
         this.load();
     }
 
     /**
      * Loads settings from localStorage.
      * Merges with DEFAULT_SETTINGS to handle partial or missing keys from older versions.
-     * @private
      */
-    load() {
+    private load(): void {
         try {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
-                const parsed = JSON.parse(stored);
+                const parsed = JSON.parse(stored) as Partial<Settings>;
                 this.settings = { ...DEFAULT_SETTINGS, ...parsed };
             }
         } catch (e) {
@@ -71,10 +101,9 @@ export class SettingsManager {
     }
 
     /**
-     * Persists the current 'this.settings' object to localStorage as a JSON string.
-     * @private
+     * Persists the current settings object to localStorage as a JSON string.
      */
-    save() {
+    private save(): void {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
         } catch (e) {
@@ -84,28 +113,28 @@ export class SettingsManager {
 
     /**
      * Retrieves the current value for a specific setting key.
-     * @param {keyof Settings} key - The setting key to retrieve.
-     * @returns {string|boolean|number} The current value of the setting.
+     * @param key - The setting key to retrieve.
+     * @returns The current value of the setting.
      */
-    get(key) {
+    get<K extends SettingKey>(key: K): Settings[K] {
         return this.settings[key];
     }
 
     /**
      * Returns a shallow copy of all current settings.
-     * @returns {Settings} The complete settings object.
+     * @returns The complete settings object.
      */
-    getAll() {
+    getAll(): Settings {
         return { ...this.settings };
     }
 
     /**
      * Updates a single setting value, persists it, and notifies all subscribers.
-     * @param {keyof Settings} key - The setting key to update.
-     * @param {string|boolean|number} value - The new value to apply.
+     * @param key - The setting key to update.
+     * @param value - The new value to apply.
      * @example settings.set('speed', 2.0);
      */
-    set(key, value) {
+    set<K extends SettingKey>(key: K, value: Settings[K]): void {
         if (!(key in DEFAULT_SETTINGS)) {
             console.warn(`SettingsManager: Unknown setting "${key}"`);
             return;
@@ -118,24 +147,23 @@ export class SettingsManager {
 
     /**
      * Registers a listener to be called whenever any setting is changed.
-     * @param {function(string, *): void} callback - The function to call with (key, value).
-     * @returns {function(): void} An unsubscription function to stop listening.
+     * @param callback - The function to call with (key, value).
+     * @returns An unsubscription function to stop listening.
      * @example
      * const unsub = settings.subscribe((k, v) => console.log(k, v));
      * unsub(); // Clean up
      */
-    subscribe(callback) {
+    subscribe(callback: SettingsListener): () => void {
         this.listeners.add(callback);
         return () => this.listeners.delete(callback);
     }
 
     /**
      * Internal helper to broadcast changes to all subscribed listeners.
-     * @param {string} key - The changed key.
-     * @param {*} value - The new value.
-     * @private
+     * @param key - The changed key.
+     * @param value - The new value.
      */
-    notifyListeners(key, value) {
+    private notifyListeners(key: SettingKey, value: SettingValue): void {
         for (const listener of this.listeners) {
             try {
                 listener(key, value);
@@ -148,11 +176,11 @@ export class SettingsManager {
     /**
      * Resets all settings to their factory defaults and notifies listeners of the change.
      */
-    reset() {
+    reset(): void {
         this.settings = { ...DEFAULT_SETTINGS };
         this.save();
         // Notify for each key to ensure UI state parity
-        for (const key of Object.keys(DEFAULT_SETTINGS)) {
+        for (const key of Object.keys(DEFAULT_SETTINGS) as SettingKey[]) {
             this.notifyListeners(key, this.settings[key]);
         }
     }

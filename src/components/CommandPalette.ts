@@ -1,31 +1,63 @@
 /**
- * @file CommandPalette.js
+ * @file CommandPalette.ts
  * @description A "Cmd+K" interface for power users to navigate and control the simulation.
  * Implements WAI-ARIA Combo Box pattern (1.2) for accessibility.
  */
 
-export class CommandPalette {
-    /**
-     * @param {Array<Object>} planetData - The hierarchical system data.
-     * @param {Object} callbacks - Functions to execute actions.
-     * @param {Function} callbacks.onSelectByName - Selects an object by name. Signature: `(name: string) => void`.
-     * @param {Function} callbacks.onToggleOrbits - Toggles orbit lines visibility.
-     * @param {Function} callbacks.onToggleLabels - Toggles label visibility.
-     * @param {Function} callbacks.onToggleTexture - Toggles texture quality (HD/LD).
-     * @param {Function} callbacks.onToggleCamera - Cycles camera modes.
-     * @param {Function} callbacks.onResetCamera - Resets camera to initial position.
-     * @param {Function} callbacks.onTogglePause - Toggles simulation pause state.
-     * @param {Function} callbacks.openModal - Opens the help modal.
-     * @param {Function} callbacks.onToggleTheme - Cycles visual themes.
-     */
-    constructor(planetData, callbacks) {
-        this.callbacks = callbacks;
-        this.isOpen = false;
-        this.selectedIndex = 0;
-        this.filteredItems = [];
-        this.previousActiveElement = null;
+import type { Disposable, CelestialBody } from '../types';
 
-        // Flatten data and merge with commands
+/**
+ * Command palette item.
+ */
+interface PaletteItem {
+    name: string;
+    type: string;
+    category: string;
+    handler: () => void;
+}
+
+/**
+ * Callbacks for CommandPalette actions.
+ */
+export interface CommandPaletteCallbacks {
+    onSelectByName: (name: string) => void;
+    onToggleOrbits: () => void;
+    onToggleLabels: () => void;
+    onToggleTexture: (element: HTMLElement | null) => void;
+    onToggleCamera: () => void;
+    onResetCamera: () => void;
+    onTogglePause: (element: HTMLElement | null) => void;
+    openModal: () => void;
+    onToggleTheme: () => void;
+}
+
+/**
+ * A "Cmd+K" command palette for power users.
+ */
+export class CommandPalette implements Disposable {
+    private callbacks: CommandPaletteCallbacks;
+    private isOpen: boolean = false;
+    private selectedIndex: number = 0;
+    private filteredItems: PaletteItem[] = [];
+    private previousActiveElement: Element | null = null;
+    private items: PaletteItem[];
+
+    // DOM elements
+    private overlay!: HTMLDivElement;
+    private input!: HTMLInputElement;
+    private list!: HTMLUListElement;
+    private liveRegion!: HTMLDivElement;
+
+    // Event handler reference
+    private _globalKeyDownHandler: ((e: KeyboardEvent) => void) | null = null;
+
+    /**
+     * Creates a new CommandPalette instance.
+     * @param planetData - The hierarchical system data.
+     * @param callbacks - Functions to execute actions.
+     */
+    constructor(planetData: CelestialBody[], callbacks: CommandPaletteCallbacks) {
+        this.callbacks = callbacks;
         this.items = [
             ...this.flattenData(planetData),
             ...this.getStaticCommands()
@@ -37,26 +69,27 @@ export class CommandPalette {
 
     /**
      * Flattens the recursive planet data into a linear list of searchable items.
-     * Traverses the `moons` array of each node to build a flat index.
-     *
-     * @param {Array<Object>} data - Hierarchy of planet/moon objects from system.json.
-     * @returns {Array<{name: string, type: string, category: string, handler: Function}>} Flattened list for the fuzzy search.
      */
-    flattenData(data) {
+    private flattenData(data: CelestialBody[]): PaletteItem[] {
         if (!data) return [];
-        const items = [];
-        const traverse = (nodes) => {
+        const items: PaletteItem[] = [];
+
+        const traverse = (nodes: CelestialBody[]): void => {
             nodes.forEach(node => {
                 items.push({
                     name: node.name,
-                    type: node.type, // 'Planet', 'Moon', 'Star'
+                    type: node.type === 'planet' ? 'Planet' :
+                        node.type === 'moon' ? 'Moon' :
+                            node.type === 'star' ? 'Star' :
+                                node.type === 'dwarf_planet' ? 'Dwarf Planet' : node.type,
                     category: 'Navigation',
                     handler: () => this.callbacks.onSelectByName(node.name)
                 });
                 if (node.moons) traverse(node.moons);
             });
         };
-        // Add Sun manually if missing (it's usually not in system.json array)
+
+        // Add Sun manually if missing
         if (!data.find(n => n.name === 'Sun')) {
             items.push({
                 name: 'Sun', type: 'Star', category: 'Navigation',
@@ -69,40 +102,37 @@ export class CommandPalette {
 
     /**
      * Defines the static command actions available in the palette.
-     * @returns {Array} List of command objects.
      */
-    getStaticCommands() {
+    private getStaticCommands(): PaletteItem[] {
         return [
             { name: 'Switch Theme', type: 'Command', category: 'Appearance', handler: () => this.callbacks.onToggleTheme() },
-            { name: 'Toggle Orbits', type: 'Command', category: 'Actions', handler: this.callbacks.onToggleOrbits },
-            { name: 'Toggle Labels', type: 'Command', category: 'Actions', handler: this.callbacks.onToggleLabels },
+            { name: 'Toggle Orbits', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleOrbits() },
+            { name: 'Toggle Labels', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleLabels() },
             { name: 'Toggle Textures (HD/LD)', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleTexture(null) },
-            { name: 'Toggle Camera Mode', type: 'Command', category: 'Actions', handler: this.callbacks.onToggleCamera },
-            { name: 'Reset View', type: 'Command', category: 'Actions', handler: this.callbacks.onResetCamera },
+            { name: 'Toggle Camera Mode', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleCamera() },
+            { name: 'Reset View', type: 'Command', category: 'Actions', handler: () => this.callbacks.onResetCamera() },
             { name: 'Pause / Resume', type: 'Command', category: 'Actions', handler: () => this.callbacks.onTogglePause(null) },
-            { name: 'Help / Controls', type: 'Command', category: 'Actions', handler: this.callbacks.openModal },
+            { name: 'Help / Controls', type: 'Command', category: 'Actions', handler: () => this.callbacks.openModal() },
         ];
     }
 
     /**
      * Initializes the DOM elements for the command palette.
-     * Constructs the dialog overlay, input field, and list container.
-     * Applies WAI-ARIA attributes (`role="dialog"`, `aria-modal`) for accessibility.
      */
-    initDOM() {
+    private initDOM(): void {
         // Overlay
         this.overlay = document.createElement('div');
         this.overlay.id = 'cmd-palette-overlay';
         this.overlay.setAttribute('role', 'dialog');
         this.overlay.setAttribute('aria-modal', 'true');
         this.overlay.setAttribute('aria-label', 'Command Palette');
-        this.overlay.hidden = true; // Use hidden attribute logic
+        this.overlay.hidden = true;
 
         // Container
         const container = document.createElement('div');
         container.className = 'cmd-panel glass-panel';
 
-        // Input Wrapper (for icon)
+        // Input Wrapper
         const inputWrapper = document.createElement('div');
         inputWrapper.className = 'cmd-input-wrapper';
 
@@ -116,7 +146,7 @@ export class CommandPalette {
         this.input.setAttribute('aria-autocomplete', 'list');
         this.input.setAttribute('aria-controls', 'cmd-list');
         this.input.setAttribute('aria-expanded', 'true');
-        this.input.setAttribute('aria-activedescendant', ''); // Updated dynamically
+        this.input.setAttribute('aria-activedescendant', '');
 
         inputWrapper.appendChild(searchIcon);
         inputWrapper.appendChild(this.input);
@@ -126,14 +156,14 @@ export class CommandPalette {
         this.list.id = 'cmd-list';
         this.list.setAttribute('role', 'listbox');
 
-        // A11y: Live region for search results
+        // Live region for A11y
         this.liveRegion = document.createElement('div');
         this.liveRegion.className = 'sr-only';
         this.liveRegion.setAttribute('aria-live', 'polite');
         this.liveRegion.setAttribute('aria-atomic', 'true');
         container.appendChild(this.liveRegion);
 
-        // Footer (Shortcuts hint)
+        // Footer
         const footer = document.createElement('div');
         footer.className = 'cmd-footer';
         footer.innerHTML = `
@@ -151,13 +181,16 @@ export class CommandPalette {
     }
 
     /**
-     * Binds event listeners for input, keyboard navigation, and toggling.
+     * Binds event listeners.
      */
-    bindEvents() {
+    private bindEvents(): void {
         // Input Filter
-        this.input.addEventListener('input', (e) => this.filter(e.target.value));
+        this.input.addEventListener('input', (e) => {
+            const target = e.target as HTMLInputElement;
+            this.filter(target.value);
+        });
 
-        // Keyboard Navigation (Input)
+        // Keyboard Navigation
         this.input.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
@@ -179,7 +212,7 @@ export class CommandPalette {
         });
 
         // Global Toggle
-        this._globalKeyDownHandler = (e) => {
+        this._globalKeyDownHandler = (e: KeyboardEvent): void => {
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
                 this.toggle();
@@ -189,30 +222,30 @@ export class CommandPalette {
     }
 
     /**
-     * Destroys the command palette and removes global event listeners (e.g., KeyDown).
-     * This is crucial to prevent memory leaks in Single Page Applications (SPA).
+     * Destroys the command palette and removes global event listeners.
      */
-    destroy() {
+    dispose(): void {
         if (this._globalKeyDownHandler) {
             window.removeEventListener('keydown', this._globalKeyDownHandler);
         }
-        if (this.overlay && this.overlay.parentNode) {
+        if (this.overlay?.parentNode) {
             this.overlay.parentNode.removeChild(this.overlay);
         }
     }
 
-    /**
-     * Toggles the open/close state of the palette.
-     */
-    toggle() {
+    /** Alias for dispose */
+    destroy(): void {
+        this.dispose();
+    }
+
+    /** Toggles open/close state */
+    toggle(): void {
         if (this.isOpen) this.close();
         else this.open();
     }
 
-    /**
-     * Opens the command palette and focuses the input.
-     */
-    open() {
+    /** Opens the command palette */
+    open(): void {
         this.isOpen = true;
         this.overlay.hidden = false;
         this.overlay.classList.add('visible');
@@ -221,14 +254,12 @@ export class CommandPalette {
         this.previousActiveElement = document.activeElement;
 
         this.input.value = '';
-        this.filter(''); // Reset list
+        this.filter('');
         this.input.focus();
     }
 
-    /**
-     * Closes the command palette and restores focus.
-     */
-    close() {
+    /** Closes the command palette */
+    close(): void {
         this.isOpen = false;
         this.overlay.classList.remove('visible');
         this.overlay.classList.remove('animate-in');
@@ -239,35 +270,32 @@ export class CommandPalette {
                 this.overlay.hidden = true;
                 this.overlay.classList.remove('animate-out');
             }
-        }, 350); // Matches duration-normal
+        }, 350);
 
-        if (this.previousActiveElement) {
+        if (this.previousActiveElement instanceof HTMLElement) {
             this.previousActiveElement.focus();
         }
     }
 
     /**
      * Filters the item list based on the search query.
-     * @param {string} query - The search string.
      */
-    filter(query) {
+    private filter(query: string): void {
         const q = query.toLowerCase().trim();
 
         if (!q) {
-            // Show top items or all? Let's show all for now, maybe limited to 20
             this.filteredItems = this.items;
         } else {
-            // Bug 042 Fix: Use optional chaining to prevent TypeError on undefined name/type
             this.filteredItems = this.items.filter(item =>
-                (item.name?.toLowerCase() || '').includes(q) ||
-                (item.type?.toLowerCase() || '').includes(q)
+                (item.name?.toLowerCase() ?? '').includes(q) ||
+                (item.type?.toLowerCase() ?? '').includes(q)
             );
         }
 
         // Sort: Exact matches first
         this.filteredItems.sort((a, b) => {
-            const aName = (a.name || '').toLowerCase();
-            const bName = (b.name || '').toLowerCase();
+            const aName = (a.name ?? '').toLowerCase();
+            const bName = (b.name ?? '').toLowerCase();
             const aStarts = aName.startsWith(q);
             const bStarts = bName.startsWith(q);
             if (aStarts && !bStarts) return -1;
@@ -279,17 +307,15 @@ export class CommandPalette {
         this.selectIndex(0);
 
         // A11y update
-        if (this.liveRegion) {
-            this.liveRegion.textContent = q
-                ? `${this.filteredItems.length} results found for "${q}"`
-                : '';
-        }
+        this.liveRegion.textContent = q
+            ? `${this.filteredItems.length} results found for "${q}"`
+            : '';
     }
 
     /**
      * Renders the filtered list of items to the DOM.
      */
-    renderList() {
+    private renderList(): void {
         this.list.innerHTML = '';
 
         if (this.filteredItems.length === 0) {
@@ -303,7 +329,7 @@ export class CommandPalette {
         this.filteredItems.forEach((item, index) => {
             const li = document.createElement('li');
             li.id = `cmd-item-${index}`;
-            li.role = 'option';
+            li.setAttribute('role', 'option');
             li.className = 'cmd-item';
 
             // Icon
@@ -311,6 +337,7 @@ export class CommandPalette {
             if (item.type === 'Planet') icon = '🪐';
             if (item.type === 'Moon') icon = '🌑';
             if (item.type === 'Star') icon = '☀️';
+            if (item.type === 'Dwarf Planet') icon = '☄️';
 
             const iconSpan = document.createElement('span');
             iconSpan.className = 'cmd-item-icon';
@@ -333,10 +360,8 @@ export class CommandPalette {
                 this.executeCurrent();
             });
 
-            // Hover state logic if needed, but CSS :hover handles visual
-            // Mouse enter updates selection index for keyboard continuity
             li.addEventListener('mouseenter', () => {
-                this.selectIndex(index, false); // false = don't scroll
+                this.selectIndex(index, false);
             });
 
             this.list.appendChild(li);
@@ -345,20 +370,16 @@ export class CommandPalette {
 
     /**
      * Selects an item at the given index.
-     * @param {number} index - The index to select.
-     * @param {boolean} [autoScroll=true] - Whether to scroll the selected item into view.
      */
-    selectIndex(index, autoScroll = true) {
+    private selectIndex(index: number, autoScroll: boolean = true): void {
         if (this.filteredItems.length === 0) return;
 
-        // Wrap around
         if (index < 0) index = this.filteredItems.length - 1;
         if (index >= this.filteredItems.length) index = 0;
 
         this.selectedIndex = index;
 
-        // Update UI
-        const items = this.list.querySelectorAll('.cmd-item');
+        const items = this.list.querySelectorAll<HTMLElement>('.cmd-item');
         items.forEach((item, i) => {
             if (i === index) {
                 item.setAttribute('aria-selected', 'true');
@@ -377,7 +398,7 @@ export class CommandPalette {
     /**
      * Executes the handler for the currently selected item.
      */
-    executeCurrent() {
+    private executeCurrent(): void {
         const item = this.filteredItems[this.selectedIndex];
         if (item) {
             this.close();

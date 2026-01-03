@@ -1,51 +1,70 @@
 /**
- * @file main.js
+ * @file main.ts
  * @description The "Conductor" module for the Solar System simulation.
  * It orchestrates the initialization of the 3D scene, manages the render loop,
  * handles global state (scene, camera, renderer), and coordinates interaction between modules.
  */
 
 import * as THREE from 'three';
-import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
-import { createStarfield, createSun, createPlayerShip, createSystem, clearMaterialCache } from './procedural.js';
-import { createBelt } from './debris.js';
-import { setupControls, setupInteraction } from './input.js';
-import { InstanceRegistry } from './instancing.js';
-import { TrailManager } from './trails.js';
-import { getOrbitalPosition, physicsToRender } from './physics.js';
-import './benchmark.js'; // ⚡ Bolt: Auto-load performance benchmark
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {
+    createStarfield,
+    createSun,
+    createPlayerShip,
+    createSystem,
+    clearMaterialCache,
+    type ExtendedTextureLoader,
+    type AnimatedBody,
+    type SystemData,
+    type SunMesh
+} from './procedural';
+import { createBelt } from './debris';
+import { setupControls, setupInteraction, type InteractionResult } from './input';
+import { InstanceRegistry } from './instancing';
+import { TrailManager } from './trails';
+import { getOrbitalPosition, physicsToRender } from './physics';
+import './benchmark'; // Auto-load performance benchmark
+
+// ============================================================================
+// Window Extensions
+// ============================================================================
+
+declare global {
+    interface Window {
+        scene: THREE.Scene | null;
+        playerShip: THREE.Group | null;
+        controls: OrbitControls | null;
+        isPaused: boolean;
+        __SKIP_INIT__?: boolean;
+    }
+}
 
 // ============================================================================
 // State & Globals
 // ============================================================================
 
-/**
- * @type {Array<{
- *   pivot: THREE.Group,
- *   mesh: THREE.Group,
- *   physics: Object,
- *   parent?: Object
- * }>}
- */
-export const animatedObjects = [];
+/** Exported for access by tests and other modules */
+export const animatedObjects: AnimatedBody[] = [];
 
-/** @type {Array<THREE.Object3D>} Optimization for raycasting */
-const interactionTargets = [];
+/** Optimization for raycasting */
+const interactionTargets: THREE.Object3D[] = [];
 
-/** @type {Array<THREE.Mesh>} List of primary planets for shortcuts */
-const planets = [];
+/** List of primary planets for shortcuts */
+const planets: THREE.Group[] = [];
 
-const allOrbits = [];
-const allTrails = [];
-const allLabels = [];
+const allOrbits: THREE.LineLoop[] = [];
+const allTrails: unknown[] = [];
+const allLabels: CSS2DObject[] = [];
 
-let playerShip;
-let starfield;
-let controls;
-export let scene;
-let camera;
-let renderer;
-let labelRenderer;
+let playerShip: THREE.Group | null = null;
+let starfield: THREE.Points | null = null;
+let controls: OrbitControls | null = null;
+
+export let scene: THREE.Scene;
+let camera: THREE.PerspectiveCamera;
+let renderer: THREE.WebGLRenderer | null = null;
+let labelRenderer: CSS2DRenderer | null = null;
 
 let useTextures = true;
 let isShipView = false;
@@ -59,18 +78,18 @@ let timeScale = 1.0;
 let simulationTime = 0;
 let lastFrameTime = 0;
 
-let focusTarget = null;
-let selectedObject = null;
-let interactionHelpers = null;
+let focusTarget: THREE.Object3D | null = null;
+let selectedObject: THREE.Object3D | null = null;
+let interactionHelpers: InteractionResult | null = null;
 
 let frameCount = 0;
-let closestObjectCache = null;
-const belts = [];
-let instanceRegistry = null;
-let trailManager = null;
+let closestObjectCache: THREE.Object3D | null = null;
+const belts: Array<THREE.Object3D & { update?: (time: number) => void }> = [];
+let instanceRegistry: InstanceRegistry | null = null;
+let trailManager: TrailManager | null = null;
 
-// Bug 048 Fix: Track animation frame ID to prevent overlapping loops
-let animationFrameId = null;
+// Bug 048 Fix: Track animation frame ID
+let animationFrameId: number | null = null;
 
 window.scene = null;
 window.playerShip = null;
@@ -83,11 +102,9 @@ window.isPaused = isPaused;
 
 /**
  * Initializes the application.
- * Sets up renderers, loads assets, and starts the animation loop.
- * Uses Async/Await to handle configuration loading.
  */
-export async function init() {
-    // 0. Reset Global State
+export async function init(): Promise<void> {
+    // Reset Global State
     interactionTargets.length = 0;
     animatedObjects.length = 0;
     planets.length = 0;
@@ -95,25 +112,22 @@ export async function init() {
     allTrails.length = 0;
     allLabels.length = 0;
 
-    // Bug 045 Fix: Clear material cache to prevent GPU memory leaks on reset
     clearMaterialCache();
 
-    // 1. Setup Basic Three.js Components
+    // Setup Three.js Components
     scene = new THREE.Scene();
     window.scene = scene;
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
-    // Initial camera position (Log scale adjusted)
-    // Earth is at ~43 units. Sun is at 0.
     camera.position.set(0, 60, 100);
 
-    // Bug 048 Fix: Cancel any existing animation loop before starting fresh
+    // Cancel any existing animation loop
     if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
     }
 
-    // Bug 052 Fix: Reuse existing WebGLRenderer if it exists
+    // Reuse existing WebGLRenderer if it exists
     if (!renderer) {
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.shadowMap.enabled = true;
@@ -124,7 +138,7 @@ export async function init() {
     }
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    // Bug 051 Fix: Reuse existing CSS2DRenderer if it exists
+    // Reuse existing CSS2DRenderer if it exists
     if (!labelRenderer) {
         labelRenderer = new CSS2DRenderer();
         labelRenderer.domElement.style.position = 'absolute';
@@ -134,7 +148,7 @@ export async function init() {
     }
     labelRenderer.setSize(window.innerWidth, window.innerHeight);
 
-    // 2. Lighting
+    // Lighting
     const pointLight = new THREE.PointLight(0xffffff, 1.5, 0, 0);
     pointLight.castShadow = true;
     pointLight.shadow.mapSize.width = 1024;
@@ -145,27 +159,24 @@ export async function init() {
     const ambientLight = new THREE.AmbientLight(0x606060);
     scene.add(ambientLight);
 
-    // 3. Loading Manager
+    // Loading Manager
     const loadingScreen = document.getElementById('loading-screen');
     const loadingBar = document.getElementById('loading-bar');
     const manager = new THREE.LoadingManager();
-    let assetsLoaded = false;
     let initFailed = false;
 
-    manager.onProgress = function (url, itemsLoaded, itemsTotal) {
+    manager.onProgress = function (_url, itemsLoaded, itemsTotal): void {
         if (loadingBar) {
             const width = (itemsLoaded / itemsTotal) * 100;
             loadingBar.style.width = width + '%';
-            loadingBar.setAttribute('aria-valuenow', Math.round(width));
+            loadingBar.setAttribute('aria-valuenow', String(Math.round(width)));
         }
     };
-    manager.onLoad = function () {
+    manager.onLoad = function (): void {
         if (initFailed) return;
-        assetsLoaded = true;
-        // Don't hide loading screen here. Wait for system data to load.
     };
 
-    const textureLoader = new THREE.TextureLoader(manager);
+    const textureLoader = new THREE.TextureLoader(manager) as ExtendedTextureLoader;
     textureLoader.lazyLoadQueue = [];
 
     instanceRegistry = new InstanceRegistry(scene);
@@ -174,11 +185,11 @@ export async function init() {
     textureLoader.instanceRegistry = instanceRegistry;
     textureLoader.trailManager = trailManager;
 
-    // 4. Create Initial Objects
+    // Create Initial Objects
     starfield = createStarfield();
     scene.add(starfield);
 
-    const sun = createSun(textureLoader, useTextures);
+    const sun: SunMesh = createSun(textureLoader, useTextures);
     scene.add(sun);
     interactionTargets.push(sun);
 
@@ -186,16 +197,14 @@ export async function init() {
     scene.add(playerShip);
     window.playerShip = playerShip;
 
-    // Asteroid Belt (CPU)
-    // Range 2.1 - 3.3 AU
-    // 5. Load System Data
-    let planetData = null;
+    // Load System Data
+    let planetData: SystemData[] | null = null;
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        const configUrl = urlParams.get('config') || 'system.json';
+        const configUrl = urlParams.get('config') ?? 'system.json';
         const response = await fetch(configUrl);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        planetData = await response.json();
+        planetData = await response.json() as SystemData[];
 
         if (!Array.isArray(planetData)) {
             throw new Error('Invalid configuration: planetData must be an array.');
@@ -203,13 +212,13 @@ export async function init() {
 
         planetData.forEach(config => {
             if (config.type === 'Belt') {
-                const belt = createBelt(config);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const belt = createBelt(config as any);
                 scene.add(belt);
                 belts.push(belt);
                 return;
             }
 
-            // Root System Creation
             const systemNode = createSystem(config, textureLoader, useTextures, null);
 
             scene.add(systemNode.pivot);
@@ -221,26 +230,18 @@ export async function init() {
             allTrails.push(...systemNode.trails);
             allLabels.push(...systemNode.labels);
 
-            // Identify Primary Planet
             if (systemNode.animated.length > 0) {
                 const primary = systemNode.animated[0];
-                // primary.pivot is the Group
-                // We want to focus on the Object that has the label/mesh
-                // The interaction target is the InstancedMesh usually.
-                // But we want to store the "System Root" (Pivot) for logic?
-                // Let's store the Pivot.
-                if (primary.pivot) planets.push(primary.pivot);
+                if (primary?.pivot) planets.push(primary.pivot);
             }
         });
 
         instanceRegistry.build();
 
-        // Add InstancedMeshes to interaction targets
         instanceRegistry.groups.forEach(group => {
             if (group.mesh) interactionTargets.push(group.mesh);
         });
 
-        // Safe to hide loading screen now
         if (loadingScreen && !initFailed) {
             loadingScreen.style.opacity = '0';
             setTimeout(() => {
@@ -256,17 +257,15 @@ export async function init() {
         throw error;
     }
 
-    // 6. Setup Controls & Input
+    // Setup Controls & Input
     controls = setupControls(camera, renderer.domElement);
     window.controls = controls;
 
     const context = {
         camera,
-        scene,
         rendererDomElement: renderer.domElement,
         interactionTargets,
         instanceRegistry,
-        state: { useTextures },
         planetData
     };
 
@@ -280,49 +279,41 @@ export async function init() {
         onUpdateTimeScale: updateTimeScale,
         onObjectSelected: handleObjectSelection,
         onToggleLabels: toggleLabels,
-        onToggleOrbits: toggleOrbits,
-        onToggleBelt: toggleBelt
+        onToggleOrbits: toggleOrbits
     };
 
-    interactionHelpers = setupInteraction(context, callbacks);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    interactionHelpers = setupInteraction(context as any, callbacks as any);
 
-    // 7. Apply Saved Settings from SettingsPanel
+    // Apply Saved Settings
     if (interactionHelpers.settingsPanel) {
         const savedSettings = interactionHelpers.settingsPanel.getSettings();
 
-        // Apply textures setting (if different from default)
         if (!savedSettings.textures && useTextures) {
             toggleTextures(document.getElementById('btn-texture'));
         }
-
-        // Apply labels setting
         if (!savedSettings.labels && showLabels) {
             toggleLabels();
         }
-
-        // Apply orbits setting
         if (!savedSettings.orbits && showOrbits) {
             toggleOrbits();
         }
-
-        // Apply speed setting
         if (savedSettings.speed !== 1.0) {
             updateTimeScale(savedSettings.speed);
-            const dockSlider = document.getElementById('slider-speed');
+            const dockSlider = document.getElementById('slider-speed') as HTMLInputElement | null;
             const dockValue = document.getElementById('speed-value');
-            if (dockSlider) dockSlider.value = savedSettings.speed;
+            if (dockSlider) dockSlider.value = String(savedSettings.speed);
             if (dockValue) dockValue.textContent = `${savedSettings.speed.toFixed(1)}x`;
         }
 
-        // Apply belt settings
         toggleBelt('asteroid_belt', savedSettings.asteroidBelt !== false);
         toggleBelt('kuiper_belt', savedSettings.kuiperBelt !== false);
         toggleBelt('oort_cloud', savedSettings.oortCloud !== false);
     }
 
-    if (textureLoader.lazyLoadQueue.length > 0) {
+    if (textureLoader.lazyLoadQueue && textureLoader.lazyLoadQueue.length > 0) {
         setTimeout(() => {
-            if (initFailed) return;
+            if (initFailed || !textureLoader.lazyLoadQueue) return;
             console.log(`Bolt ⚡: Lazy loading ${textureLoader.lazyLoadQueue.length} textures...`);
             textureLoader.lazyLoadQueue.forEach(item => {
                 const tex = new THREE.TextureLoader().load(item.url);
@@ -342,18 +333,14 @@ export async function init() {
 // Logic Helpers
 // ============================================================================
 
-/**
- * Toggles the camera mode between "Orbit View" (Overview) and "Ship View" (Chase Camera).
- * Updates the ARIA state of the camera button.
- */
-function toggleCameraView() {
+function toggleCameraView(): void {
     isShipView = !isShipView;
     const btn = document.getElementById('btn-camera');
-    if (btn) btn.setAttribute('aria-pressed', isShipView);
+    if (btn) btn.setAttribute('aria-pressed', String(isShipView));
 
     if (isShipView) {
         focusTarget = null;
-        if (playerShip) {
+        if (playerShip && controls) {
             controls.target.copy(playerShip.position);
             camera.position.set(
                 playerShip.position.x + 5,
@@ -362,126 +349,98 @@ function toggleCameraView() {
             );
         }
     } else {
-        controls.target.set(0, 0, 0);
-        camera.position.set(0, 60, 100);
+        if (controls) {
+            controls.target.set(0, 0, 0);
+            camera.position.set(0, 60, 100);
+        }
     }
-    controls.update();
+    controls?.update();
 }
 
-/**
- * Resets the camera to its initial overview position and clears any focus target.
- * Updates UI state and displays a feedback toast.
- */
-function resetCamera() {
+function resetCamera(): void {
     isShipView = false;
     focusTarget = null;
     const btn = document.getElementById('btn-camera');
     if (btn) btn.setAttribute('aria-pressed', 'false');
 
-    controls.target.set(0, 0, 0);
-    camera.position.set(0, 60, 100);
-    controls.update();
+    if (controls) {
+        controls.target.set(0, 0, 0);
+        camera.position.set(0, 60, 100);
+        controls.update();
+    }
     showToast("View Reset");
 }
 
-/**
- * Sets the camera's focus target to a specific mesh.
- * The camera will smoothly follow this object in the animation loop.
- * @param {THREE.Object3D} mesh - The object to follow.
- */
-function setFocusTarget(mesh) {
+function setFocusTarget(mesh: THREE.Object3D): void {
     focusTarget = mesh;
     isShipView = false;
-    // We try to find a name from userData
-    const name = mesh.userData.name || "Object";
+    const name = mesh.userData.name ?? "Object";
     showToast(`Following ${name}`);
 }
 
-/**
- * Updates the global time scale factor for the simulation.
- * @param {number} scale - The new time multiplier (e.g., 1.0 = normal, 2.0 = 2x speed).
- */
-function updateTimeScale(scale) {
+function updateTimeScale(scale: number): void {
     timeScale = scale;
 }
 
-/**
- * Toggles between High Definition (Textured) and Low Definition (Solid Color) rendering modes.
- * This is a "Bolt" optimization feature to improve performance on low-end devices.
- * @param {HTMLElement} [btnElement] - The button element trigger (optional, for ARIA/Text update).
- */
-function toggleTextures(btnElement) {
+function toggleTextures(btnElement: HTMLElement | null): void {
     useTextures = !useTextures;
     if (btnElement) {
         btnElement.textContent = useTextures ? "HD" : "LD";
-        btnElement.setAttribute('aria-pressed', useTextures);
+        btnElement.setAttribute('aria-pressed', String(useTextures));
     }
-    // (Implementation similar to before - simplified for brevity)
     interactionTargets.forEach(mesh => {
-        if (useTextures && mesh.userData.texturedMaterial) mesh.material = mesh.userData.texturedMaterial;
-        else if (!useTextures && mesh.userData.solidMaterial) mesh.material = mesh.userData.solidMaterial;
+        const userData = mesh.userData as Record<string, unknown>;
+        if (useTextures && userData.texturedMaterial) {
+            (mesh as THREE.Mesh).material = userData.texturedMaterial as THREE.Material;
+        } else if (!useTextures && userData.solidMaterial) {
+            (mesh as THREE.Mesh).material = userData.solidMaterial as THREE.Material;
+        }
     });
     if (instanceRegistry) {
         instanceRegistry.groups.forEach(group => {
             if (group.mesh && group.instances.length > 0) {
-                const sampleUserData = group.instances[0].pivot.userData;
-                if (useTextures && sampleUserData.texturedMaterial) group.mesh.material = sampleUserData.texturedMaterial;
-                else if (!useTextures && sampleUserData.solidMaterial) group.mesh.material = sampleUserData.solidMaterial;
+                const sampleUserData = group.instances[0]?.pivot.userData as Record<string, unknown>;
+                if (useTextures && sampleUserData?.texturedMaterial) {
+                    group.mesh.material = sampleUserData.texturedMaterial as THREE.Material;
+                } else if (!useTextures && sampleUserData?.solidMaterial) {
+                    group.mesh.material = sampleUserData.solidMaterial as THREE.Material;
+                }
             }
         });
     }
     showToast(`Textures: ${useTextures ? "ON" : "OFF"}`);
 }
 
-/**
- * Toggles the visibility of all text labels (CSS2DObject).
- * Useful for reducing visual clutter or improving performance.
- */
-function toggleLabels() {
+function toggleLabels(): void {
     showLabels = !showLabels;
     labelsNeedUpdate = true;
     const btn = document.getElementById('btn-labels');
-    if (btn) btn.setAttribute('aria-pressed', showLabels);
-    allLabels.forEach(label => label.visible = showLabels);
+    if (btn) btn.setAttribute('aria-pressed', String(showLabels));
+    allLabels.forEach(label => { label.visible = showLabels; });
     showToast(`Labels: ${showLabels ? "ON" : "OFF"}`);
 }
 
-/**
- * Toggles the visibility of a specific belt system by its type.
- * @param {string} type - The belt identifier (e.g., 'asteroid_belt').
- * @param {boolean} visible - Whether the belt should be visible.
- */
-function toggleBelt(type, visible) {
+function toggleBelt(type: string, visible: boolean): void {
     belts.forEach(belt => {
-        if (belt.userData && belt.userData.type === type) {
+        if (belt.userData?.type === type) {
             belt.visible = visible;
         }
     });
 }
 
-/**
- * Toggles the visibility of orbit lines and trails.
- */
-function toggleOrbits() {
+function toggleOrbits(): void {
     showOrbits = !showOrbits;
     const btn = document.getElementById('btn-orbits');
-    if (btn) btn.setAttribute('aria-pressed', showOrbits);
-    allTrails.forEach(trail => trail.visible = showOrbits);
+    if (btn) btn.setAttribute('aria-pressed', String(showOrbits));
+    allTrails.forEach(trail => {
+        if (trail && typeof trail === 'object' && 'visible' in trail) {
+            (trail as THREE.Object3D).visible = showOrbits;
+        }
+    });
     showToast(`Orbits: ${showOrbits ? "ON" : "OFF"}`);
-
-    // A11y: announce state change
-    const liveAnnouncer = document.getElementById('toast');
-    if (liveAnnouncer) {
-        liveAnnouncer.setAttribute('aria-label', `Orbits and trails ${showOrbits ? 'visible' : 'hidden'}`);
-    }
 }
 
-/**
- * Pauses or Resumes the simulation loop.
- * When paused, physics integration stops, but camera controls remain active.
- * @param {HTMLElement} [btnElement] - The pause button element (optional, for Icon/ARIA update).
- */
-function togglePause(btnElement) {
+function togglePause(btnElement: HTMLElement | null): void {
     isPaused = !isPaused;
     window.isPaused = isPaused;
     if (btnElement) {
@@ -495,43 +454,27 @@ function togglePause(btnElement) {
     }
     showToast(isPaused ? "Simulation Paused" : "Simulation Resumed");
 
-    // A11y: Announce state change to screen readers (WCAG 4.1.3)
     const srStatus = document.getElementById('sr-status');
     if (srStatus) {
         srStatus.textContent = isPaused ? "Simulation paused" : "Simulation resumed";
     }
 }
 
-/**
- * Focuses the camera on a primary planet by its index in the `planets` array.
- * Mapped to number keys (1-9).
- * @param {number} index - The 0-based index of the planet.
- */
-function focusPlanet(index) {
+function focusPlanet(index: number): void {
     if (index < 0 || index >= planets.length) return;
     const planet = planets[index];
+    if (!planet) return;
     setFocusTarget(planet);
-    handleObjectSelection(planet); // Update state
-    if (interactionHelpers && interactionHelpers.updateSelectionUI) {
-        interactionHelpers.updateSelectionUI(planet);
-    }
+    handleObjectSelection(planet);
+    interactionHelpers?.updateSelectionUI(planet);
 }
 
-/**
- * Updates the currently selected object.
- * Used for driving the Info Panel logic.
- * @param {THREE.Object3D} mesh - The selected object.
- */
-function handleObjectSelection(mesh) {
+function handleObjectSelection(mesh: THREE.Object3D): void {
     selectedObject = mesh;
 }
 
-/**
- * Displays a temporary visual feedback message (Toast) to the user.
- * @param {string} message - The text to display.
- */
-function showToast(message) {
-    const toast = document.getElementById('toast');
+function showToast(message: string): void {
+    const toast = document.getElementById('toast') as HTMLElement & { timeout?: ReturnType<typeof setTimeout> };
     if (toast) {
         toast.textContent = message;
         toast.classList.add('visible');
@@ -540,10 +483,9 @@ function showToast(message) {
     }
 }
 
+// Pre-allocated vectors for animate loop
 const tempVec = new THREE.Vector3();
 const sunPos = new THREE.Vector3(0, 0, 0);
-
-// ⚡ Bolt Optimization: Pre-allocated vectors for animate loop (zero GC pressure)
 const _localPos = new THREE.Vector3();
 const _worldPos = new THREE.Vector3();
 const _parentPosPhys = new THREE.Vector3();
@@ -551,99 +493,69 @@ const _parentPosRender = new THREE.Vector3();
 const _renderPos = new THREE.Vector3();
 
 // ============================================================================
-// Animation Loop (Updated for Physics)
+// Animation Loop
 // ============================================================================
 
-/**
- * The Main Loop.
- * Handles Physics, Animation, and Rendering.
- */
-function animate() {
-    // Bug 048 Fix: Store animation frame ID to allow cancellation
+function animate(): void {
     animationFrameId = requestAnimationFrame(animate);
 
     const now = performance.now();
     const rawDt = (now - lastFrameTime) / 1000;
-    const dt = Math.min(rawDt, 0.1); // Clamp to 0.1s (Bug 035)
+    const dt = Math.min(rawDt, 0.1);
     lastFrameTime = now;
 
     if (!isPaused) {
-        // Increment Simulation Time
-        // 1 second real time = 1 year simulation time (at timeScale 1.0)
-        // Adjust this constant to find a good default speed.
-        // Base Speed: 0.2 Earth Years per second (at timeScale 1.0).
         simulationTime += dt * 0.2 * timeScale;
-
-        // --- 1. Physics & Motion ---
 
         animatedObjects.forEach(obj => {
             const physics = obj.physics;
             if (physics && physics.a !== undefined) {
-                // ⚡ Bolt: Zero-allocation path using pre-allocated vectors
-                // Calculate position in Physics Space (AU) relative to parent
                 getOrbitalPosition(physics, simulationTime, _localPos);
                 _worldPos.copy(_localPos);
 
-                // If this is a Moon, add Parent's Physics Position
                 if (obj.parent) {
                     getOrbitalPosition(obj.parent, simulationTime, _parentPosPhys);
                     _worldPos.add(_parentPosPhys);
                 }
 
-                // Transform to Render Space
                 physicsToRender(_worldPos, _renderPos);
 
-                // Update Pivot Position
                 if (obj.parent) {
-                    // Reuse cached parent physics position (already in _parentPosPhys)
                     physicsToRender(_parentPosPhys, _parentPosRender);
-
-                    // Calculate relative offset in-place
                     obj.pivot.position.copy(_renderPos).sub(_parentPosRender);
                 } else {
-                    // Planet (Child of Scene)
                     obj.pivot.position.copy(_renderPos);
                 }
 
-                // Self Rotation (Visual Mesh)
                 if (obj.mesh) {
                     obj.mesh.rotation.y += 0.5 * dt * timeScale;
                 }
             }
         });
 
-        // Update Instanced Meshes
         scene.updateMatrixWorld();
-        if (instanceRegistry) {
-            instanceRegistry.update();
-        }
-
-        // Update Belts
-        belts.forEach(belt => belt.update && belt.update(simulationTime));
-
-        // Rotate Starfield
+        instanceRegistry?.update();
+        belts.forEach(belt => belt.update?.(simulationTime));
         if (starfield) starfield.rotation.y += 0.02 * dt;
     }
 
-    // --- 2. Camera Logic ---
-    if (isShipView && playerShip) {
+    // Camera Logic
+    if (isShipView && playerShip && controls) {
         controls.target.copy(playerShip.position);
         camera.position.set(
             playerShip.position.x + 5,
             playerShip.position.y + 3,
             playerShip.position.z + 5
         );
-    } else if (focusTarget) {
+    } else if (focusTarget && controls) {
         tempVec.setFromMatrixPosition(focusTarget.matrixWorld);
         controls.target.copy(tempVec);
     }
 
-    // --- 3. Player Ship AI ---
+    // Player Ship AI
     if (playerShip && frameCount % 10 === 0) {
-        // Simplified search logic
-        // Use 'planets' list for efficiency
         let closestDist = Infinity;
-        let closestObj = null;
+        let closestObj: THREE.Object3D | null = null;
         const shipPos = playerShip.position;
 
         planets.forEach(p => {
@@ -663,21 +575,14 @@ function animate() {
 
     frameCount++;
 
-    // --- 4. UI ---
+    // UI Updates
     if (selectedObject && frameCount % 10 === 0) {
         const distEl = document.getElementById('info-dist-sun');
         if (distEl) {
-            // Distance in Render Space is meaningless for Astronomy info.
-            // We should ideally show Physics Distance (AU).
-            // But getting that back from the mesh is hard without stored state.
-            // For now, let's just show "Distance" as generic, or read from userData.
-            // If the object has `userData.distance` (which we set to 'a'), use that?
-            // `system.json` sets `distance` = `a`.
-            // Let's use that static value for now to avoid confusion with Log units.
-            if (selectedObject.userData && selectedObject.userData.physics) {
-                // Calculate real-time distance?
-                // Too complex for this snippet. Just show Semi-Major Axis.
-                distEl.textContent = `Orbit: ${selectedObject.userData.physics.a} AU`;
+            const userData = selectedObject.userData as Record<string, unknown>;
+            const physics = userData.physics as Record<string, unknown> | undefined;
+            if (physics?.a) {
+                distEl.textContent = `Orbit: ${physics.a} AU`;
             } else {
                 tempVec.setFromMatrixPosition(selectedObject.matrixWorld);
                 distEl.textContent = `Render Dist: ${tempVec.distanceTo(sunPos).toFixed(1)}`;
@@ -685,79 +590,67 @@ function animate() {
         }
     }
 
-    // --- 5. Render ---
-    if (controls) controls.update();
+    // Render
+    controls?.update();
     if (renderer) {
         renderer.render(scene, camera);
-        if (showLabels || labelsNeedUpdate) {
-            // Conditional Visibility for Moons (Bolt Optimization)
-            // VIS-01 Fix: Viewport edge detection for labels
+        if ((showLabels || labelsNeedUpdate) && labelRenderer) {
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
-            const edgeMargin = 40; // px from edge to start fading
-            const fadeZone = 60;   // px fade transition zone
+            const edgeMargin = 40;
+            const fadeZone = 60;
 
-            // Collect visible label rects for collision detection (Visual Bug Fix: Mobile label overlap)
-            const visibleLabels = [];
+            const visibleLabels: Array<{ label: CSS2DObject; rect: DOMRect }> = [];
 
             allLabels.forEach(label => {
-                // Moon visibility logic
                 if (label.userData.isMoon) {
                     const parentName = label.userData.parentPlanet;
-                    const isParentFocused = focusTarget && focusTarget.userData.name === parentName;
-                    const isParentSelected = selectedObject && selectedObject.userData.name === parentName;
-
+                    const isParentFocused = focusTarget?.userData.name === parentName;
+                    const isParentSelected = selectedObject?.userData.name === parentName;
                     label.visible = showLabels && (isParentFocused || isParentSelected);
                 } else {
                     label.visible = showLabels;
                 }
 
-                // VIS-01 Fix: Edge fade for visible labels
                 if (label.visible && label.element) {
                     const rect = label.element.getBoundingClientRect();
                     let opacity = 1;
 
-                    // Calculate distance from each edge
                     const distLeft = rect.left;
                     const distRight = viewportWidth - rect.right;
                     const distTop = rect.top;
                     const distBottom = viewportHeight - rect.bottom;
-
-                    // Find minimum distance to any edge
                     const minDist = Math.min(distLeft, distRight, distTop, distBottom);
 
-                    // Fade when approaching edge
                     if (minDist < edgeMargin) {
                         opacity = 0;
                     } else if (minDist < edgeMargin + fadeZone) {
                         opacity = (minDist - edgeMargin) / fadeZone;
                     }
 
-                    label.element.style.opacity = opacity;
+                    label.element.style.opacity = String(opacity);
 
-                    // Visual Bug Fix: Label collision detection for mobile
-                    // Only check non-moon labels on smaller screens
                     if (opacity > 0 && !label.userData.isMoon && viewportWidth < 768) {
                         visibleLabels.push({ label, rect });
                     }
                 }
             });
 
-            // Visual Bug Fix: Hide overlapping labels on mobile (Earth/Venus overlap)
             if (viewportWidth < 768) {
                 for (let i = 0; i < visibleLabels.length; i++) {
                     for (let j = i + 1; j < visibleLabels.length; j++) {
-                        const a = visibleLabels[i].rect;
-                        const b = visibleLabels[j].rect;
+                        const a = visibleLabels[i]?.rect;
+                        const b = visibleLabels[j]?.rect;
+                        if (!a || !b) continue;
 
-                        // Check for overlap
                         const overlap = !(a.right < b.left || a.left > b.right ||
                             a.bottom < b.top || a.top > b.bottom);
 
                         if (overlap) {
-                            // Hide the label with lower z-position (further from camera)
-                            // For simplicity, hide the second one in the array
-                            visibleLabels[j].label.element.style.opacity = 0;
+                            const labelElement = visibleLabels[j]?.label.element;
+                            if (labelElement) {
+                                labelElement.style.opacity = '0';
+                            }
                         }
                     }
                 }
@@ -768,24 +661,26 @@ function animate() {
         }
     }
 
-    // --- 6. Trails ---
+    // Trails
     if (!isPaused && showOrbits && frameCount % 2 === 0 && trailManager) {
         trailManager.update();
     }
 }
 
-const onWindowResize = () => {
+function onWindowResize(): void {
     if (camera && renderer && labelRenderer) {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
         labelRenderer.setSize(window.innerWidth, window.innerHeight);
     }
-};
+}
 window.addEventListener('resize', onWindowResize);
 
-// Bug 050 Fix: Export dispose function for cleanup
-export function dispose() {
+/**
+ * Disposes of all resources.
+ */
+export function dispose(): void {
     if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
@@ -800,18 +695,16 @@ export function dispose() {
         labelRenderer.domElement.remove();
         labelRenderer = null;
     }
-    if (trailManager) {
-        trailManager.dispose();
-        trailManager = null;
-    }
-    if (instanceRegistry) {
-        instanceRegistry.dispose();
-        instanceRegistry = null;
-    }
+    trailManager?.dispose();
+    trailManager = null;
+    instanceRegistry?.dispose();
+    instanceRegistry = null;
+    interactionHelpers?.dispose();
 }
 
+// Auto-initialize unless skipped (for testing)
 if (!window.__SKIP_INIT__) {
-    init().catch(err => {
+    init().catch((err: Error) => {
         console.error("Initialization failed:", err);
         const loading = document.getElementById('loading-screen');
         if (loading) {

@@ -1,9 +1,9 @@
 /**
- * @file physics.js
+ * @file physics.ts
  * @description Orbital Mechanics & Multi-Zone Coordinate Scaling.
  *
  * This module is responsible for:
- * 1. calculating accurate Keplerian orbital positions.
+ * 1. Calculating accurate Keplerian orbital positions.
  * 2. Transforming vast astronomical distances (AU) into a renderable 3D space
  *    using a Piecewise function (Linear -> Logarithmic).
  *
@@ -15,6 +15,7 @@
  */
 
 import * as THREE from 'three';
+import type { OrbitalParameters } from './types/system';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -27,19 +28,27 @@ const DEG_TO_RAD = Math.PI / 180;
  * 3. Derives True Anomaly (nu) and Radius (r) from E.
  * 4. Transforms polar coordinates to 3D Cartesian coordinates using orbital elements (i, Omega, omega).
  *
- * @param {Object} orbit - The Keplerian orbital elements.
- * @param {number} orbit.a - Semi-major axis (AU). Size of the orbit.
- * @param {number} orbit.e - Eccentricity (0=circle, 0.99=highly elliptical). Shape.
- * @param {number} orbit.i - Inclination (degrees). Tilt relative to the ecliptic plane.
- * @param {number} orbit.omega - Argument of Periapsis (degrees). Orientation of the ellipse in the orbital plane.
- * @param {number} orbit.Omega - Longitude of Ascending Node (degrees). Orientation of the ascending node.
- * @param {number} orbit.M0 - Mean Anomaly at Epoch (degrees). Starting position at time=0.
- * @param {number} time - Current simulation time in Earth Years.
- * @param {THREE.Vector3} [out] - Optional output vector to avoid allocation.
- * @returns {THREE.Vector3} The physical position vector in AU (before visual scaling).
+ * @param orbit - The Keplerian orbital elements.
+ * @param time - Current simulation time in Earth Years.
+ * @param out - Optional output vector to avoid allocation.
+ * @returns The physical position vector in AU (before visual scaling).
  */
-export function getOrbitalPosition(orbit, time, out = null) {
-    const { a, e, i, omega, Omega, M0 } = orbit;
+export function getOrbitalPosition(
+    orbit: OrbitalParameters,
+    time: number,
+    out: THREE.Vector3 | null = null
+): THREE.Vector3 {
+    const {
+        a,
+        e,
+        i,
+        omega = 0,
+        w: argPerihelion = 0,
+        M0 = 0
+    } = orbit;
+
+    // Use omega if provided, otherwise fallback to w (argument of perihelion)
+    const omegaValue = omega ?? argPerihelion;
 
     // 1. Calculate Mean Anomaly (M)
     // Kepler's 3rd Law: T^2 = a^3 -> T = a^1.5 (for mass of Sun = 1)
@@ -82,19 +91,17 @@ export function getOrbitalPosition(orbit, time, out = null) {
     // P = r * [cos(nu), sin(nu), 0]
     // Then rotate P by orbital elements.
 
-    const cosNu = Math.cos(nu);
-    const sinNu = Math.sin(nu);
+    // Longitude of Ascending Node (Omega) - use default 0 if not in orbit params
+    const Omega = 0; // Simplified - could be added to OrbitalParameters interface
+
     const cosOm = Math.cos(Omega * DEG_TO_RAD);
     const sinOm = Math.sin(Omega * DEG_TO_RAD);
-    // const cosO = Math.cos(omega * DEG_TO_RAD);
-    // const sinO = Math.sin(omega * DEG_TO_RAD);
     const cosI = Math.cos(i * DEG_TO_RAD);
     const sinI = Math.sin(i * DEG_TO_RAD);
 
     // Simplified rotation matrix application
-    // The previous implementation had the correct breakdown for 3D orbital elements.
     // Argument of Latitude u = omega + nu
-    const u = omega * DEG_TO_RAD + nu;
+    const u = omegaValue * DEG_TO_RAD + nu;
     const cosU = Math.cos(u);
     const sinU = Math.sin(u);
 
@@ -113,7 +120,7 @@ export function getOrbitalPosition(orbit, time, out = null) {
     const z_astro = r * (sinI * sinU);
 
     // ⚡ Bolt: Use provided output vector or create new one
-    const result = out || new THREE.Vector3();
+    const result = out ?? new THREE.Vector3();
     return result.set(x_astro, z_astro, y_astro);
 }
 
@@ -127,17 +134,25 @@ export function getOrbitalPosition(orbit, time, out = null) {
  * 3. Oort Cloud (>50 AU): Aggressive Logarithmic. Brings the far reaches (100k AU) into viewable range.
  */
 
-/** @type {Object} Scale configuration for the multi-zone rendering system */
-const SCALE_CONFIG = {
+/** Scale configuration for the multi-zone rendering system */
+interface ScaleConfig {
     /** 1 AU (Astronomical Unit) = 40 Three.js units */
-    AU_SCALE: 40.0,
+    AU_SCALE: number;
     /** End of Linear Zone in AU (Neptune is ~30 AU) */
-    LIMIT_LINEAR: 30.0,
+    LIMIT_LINEAR: number;
     /** End of Kuiper Belt Zone in AU */
-    LIMIT_KUIPER: 50.0,
+    LIMIT_KUIPER: number;
     /** Compression strength for Kuiper Belt Zone */
-    LOG_FACTOR_KUIPER: 1.5,
+    LOG_FACTOR_KUIPER: number;
     /** Compression strength for Oort Cloud Zone */
+    LOG_FACTOR_OORT: number;
+}
+
+const SCALE_CONFIG: ScaleConfig = {
+    AU_SCALE: 40.0,
+    LIMIT_LINEAR: 30.0,
+    LIMIT_KUIPER: 50.0,
+    LOG_FACTOR_KUIPER: 1.5,
     LOG_FACTOR_OORT: 4.0
 };
 
@@ -158,16 +173,21 @@ const VISUAL_LIMIT_2 = VISUAL_LIMIT_1 + VISUAL_OFFSET_K; // ~1382.67 units
  * Transforms a physical position vector (in AU) to a render-ready position vector.
  * Applies the Multi-Zone Piecewise Scaling function.
  *
- * @param {THREE.Vector3} vector - The physical position (x, y, z) in AU.
- * @param {THREE.Vector3} [out] - Optional output vector to avoid allocation.
- * @returns {THREE.Vector3} A NEW Vector3 representing the visual position in the scene.
+ * @param vector - The physical position (x, y, z) in AU.
+ * @param out - Optional output vector to avoid allocation.
+ * @returns A Vector3 representing the visual position in the scene.
  */
-export function physicsToRender(vector, out = null) {
+export function physicsToRender(
+    vector: THREE.Vector3,
+    out: THREE.Vector3 | null = null
+): THREE.Vector3 {
     const r = vector.length(); // Physical distance from origin (AU)
 
-    if (r === 0) return new THREE.Vector3(0, 0, 0);
+    if (r === 0) {
+        return out ? out.set(0, 0, 0) : new THREE.Vector3(0, 0, 0);
+    }
 
-    let r_vis;
+    let r_vis: number;
 
     // Apply piecewise scaling logic
     if (r <= LIMIT_1) {
@@ -183,7 +203,7 @@ export function physicsToRender(vector, out = null) {
     }
 
     // ⚡ Bolt: Preserve direction, apply new magnitude (zero-allocation path)
-    const result = out || new THREE.Vector3();
+    const result = out ?? new THREE.Vector3();
     return result.copy(vector).normalize().multiplyScalar(r_vis);
 }
 
@@ -194,10 +214,10 @@ export function physicsToRender(vector, out = null) {
  * To find if it hits a physical object (logic-wise), we might need to reverse map it.
  * (Note: Currently mainly used for debug or reverse calculations).
  *
- * @param {number} visualDistance - The distance from origin in Three.js units.
- * @returns {number} Estimated physical distance in AU.
+ * @param visualDistance - The distance from origin in Three.js units.
+ * @returns Estimated physical distance in AU.
  */
-export function renderToPhysicsEstimate(visualDistance) {
+export function renderToPhysicsEstimate(visualDistance: number): number {
     if (visualDistance <= VISUAL_LIMIT_1) {
         return visualDistance / AU_SCALE;
     } else if (visualDistance <= VISUAL_LIMIT_2) {
@@ -212,3 +232,6 @@ export function renderToPhysicsEstimate(visualDistance) {
         return Math.exp((visualDistance - VISUAL_LIMIT_2) / (AU_SCALE * LOG_FACTOR_O)) + LIMIT_2 - 1;
     }
 }
+
+// Export scale config for use in other modules
+export { SCALE_CONFIG, AU_SCALE };

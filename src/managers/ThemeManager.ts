@@ -1,36 +1,45 @@
 /**
- * @file ThemeManager.js
+ * @file ThemeManager.ts
  * @description Manages the visual theme of the application (colors, fonts, etc.)
  * Persists the user's choice in localStorage.
  */
 
+import type { ThemeName } from '../types';
+
+/**
+ * Valid theme names as a readonly tuple.
+ */
+const THEMES: readonly ThemeName[] = ['default', 'blueprint', 'oled'] as const;
+
 /**
  * ThemeManager maintains the visual aesthetic state of the application.
  * It coordinates between CSS variable themes and logical states.
- * 
+ *
  * Architectural Role: Decoupled State Manager.
  * Dependency: document.documentElement (for data-theme attribute).
  */
 export class ThemeManager {
-    constructor() {
-        /** @type {string[]} Valid theme identifiers matching CSS [data-theme] selectors. */
-        this.themes = ['default', 'blueprint', 'oled'];
+    /** Valid theme identifiers matching CSS [data-theme] selectors */
+    private readonly themes: readonly ThemeName[];
 
-        /** @type {number} Index of the currently active theme. */
+    /** Index of the currently active theme */
+    private currentThemeIndex: number;
+
+    constructor() {
+        this.themes = THEMES;
         this.currentThemeIndex = 0;
 
-        // Load thermal preference from persistent storage
+        // Load theme preference from persistent storage
         this.loadPreference();
     }
 
     /**
      * Sets the application theme by updating the 'data-theme' attribute on <html>.
      * This triggers CSS variable shifts defined in style.css.
-     * 
-     * @param {string} themeName - The name of the theme to set ('default', 'blueprint', 'oled').
-     * @returns {void}
+     *
+     * @param themeName - The name of the theme to set ('default', 'blueprint', 'oled').
      */
-    setTheme(themeName) {
+    setTheme(themeName: ThemeName): void {
         if (!this.themes.includes(themeName)) return;
 
         document.documentElement.setAttribute('data-theme', themeName);
@@ -45,32 +54,34 @@ export class ThemeManager {
 
     /**
      * Cycles to the next available theme in the sequence.
-     * 
-     * @returns {string} The name of the newly activated theme.
-     * @example 
+     *
+     * @returns The name of the newly activated theme.
+     * @example
      * themeManager.cycleTheme(); // 'blueprint'
      * themeManager.cycleTheme(); // 'oled'
      */
-    cycleTheme() {
+    cycleTheme(): ThemeName {
         this.currentThemeIndex = (this.currentThemeIndex + 1) % this.themes.length;
         const nextTheme = this.themes[this.currentThemeIndex];
-        this.setTheme(nextTheme);
-        return nextTheme;
+        if (nextTheme) {
+            this.setTheme(nextTheme);
+            return nextTheme;
+        }
+        return 'default';
     }
 
     /**
      * Initializes theme state from localStorage or defaults to 'default'.
-     * @private
      */
-    loadPreference() {
-        let stored = null;
+    private loadPreference(): void {
+        let stored: string | null = null;
         try {
             stored = localStorage.getItem('theme');
         } catch (e) {
             console.warn('ThemeManager: Unable to read theme preference.', e);
         }
 
-        if (stored && this.themes.includes(stored)) {
+        if (stored && this.isValidTheme(stored)) {
             this.setTheme(stored);
         } else {
             this.setTheme('default');
@@ -78,10 +89,17 @@ export class ThemeManager {
     }
 
     /**
-     * Returns the name of the current active theme.
-     * @returns {string} One of 'default', 'blueprint', or 'oled'.
+     * Type guard to check if a string is a valid theme name.
      */
-    getTheme() {
-        return this.themes[this.currentThemeIndex];
+    private isValidTheme(value: string): value is ThemeName {
+        return (this.themes as readonly string[]).includes(value);
+    }
+
+    /**
+     * Returns the name of the current active theme.
+     * @returns One of 'default', 'blueprint', or 'oled'.
+     */
+    getTheme(): ThemeName {
+        return this.themes[this.currentThemeIndex] ?? 'default';
     }
 }

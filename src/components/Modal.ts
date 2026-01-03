@@ -1,5 +1,5 @@
 /**
- * @file Modal.js
+ * @file Modal.ts
  * @description A reusable Modal component that wraps the native <dialog> element.
  *
  * Enforces accessibility standards:
@@ -10,42 +10,70 @@
  * - Animations via CSS
  */
 
-export class Modal {
+import type { Disposable } from '../types';
+
+/**
+ * Modal configuration options.
+ */
+export interface ModalOptions {
+    /** Callback when modal closes */
+    onClose?: () => void;
+    /** Callback when modal opens */
+    onOpen?: () => void;
+}
+
+/**
+ * A reusable Modal component wrapping native <dialog>.
+ */
+export class Modal implements Disposable {
+    private element: HTMLDialogElement | null;
+    private options: ModalOptions;
+
+    // Event handler references for proper cleanup
+    private _handleBackdropClick: ((event: MouseEvent) => void) | null = null;
+    private _handleClose: (() => void) | null = null;
+    private _handleCloseClick: (() => void) | null = null;
+
     /**
      * Creates a new Modal instance.
-     * @param {string|HTMLElement} elementOrId - The <dialog> element or its ID.
-     * @param {Object} options - Configuration options.
-     * @param {Function} [options.onClose] - Callback when modal closes.
-     * @param {Function} [options.onOpen] - Callback when modal opens.
+     * @param elementOrId - The <dialog> element or its ID.
+     * @param options - Configuration options.
      */
-    constructor(elementOrId, options = {}) {
-        this.element = typeof elementOrId === 'string'
+    constructor(elementOrId: string | HTMLElement, options: ModalOptions = {}) {
+        const el = typeof elementOrId === 'string'
             ? document.getElementById(elementOrId)
             : elementOrId;
 
-        if (!this.element) {
+        if (!el) {
             console.error(`Modal: Element not found.`);
+            this.element = null;
+            this.options = options;
             return;
         }
 
-        if (this.element.tagName !== 'DIALOG') {
+        if (el.tagName !== 'DIALOG') {
             console.error(`Modal: Element must be a <dialog> tag.`);
+            this.element = null;
+            this.options = options;
             return;
         }
 
+        this.element = el as HTMLDialogElement;
         this.options = options;
         this.bindEvents();
     }
 
-    bindEvents() {
+    private bindEvents(): void {
+        if (!this.element) return;
+
         // Bug 038 Fix: Store named references to handlers for proper cleanup
-        this._handleBackdropClick = (event) => {
+        this._handleBackdropClick = (event: MouseEvent): void => {
             if (event.target === this.element) {
                 this.close();
             }
         };
 
-        this._handleClose = () => {
+        this._handleClose = (): void => {
             if (this.options.onClose) this.options.onClose();
             document.documentElement.classList.remove('modal-open');
         };
@@ -53,7 +81,7 @@ export class Modal {
         // Close button handler (WCAG 2.1.1 Keyboard)
         const closeBtn = this.element.querySelector('.modal-close-btn');
         if (closeBtn) {
-            this._handleCloseClick = () => this.close();
+            this._handleCloseClick = (): void => this.close();
             closeBtn.addEventListener('click', this._handleCloseClick);
         }
 
@@ -65,11 +93,12 @@ export class Modal {
      * Opens the modal.
      * Triggers the `onOpen` callback if provided and manages body classes for scroll locking.
      */
-    open() {
+    open(): void {
+        if (!this.element) return;
+
         if (!this.element.open) {
             this.element.showModal();
             if (this.options.onOpen) this.options.onOpen();
-            // Optional: Prevent body scroll if not handled by CSS
             document.documentElement.classList.add('modal-open');
         }
     }
@@ -78,17 +107,26 @@ export class Modal {
      * Closes the modal.
      * Uses the native `dialog.close()` method.
      */
-    close() {
+    close(): void {
+        if (!this.element) return;
+
         if (this.element.open) {
             this.element.close();
         }
     }
 
     /**
+     * Returns whether the modal is currently open.
+     */
+    isOpen(): boolean {
+        return this.element?.open ?? false;
+    }
+
+    /**
      * Destroys the instance and properly removes event listeners.
      * Bug 038 Fix: Now actually cleans up listeners.
      */
-    dispose() {
+    dispose(): void {
         if (this.element && this._handleBackdropClick) {
             this.element.removeEventListener('click', this._handleBackdropClick);
         }

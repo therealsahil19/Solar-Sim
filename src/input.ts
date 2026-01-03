@@ -1,5 +1,5 @@
 /**
- * @file input.js
+ * @file input.ts
  * @description Manages user input and interaction for the simulation.
  *
  * This module handles:
@@ -8,27 +8,65 @@
  * 3. Keyboard shortcuts (e.g., 'C' for camera toggle).
  * 4. UI event listeners (Buttons).
  * 5. Component Initialization (CommandPalette, NavigationSidebar, InfoPanel, Modal).
- *
- * It uses dependency injection to access the Scene, Camera, and other context
- * without relying on global variables.
  */
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { CommandPalette } from './components/CommandPalette.js';
-import { NavigationSidebar } from './components/NavigationSidebar.js';
-import { InfoPanel } from './components/InfoPanel.js';
-import { Modal } from './components/Modal.js';
-import { SettingsPanel } from './components/SettingsPanel.js';
-import { ThemeManager } from './managers/ThemeManager.js';
+import { CommandPalette, type CommandPaletteCallbacks } from './components/CommandPalette';
+import { NavigationSidebar } from './components/NavigationSidebar';
+import { InfoPanel } from './components/InfoPanel';
+import { Modal } from './components/Modal';
+import { SettingsPanel } from './components/SettingsPanel';
+import { ThemeManager } from './managers/ThemeManager';
+import type { SolarSimUserData } from './types';
+import type { CelestialBody } from './types/system';
+import type { InstanceRegistry } from './instancing';
+
+/**
+ * Context for the interaction system.
+ */
+export interface InteractionContext {
+    camera: THREE.Camera;
+    rendererDomElement: HTMLElement;
+    interactionTargets: THREE.Object3D[];
+    planetData?: CelestialBody[];
+    instanceRegistry?: InstanceRegistry;
+}
+
+/**
+ * Callbacks for interaction events.
+ */
+export interface InteractionCallbacks {
+    onSetFocus: (mesh: THREE.Object3D) => void;
+    onObjectSelected: (mesh: THREE.Object3D) => void;
+    onToggleTexture: (btn: HTMLElement | null) => void;
+    onToggleLabels: () => void;
+    onToggleOrbits: () => void;
+    onToggleCamera: () => void;
+    onTogglePause: (btn: HTMLElement | null) => void;
+    onResetCamera: () => void;
+    onUpdateTimeScale: (value: number) => void;
+    onFocusPlanet: (index: number) => void;
+}
+
+/**
+ * Result of setting up interactions.
+ */
+export interface InteractionResult {
+    updateSelectionUI: (mesh: THREE.Object3D) => void;
+    openModal: () => void;
+    closeModal: () => void;
+    settingsPanel: SettingsPanel;
+    dispose: () => void;
+}
 
 /**
  * Sets up the OrbitControls for the camera.
- * @param {THREE.Camera} camera - The active camera.
- * @param {HTMLElement} domElement - The DOM element to attach controls to (renderer canvas).
- * @returns {OrbitControls} The configured OrbitControls instance.
  */
-export function setupControls(camera, domElement) {
+export function setupControls(
+    camera: THREE.Camera,
+    domElement: HTMLElement
+): OrbitControls {
     const controls = new OrbitControls(camera, domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -38,45 +76,43 @@ export function setupControls(camera, domElement) {
 
 /**
  * Initializes all user interaction handlers.
- *
- * @param {Object} context - The context object containing references to the Scene and state.
- * @param {Object} callbacks - Object containing functions to trigger state changes in `main.js`.
- * @returns {Object} Interaction helpers and lifecycle methods.
  */
-export function setupInteraction(context, callbacks) {
+export function setupInteraction(
+    context: InteractionContext,
+    callbacks: InteractionCallbacks
+): InteractionResult {
     const { camera, rendererDomElement, interactionTargets } = context;
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
     // --- Component Initialization ---
 
-    // 1. Theme Manager
+    // Theme Manager
     const themeManager = new ThemeManager();
 
-    // 2. Info Panel
+    // Info Panel
     const infoPanel = new InfoPanel({
         callbacks: {
             onFollow: (mesh) => callbacks.onSetFocus(mesh)
         }
     });
 
-    // 3. Navigation Sidebar
-    let sidebar = null;
+    // Navigation Sidebar
+    let sidebar: NavigationSidebar | null = null;
     if (context.planetData) {
         sidebar = new NavigationSidebar({
             planetData: context.planetData,
             callbacks: {
                 onSelect: (name) => selectByName(name),
-                onClose: () => { /* handled internally by component, but good to have hook */ }
+                onClose: () => { /* handled internally */ }
             }
         });
     }
 
-    // 4. Settings Panel
+    // Settings Panel
     const settingsPanel = new SettingsPanel({
         callbacks: {
-            onToggleTextures: (value) => {
-                // If value matches current state, toggle is a no-op
+            onToggleTextures: (_value) => {
                 const btn = document.getElementById('btn-texture');
                 callbacks.onToggleTexture(btn);
             },
@@ -97,10 +133,9 @@ export function setupInteraction(context, callbacks) {
             },
             onChangeSpeed: (value) => {
                 callbacks.onUpdateTimeScale(value);
-                // Sync the dock slider too
-                const dockSlider = document.getElementById('slider-speed');
+                const dockSlider = document.getElementById('slider-speed') as HTMLInputElement | null;
                 const dockValue = document.getElementById('speed-value');
-                if (dockSlider) dockSlider.value = value;
+                if (dockSlider) dockSlider.value = String(value);
                 if (dockValue) dockValue.textContent = `${value.toFixed(1)}x`;
             }
         }
@@ -108,28 +143,27 @@ export function setupInteraction(context, callbacks) {
 
     /**
      * Updates the Side Panel and Toast with details about the selected object.
-     * Delegates to the InfoPanel component.
      */
-    function updateSelectionUI(mesh) {
+    function updateSelectionUI(mesh: THREE.Object3D): void {
         if (!mesh) return;
 
-        const d = mesh.userData;
-        let toastText = `Selected: ${d.name}`;
+        const d = mesh.userData as SolarSimUserData & Record<string, unknown>;
+        let toastText = `Selected: ${d.name ?? 'Unknown'}`;
 
         if (d.type) {
-            const typeLabel = d.type.charAt(0).toUpperCase() + d.type.slice(1);
-            if (d.size !== undefined && d.type !== 'Star') {
-                const isMoon = d.type === 'Moon';
+            const typeLabel = String(d.type).charAt(0).toUpperCase() + String(d.type).slice(1);
+            const size = d.size as number | undefined;
+            if (size !== undefined && d.type !== 'Star') {
+                const isMoon = d.type === 'moon';
                 const sizeType = isMoon ? 'Moon' : 'Earth';
-                // Comparison: Planets to Earth (1.0), Moons to Moon (0.27)
-                const displaySize = isMoon ? (d.size / 0.27) : d.size;
+                const displaySize = isMoon ? (size / 0.27) : size;
                 toastText += ` (${typeLabel}) – ${displaySize.toFixed(2)} × ${sizeType} size`;
             } else {
                 toastText += ` (${typeLabel})`;
             }
         }
 
-        const toast = document.getElementById('toast');
+        const toast = document.getElementById('toast') as HTMLElement & { timeout?: ReturnType<typeof setTimeout> };
         if (toast) {
             toast.textContent = toastText;
             toast.classList.add('visible');
@@ -137,25 +171,22 @@ export function setupInteraction(context, callbacks) {
             toast.timeout = setTimeout(() => toast.classList.remove('visible'), 2000);
         }
 
-        // Update Component
         infoPanel.update(mesh);
     }
 
     // --- Navigation Helpers ---
 
-    function findMeshByName(name) {
-        // 1. Standard Objects
+    function findMeshByName(name: string): THREE.Object3D | null {
         const found = interactionTargets.find(obj => obj.userData.name === name);
         if (found) return found;
 
-        // 2. Instanced Objects
         if (context.instanceRegistry) {
             return context.instanceRegistry.findInstanceByName(name);
         }
         return null;
     }
 
-    function selectByName(name) {
+    function selectByName(name: string): void {
         const mesh = findMeshByName(name);
         if (mesh) {
             callbacks.onSetFocus(mesh);
@@ -169,20 +200,19 @@ export function setupInteraction(context, callbacks) {
     // --- Interaction Logic (Raycasting) ---
 
     let lastClickTime = 0;
-    let lastClickedMeshId = null;
+    let lastClickedMeshId: string | null = null;
     const doubleClickDelay = 300;
 
-    // Cached values to prevent layout thrashing
     let width = window.innerWidth;
     let height = window.innerHeight;
 
-    const onWindowResize = () => {
+    const onWindowResize = (): void => {
         width = window.innerWidth;
         height = window.innerHeight;
     };
     window.addEventListener('resize', onWindowResize);
 
-    const onPointerUp = (event) => {
+    const onPointerUp = (event: PointerEvent): void => {
         if (event.button !== 0) return;
 
         mouse.x = (event.clientX / width) * 2 - 1;
@@ -193,18 +223,19 @@ export function setupInteraction(context, callbacks) {
 
         if (intersects.length > 0) {
             const hit = intersects[0];
-            let mesh = hit.object;
+            if (!hit) return;
+
+            let mesh: THREE.Object3D = hit.object;
             let userData = mesh.userData;
 
             // Handle InstancedMesh
-            if (mesh.isInstancedMesh && context.instanceRegistry) {
-                const data = context.instanceRegistry.getIntersectionData(mesh, hit.instanceId);
+            if ((mesh as THREE.InstancedMesh).isInstancedMesh && context.instanceRegistry) {
+                const data = context.instanceRegistry.getIntersectionData(
+                    mesh as THREE.InstancedMesh,
+                    hit.instanceId ?? 0
+                );
                 if (data) {
                     userData = data;
-                    const group = context.instanceRegistry.groups.get(mesh.userData.registryKey);
-                    if (group) {
-                        mesh = group.instances[hit.instanceId].pivot;
-                    }
                 }
             }
 
@@ -227,30 +258,34 @@ export function setupInteraction(context, callbacks) {
     };
     rendererDomElement.addEventListener('pointerup', onPointerUp);
 
-    // --- Modal Logic (Refactored to use Modal class) ---
+    // --- Modal Logic ---
     const welcomeModal = new Modal('welcome-modal', {
-        onClose: () => {
-            // Optional: Actions when closed
-        }
+        onClose: () => { /* Optional actions */ }
     });
 
     const btnHelp = document.getElementById('btn-help');
 
-    function openModal() {
-        if (welcomeModal) welcomeModal.open();
+    function openModal(): void {
+        welcomeModal.open();
     }
-    function closeModal() {
-        if (welcomeModal) welcomeModal.close();
+
+    function closeModal(): void {
+        welcomeModal.close();
     }
 
     if (btnHelp) btnHelp.addEventListener('click', openModal);
 
     // --- Command Palette ---
-    let commandPalette = null;
+    let commandPalette: CommandPalette | null = null;
     if (context.planetData) {
-        const paletteCallbacks = {
-            ...callbacks,
+        const paletteCallbacks: CommandPaletteCallbacks = {
             onSelectByName: selectByName,
+            onToggleOrbits: callbacks.onToggleOrbits,
+            onToggleLabels: callbacks.onToggleLabels,
+            onToggleTexture: callbacks.onToggleTexture,
+            onToggleCamera: callbacks.onToggleCamera,
+            onResetCamera: callbacks.onResetCamera,
+            onTogglePause: callbacks.onTogglePause,
             openModal: openModal,
             onToggleTheme: () => {
                 const next = themeManager.cycleTheme();
@@ -266,9 +301,9 @@ export function setupInteraction(context, callbacks) {
     }
 
     // --- Global Shortcuts ---
-    const onKeyDown = (e) => {
+    const onKeyDown = (e: KeyboardEvent): void => {
         const key = e.key.toLowerCase();
-        if (document.activeElement.tagName === 'INPUT') return;
+        if (document.activeElement?.tagName === 'INPUT') return;
 
         if (key === 'c') callbacks.onToggleCamera();
         else if (key === 'l') callbacks.onToggleLabels();
@@ -282,7 +317,7 @@ export function setupInteraction(context, callbacks) {
         } else if (key === '?' || (key === '/' && e.shiftKey)) {
             openModal();
         } else if (key === 'escape') {
-            if (sidebar && sidebar.isOpen) {
+            if (sidebar) {
                 sidebar.close();
             } else {
                 callbacks.onResetCamera();
@@ -298,16 +333,23 @@ export function setupInteraction(context, callbacks) {
     window.addEventListener('keydown', onKeyDown);
 
     // --- UI Button Binding ---
-    const onToggleTextureHandler = () => callbacks.onToggleTexture(document.getElementById('btn-texture'));
-    const onPauseHandler = () => callbacks.onTogglePause(document.getElementById('btn-pause'));
-    const onSpeedHandler = (e) => {
-        const val = parseFloat(e.target.value);
+    const onToggleTextureHandler = (): void => {
+        callbacks.onToggleTexture(document.getElementById('btn-texture'));
+    };
+
+    const onPauseHandler = (): void => {
+        callbacks.onTogglePause(document.getElementById('btn-pause'));
+    };
+
+    const onSpeedHandler = (e: Event): void => {
+        const target = e.target as HTMLInputElement;
+        const val = parseFloat(target.value);
         callbacks.onUpdateTimeScale(val);
         const valStr = val.toFixed(1);
         const speedValue = document.getElementById('speed-value');
         if (speedValue) speedValue.textContent = valStr + 'x';
-        e.target.setAttribute('aria-valuenow', val);
-        e.target.setAttribute('aria-valuetext', valStr + 'x');
+        target.setAttribute('aria-valuenow', String(val));
+        target.setAttribute('aria-valuetext', valStr + 'x');
     };
 
     const btnCamera = document.getElementById('btn-camera');
@@ -337,8 +379,8 @@ export function setupInteraction(context, callbacks) {
         updateSelectionUI,
         openModal,
         closeModal,
-        settingsPanel, // Expose for main.js to read initial settings
-        dispose: () => {
+        settingsPanel,
+        dispose: (): void => {
             rendererDomElement.removeEventListener('pointerup', onPointerUp);
             window.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('resize', onWindowResize);
@@ -352,10 +394,11 @@ export function setupInteraction(context, callbacks) {
             if (sliderSpeed) sliderSpeed.removeEventListener('input', onSpeedHandler);
             if (btnHelp) btnHelp.removeEventListener('click', btnHelpHandler);
 
-            // Clean up components if they have dispose methods
-            if (commandPalette && commandPalette.destroy) commandPalette.destroy();
-            if (welcomeModal && welcomeModal.dispose) welcomeModal.dispose();
-            if (settingsPanel && settingsPanel.dispose) settingsPanel.dispose();
+            commandPalette?.dispose();
+            welcomeModal.dispose();
+            settingsPanel.dispose();
+            sidebar?.dispose();
+            infoPanel.dispose();
         }
     };
 }

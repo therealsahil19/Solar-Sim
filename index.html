@@ -6,46 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive 3D Solar System</title>
 
-    <!-- Sentinel: Security Hardening -->
-    <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self';
-        script-src 'self' 'sha256-9Y34R4LiR87oZteBadaZ8p1tkkFtEjqcmr5jf5FqOMk=' https://unpkg.com;
-        style-src 'self' 'unsafe-inline';
-        img-src 'self' blob: data: https://www.solarsystemscope.com;
-        connect-src 'self' https://unpkg.com https://www.solarsystemscope.com;
-        font-src 'self';
-        object-src 'none';
-        base-uri 'self';
-        form-action 'self';
-    ">
+    <!-- Security Headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
 
     <!-- ⚡ Bolt: Resource hints for faster loading -->
-    <link rel="dns-prefetch" href="https://unpkg.com">
-    <link rel="preconnect" href="https://unpkg.com" crossorigin>
-    <link rel="preload" href="src/style.css" as="style">
-
-    <link rel="stylesheet" href="src/style.css">
-
-    <!-- Import Map -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-
-    <!-- Sentinel: Subresource Integrity (SRI) for Dependencies -->
-    <link rel="modulepreload" href="https://unpkg.com/three@0.160.0/build/three.module.js"
-        integrity="sha384-61S/Nu32S3E5+n+KpCOTb2eRYps6fVKm+9Gz1QBvSePFthb46f063Aa/qe/lykFZ" crossorigin="anonymous">
-    <link rel="modulepreload" href="https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js"
-        integrity="sha384-qlO/ZugKPxAQUAvTlQoo0QECzxJIJySZmCF/DHdb2Xn/hHndFwX/vfUAC9Hbk6LP" crossorigin="anonymous">
-    <link rel="modulepreload" href="https://unpkg.com/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js"
-        integrity="sha384-oxPlnJSeUCYU9W3RMQswb4S/vFd4Bhxuy1Ffx0V2KJakWeb6n1gaqUtSE9Ic/F72" crossorigin="anonymous">
-
+    <link rel="preload" href="./src/style.css" as="style">
+    <link rel="stylesheet" href="./src/style.css">
 </head>
 
 <body>
@@ -275,7 +242,7 @@
             rel="noopener noreferrer">GitHub</a>
     </div>
 
-    <script type="module" src="src/main.js"></script>
+    <script type="module" src="./src/main.ts"></script>
 </body>
 
 </html>

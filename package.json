@@ -1,27 +1,43 @@
 {
   "name": "solar-sim",
-  "version": "1.0.0",
-  "description": "A web-based 3D simulation of a solar system built with [Three.js](https://threejs.org/).",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "A web-based 3D simulation of a solar system built with Three.js and TypeScript.",
+  "type": "module",
   "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
     "test": "npx playwright test",
     "test:ui": "npx playwright test --ui",
     "test:headed": "npx playwright test --headed",
-    "dev": "npx serve -p 8080 ."
+    "test:unit": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/therealsahil19/Solar-Sim.git"
   },
-  "keywords": [],
+  "keywords": [
+    "threejs",
+    "solar-system",
+    "typescript",
+    "simulation",
+    "3d"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/therealsahil19/Solar-Sim/issues"
   },
-  "homepage": "https://github.com/therealsahil19/Solar-Sim#readme",
+  "homepage": "https://therealsahil19.github.io/Solar-Sim/",
+  "dependencies": {
+    "three": "^0.160.0"
+  },
   "devDependencies": {
-    "@playwright/test": "^1.57.0"
+    "@playwright/test": "^1.57.0",
+    "@types/three": "^0.160.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0"
   }
 }

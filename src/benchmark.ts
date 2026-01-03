@@ -1,5 +1,5 @@
 /**
- * @file benchmark.js
+ * @file benchmark.ts
  * @description ⚡ Bolt Performance Benchmark
  *
  * Measures frame timing statistics to validate performance optimizations.
@@ -11,24 +11,43 @@
  *   3. View results in console
  */
 
+import type { BenchmarkResult } from './types';
+
+// Extend Window interface for global benchmark access
+declare global {
+    interface Window {
+        boltBenchmark: typeof startBenchmark;
+    }
+}
+
+/**
+ * Result of starting a benchmark.
+ */
+export interface BenchmarkHandle {
+    /** Promise that resolves with benchmark results or null if cancelled */
+    promise: Promise<BenchmarkResult | null>;
+    /** Cancel the running benchmark */
+    cancel: () => void;
+}
+
 /**
  * Starts a frame timing benchmark.
- * @param {number} [durationMs=5000] - Duration of the benchmark in milliseconds.
- * @returns {{ promise: Promise<Object>, cancel: Function }} Object with promise for results and cancel function.
+ * @param durationMs - Duration of the benchmark in milliseconds.
+ * @returns Object with promise for results and cancel function.
  */
-export function startBenchmark(durationMs = 5000) {
-    const frameTimes = [];
-    let startTime = performance.now();
+export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
+    const frameTimes: number[] = [];
+    const startTime = performance.now();
     let lastFrame = startTime;
-    let frameId = null;
-    let resolvePromise = null;
+    let frameId: number | null = null;
+    let resolvePromise: ((result: BenchmarkResult | null) => void) | null = null;
 
     // Bug 047 Fix: Added Promise-based API for programmatic result capture
-    const resultPromise = new Promise((resolve) => {
+    const resultPromise = new Promise<BenchmarkResult | null>((resolve) => {
         resolvePromise = resolve;
     });
 
-    function measure() {
+    function measure(): void {
         const now = performance.now();
         frameTimes.push(now - lastFrame);
         lastFrame = now;
@@ -39,11 +58,17 @@ export function startBenchmark(durationMs = 5000) {
             // Calculate stats
             const sorted = [...frameTimes].sort((a, b) => a - b);
             const avg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
-            const p50 = sorted[Math.floor(sorted.length * 0.50)];
-            const p95 = sorted[Math.floor(sorted.length * 0.95)];
-            const p99 = sorted[Math.floor(sorted.length * 0.99)];
-            const max = sorted[sorted.length - 1];
-            const min = sorted[0];
+
+            const p50Index = Math.floor(sorted.length * 0.50);
+            const p95Index = Math.floor(sorted.length * 0.95);
+            const p99Index = Math.floor(sorted.length * 0.99);
+
+            const p50 = sorted[p50Index] ?? 0;
+            const p95 = sorted[p95Index] ?? 0;
+            const p99 = sorted[p99Index] ?? 0;
+            const max = sorted[sorted.length - 1] ?? 0;
+            const min = sorted[0] ?? 0;
+
             const stdDev = Math.sqrt(
                 frameTimes.reduce((sum, t) => sum + Math.pow(t - avg, 2), 0) / frameTimes.length
             );
@@ -64,20 +89,17 @@ export function startBenchmark(durationMs = 5000) {
 
             // Jank detection (frames >16.67ms for 60fps target)
             const jankFrames = frameTimes.filter(t => t > 16.67).length;
-            const jankPercent = ((jankFrames / frameTimes.length) * 100).toFixed(1);
-            console.log(`   Jank Frames (>16.67ms): ${jankFrames} (${jankPercent}%)`);
+            const jankPercent = (jankFrames / frameTimes.length) * 100;
+            console.log(`   Jank Frames (>16.67ms): ${jankFrames} (${jankPercent.toFixed(1)}%)`);
 
-            const result = {
+            const result: BenchmarkResult = {
                 frames: frameTimes.length,
                 avgFps: 1000 / avg,
-                avgFrame: avg,
-                p50: p50,
-                p95: p95,
+                minFps: 1000 / max,
+                maxFps: 1000 / min,
                 p99: p99,
-                max: max,
-                min: min,
                 stdDev: stdDev,
-                jankPercent: parseFloat(jankPercent)
+                jankPercent: jankPercent
             };
 
             // Resolve the promise with results
@@ -90,8 +112,8 @@ export function startBenchmark(durationMs = 5000) {
 
     return {
         promise: resultPromise,
-        cancel: () => {
-            if (frameId) cancelAnimationFrame(frameId);
+        cancel: (): void => {
+            if (frameId !== null) cancelAnimationFrame(frameId);
             console.log('Benchmark cancelled.');
             if (resolvePromise) resolvePromise(null);
         }

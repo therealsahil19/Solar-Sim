@@ -1,5 +1,5 @@
 /**
- * @file NavigationSidebar.js
+ * @file NavigationSidebar.ts
  * @description Manages the planetary navigation sidebar component.
  *
  * This class handles:
@@ -10,33 +10,77 @@
  * It is decoupled from the 3D scene, communicating purely via callbacks.
  */
 
-export class NavigationSidebar {
+import type { Disposable, CelestialBody } from '../types';
+
+/**
+ * DOM element cache for NavigationSidebar.
+ */
+interface NavigationSidebarDOM {
+    sidebar: HTMLElement | null;
+    list: HTMLElement | null;
+    search: HTMLInputElement | null;
+    btnClose: HTMLButtonElement | null;
+    btnOpen: HTMLButtonElement | null;
+}
+
+/**
+ * Callbacks for NavigationSidebar interactions.
+ */
+export interface NavigationSidebarCallbacks {
+    /** Callback invoked when an item is selected */
+    onSelect: (name: string) => void;
+    /** Optional callback when sidebar is closed */
+    onClose?: () => void;
+}
+
+/**
+ * Configuration for NavigationSidebar.
+ */
+export interface NavigationSidebarConfig {
+    /** The hierarchical system data */
+    planetData: CelestialBody[];
+    /** Interaction callbacks */
+    callbacks: NavigationSidebarCallbacks;
+}
+
+/**
+ * Simplified item structure for rendering.
+ */
+interface NavItem {
+    name: string;
+    type: string;
+    moons?: NavItem[];
+}
+
+/**
+ * Manages the planetary navigation sidebar component.
+ */
+export class NavigationSidebar implements Disposable {
+    private data: CelestialBody[];
+    private callbacks: NavigationSidebarCallbacks;
+    private isOpen: boolean = false;
+    private dom: NavigationSidebarDOM;
+
+    // Event handler references
+    private _handleCloseClick: (() => void) | null = null;
+    private _handleOpenClick: (() => void) | null = null;
+    private _handleSearchInput: ((e: Event) => void) | null = null;
+
     /**
      * Creates a new Navigation Sidebar instance.
-     *
-     * @param {Object} config - Configuration object.
-     * @param {Array<Object>} config.planetData - The hierarchical system data (from system.json).
-     * @param {Object} config.callbacks - Interaction callbacks.
-     * @param {Function} config.callbacks.onSelect - Callback invoked when an item is clicked. Signature: `(name: string) => void`.
-     * @param {Function} [config.callbacks.onClose] - Optional callback when sidebar is closed.
+     * @param config - Configuration object.
      */
-    constructor({ planetData, callbacks }) {
-        /** @type {Array<Object>} Reference to the raw planet data */
+    constructor({ planetData, callbacks }: NavigationSidebarConfig) {
         this.data = planetData;
-
-        /** @type {Object} Callbacks for external communication */
         this.callbacks = callbacks;
 
-        /** @type {boolean} Internal state of visibility */
-        this.isOpen = false;
-
-        // Cache DOM elements for performance
+        // Cache DOM elements
         this.dom = {
             sidebar: document.getElementById('nav-sidebar'),
             list: document.getElementById('nav-list'),
-            search: document.getElementById('nav-search'),
-            btnClose: document.getElementById('btn-close-nav'),
-            btnOpen: document.getElementById('btn-planets'), // External trigger button
+            search: document.getElementById('nav-search') as HTMLInputElement | null,
+            btnClose: document.getElementById('btn-close-nav') as HTMLButtonElement | null,
+            btnOpen: document.getElementById('btn-planets') as HTMLButtonElement | null,
         };
 
         if (!this.dom.sidebar) {
@@ -55,57 +99,71 @@ export class NavigationSidebar {
     /**
      * Initializes the component by rendering the tree and binding event listeners.
      */
-    init() {
+    private init(): void {
         this.renderTree();
         this.bindEvents();
     }
 
     /**
      * Renders the navigation tree into the sidebar.
-     * Clears any existing content (skeletons) before rendering.
      */
-    renderTree() {
+    private renderTree(): void {
         if (!this.dom.list) return;
-        this.dom.list.innerHTML = ''; // Clear skeleton or previous render
+        this.dom.list.innerHTML = '';
 
-        // 1. Add Sun manually (since it might not be in the recursive data array)
-        const sunData = [{ name: 'Sun', type: 'Star', moons: [] }];
+        // Add Sun manually
+        const sunData: NavItem[] = [{ name: 'Sun', type: 'Star', moons: [] }];
         this.buildLevel(this.dom.list, sunData);
 
-        // 2. Add System Data (Planets and recursive moons)
+        // Add System Data
         if (this.data) {
-            this.buildLevel(this.dom.list, this.data);
+            const items = this.data.map(body => this.mapToNavItem(body));
+            this.buildLevel(this.dom.list, items);
         }
     }
 
     /**
-     * Recursive helper to build a specific level of the navigation tree.
-     *
-     * @param {HTMLElement} container - The DOM element to append to (ul or div).
-     * @param {Array<Object>} items - Array of planet/moon data objects for this level.
+     * Maps a CelestialBody to a NavItem for rendering.
      */
-    buildLevel(container, items) {
+    private mapToNavItem(body: CelestialBody): NavItem {
+        let mappedType = 'Unknown';
+        if (body.type === 'planet') mappedType = 'Planet';
+        else if (body.type === 'dwarf_planet') mappedType = 'Dwarf Planet';
+        else if (body.type === 'moon') mappedType = 'Moon';
+        else if (body.type === 'star') mappedType = 'Star';
+        else mappedType = body.type;
+
+        return {
+            name: body.name,
+            type: mappedType,
+            moons: body.moons?.map(moon => this.mapToNavItem(moon))
+        } as NavItem;
+    }
+
+    /**
+     * Recursive helper to build a specific level of the navigation tree.
+     */
+    private buildLevel(container: HTMLElement, items: NavItem[]): void {
         const ul = document.createElement('ul');
         ul.className = 'nav-ul';
-        ul.role = 'group'; // A11y: Semantically groups the sub-items
+        ul.setAttribute('role', 'group');
 
         items.forEach(item => {
             const li = document.createElement('li');
             li.className = 'nav-li';
-            li.role = 'treeitem'; // A11y: Identifies this as a tree node
+            li.setAttribute('role', 'treeitem');
             li.setAttribute('aria-label', item.name);
 
-            // Create interactive button
             const btn = document.createElement('button');
             btn.className = 'nav-btn';
 
             // Determine Icon
-            let icon = '🌑'; // Default for Moon
+            let icon = '🌑';
             if (item.type === 'Planet') icon = '🪐';
             if (item.type === 'Dwarf Planet') icon = '☄️';
             if (item.type === 'Star') icon = '☀️';
 
-            // Construct Content (Safe DOM creation to prevent XSS)
+            // Construct Content (Safe DOM creation)
             const spanName = document.createElement('span');
             spanName.textContent = `${icon} ${item.name}`;
 
@@ -122,13 +180,12 @@ export class NavigationSidebar {
                 if (this.callbacks.onSelect) {
                     this.callbacks.onSelect(item.name);
                 }
-                // UX: Auto-close on mobile to clear view
                 if (window.innerWidth <= 768) this.close();
             });
 
             li.appendChild(btn);
 
-            // Recursive Step: If item has moons, build the next level
+            // Recursive Step
             if (item.moons && item.moons.length > 0) {
                 const subContainer = document.createElement('div');
                 subContainer.className = 'nav-sublist';
@@ -143,12 +200,11 @@ export class NavigationSidebar {
     }
 
     /**
-     * Binds internal DOM events (Close, Open, Search).
+     * Binds internal DOM events.
      */
-    bindEvents() {
-        // Toggle Logic
-        this._handleCloseClick = () => this.close();
-        this._handleOpenClick = () => this.open();
+    private bindEvents(): void {
+        this._handleCloseClick = (): void => this.close();
+        this._handleOpenClick = (): void => this.open();
 
         if (this.dom.btnClose) {
             this.dom.btnClose.addEventListener('click', this._handleCloseClick);
@@ -157,9 +213,11 @@ export class NavigationSidebar {
             this.dom.btnOpen.addEventListener('click', this._handleOpenClick);
         }
 
-        // Search Logic (Real-time filtering)
         if (this.dom.search) {
-            this._handleSearchInput = (e) => this.handleSearch(e.target.value);
+            this._handleSearchInput = (e: Event): void => {
+                const target = e.target as HTMLInputElement;
+                this.handleSearch(target.value);
+            };
             this.dom.search.addEventListener('input', this._handleSearchInput);
         }
     }
@@ -167,7 +225,7 @@ export class NavigationSidebar {
     /**
      * Cleans up event listeners and references.
      */
-    dispose() {
+    dispose(): void {
         if (this.dom.btnClose && this._handleCloseClick) {
             this.dom.btnClose.removeEventListener('click', this._handleCloseClick);
         }
@@ -181,79 +239,76 @@ export class NavigationSidebar {
 
     /**
      * Opens the sidebar.
-     * Manages ARIA states and moves focus to the search input for efficiency.
      */
-    open() {
+    open(): void {
+        if (!this.dom.sidebar) return;
+
         this.isOpen = true;
         this.dom.sidebar.setAttribute('aria-hidden', 'false');
         this.dom.sidebar.classList.remove('animate-out');
         this.dom.sidebar.classList.add('animate-in');
 
-        // A11y: Move focus to search after a short delay (transition allowance)
         if (this.dom.search) {
-            setTimeout(() => this.dom.search.focus(), 50);
+            setTimeout(() => this.dom.search?.focus(), 50);
         }
     }
 
     /**
      * Closes the sidebar.
-     * Returns focus to the trigger button to maintain keyboard navigation flow.
      */
-    close() {
+    close(): void {
+        if (!this.dom.sidebar) return;
+
         this.isOpen = false;
         this.dom.sidebar.classList.remove('animate-in');
         this.dom.sidebar.classList.add('animate-out');
 
         setTimeout(() => {
-            if (!this.isOpen) {
+            if (!this.isOpen && this.dom.sidebar) {
                 this.dom.sidebar.setAttribute('aria-hidden', 'true');
                 this.dom.sidebar.classList.remove('animate-out');
             }
-        }, 400); // Matches 0.4s transition
+        }, 400);
 
-        // A11y: Return focus to the button that opened the menu
         if (this.dom.btnOpen) this.dom.btnOpen.focus();
+        if (this.callbacks.onClose) this.callbacks.onClose();
     }
 
     /**
      * Filters the navigation tree based on a search term.
-     * Implements a "Show Matches & Parents" strategy so users don't lose context.
-     *
-     * @param {string} term - The search query.
      */
-    handleSearch(term) {
-        term = term.toLowerCase().trim();
-        const items = this.dom.list.querySelectorAll('.nav-li');
+    private handleSearch(term: string): void {
+        if (!this.dom.list) return;
 
-        // Reset if empty
+        term = term.toLowerCase().trim();
+        const items = this.dom.list.querySelectorAll<HTMLElement>('.nav-li');
+
         if (!term) {
-            items.forEach(li => li.style.display = '');
+            items.forEach(li => { li.style.display = ''; });
             return;
         }
 
         // Phase 1: Reset all and mark direct matches
         items.forEach(li => {
             const btn = li.querySelector('.nav-btn');
-            // Safe text access
-            const text = btn.textContent.toLowerCase();
+            const text = btn?.textContent?.toLowerCase() ?? '';
             const isMatch = text.includes(term);
 
             li.dataset.matches = isMatch ? 'true' : 'false';
-            li.style.display = 'none'; // Hide by default
+            li.style.display = 'none';
         });
 
         // Phase 2: Walk up the tree to reveal matching paths
         items.forEach(li => {
             if (li.dataset.matches === 'true') {
-                li.style.display = ''; // Show match
+                li.style.display = '';
 
-                // Walk up parent elements
-                let parent = li.parentElement; // ul
+                let parent = li.parentElement;
                 while (parent && parent !== this.dom.list) {
                     if (parent.classList.contains('nav-sublist')) {
-                        parent.style.display = '';
-                        const parentLi = parent.parentElement;
-                        if (parentLi) parentLi.style.display = ''; // Show parent folder
+                        (parent as HTMLElement).style.display = '';
+                        const parentLi = parent.parentElement as HTMLElement | null;
+                        if (parentLi) parentLi.style.display = '';
                     }
                     parent = parent.parentElement;
                 }

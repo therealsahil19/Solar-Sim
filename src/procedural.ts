@@ -1,5 +1,5 @@
 /**
- * @file procedural.js
+ * @file procedural.ts
  * @description Factory module for generating 3D objects in the simulation.
  *
  * This module follows a functional "Factory" pattern. It exports pure functions
@@ -14,72 +14,127 @@
 
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-import { getOrbitalPosition, physicsToRender } from './physics.js';
+import { getOrbitalPosition, physicsToRender } from './physics';
+import type { OrbitalParameters } from './types/system';
+import type { TrailManager } from './trails';
+import type { InstanceRegistry } from './instancing';
 
 // --- Shared Resources ---
-// Reusing geometry reduces memory overhead significantly
 const baseSphereGeometry = new THREE.SphereGeometry(1, 64, 64);
 
-// Material Cache to reduce shader programs and draw calls
-const materialCache = {};
+// Material Cache
+const materialCache: Record<string, THREE.MeshStandardMaterial> = {};
+
+/**
+ * Extended TextureLoader with additional properties for our simulation.
+ */
+export interface ExtendedTextureLoader extends THREE.TextureLoader {
+    instanceRegistry?: InstanceRegistry;
+    trailManager?: TrailManager;
+    lazyLoadQueue?: Array<{
+        material: THREE.MeshStandardMaterial;
+        url: string;
+    }>;
+}
+
+/**
+ * Configuration for a celestial body from system.json.
+ */
+export interface SystemData {
+    name: string;
+    type: string;
+    physics: OrbitalParameters;
+    visual: {
+        color: string | number;
+        size: number;
+        texture?: string;
+        ring?: {
+            inner?: number;
+            outer?: number;
+            texture?: string;
+            color?: number;
+        };
+        hasRing?: boolean;
+    };
+    description?: string;
+    moons?: SystemData[];
+}
+
+/**
+ * Result of creating a celestial system.
+ */
+export interface SystemResult {
+    pivot: THREE.Group;
+    orbit: THREE.LineLoop | null;
+    interactables: THREE.Mesh[];
+    animated: AnimatedBody[];
+    orbits: THREE.LineLoop[];
+    trails: unknown[];
+    labels: CSS2DObject[];
+}
+
+/**
+ * Animated body data for the animation loop.
+ */
+export interface AnimatedBody {
+    pivot: THREE.Group;
+    mesh: THREE.Group;
+    physics: OrbitalParameters;
+    parent?: OrbitalParameters | null;
+}
 
 /**
  * Clears the material cache to prevent memory leaks during scene resets.
- * Should be called when the scene is destroyed or reset.
  */
-export function clearMaterialCache() {
+export function clearMaterialCache(): void {
     Object.values(materialCache).forEach(mat => mat.dispose());
     for (const key in materialCache) delete materialCache[key];
 }
 
 /**
  * Retrieves or creates a cached solid material for a given color.
- * Use this to avoid creating duplicate materials for objects with the same color.
- * @param {string|number|THREE.Color} color - The color of the material.
- * @returns {THREE.MeshStandardMaterial} The cached material.
  */
-function getSolidMaterial(color) {
-    // Ensure the key is a primitive string to avoid "[object Object]" collisions
-    let key;
-    if (color && typeof color === 'object' && color.isColor) {
-        key = '#' + color.getHexString();
+function getSolidMaterial(color: THREE.ColorRepresentation): THREE.MeshStandardMaterial {
+    let key: string;
+    if (color && typeof color === 'object' && 'isColor' in color) {
+        key = '#' + (color as THREE.Color).getHexString();
     } else {
         key = String(color);
     }
 
     if (!materialCache[key]) {
-        materialCache[key] = new THREE.MeshStandardMaterial({ color: color });
+        materialCache[key] = new THREE.MeshStandardMaterial({ color });
     }
-    return materialCache[key];
+    return materialCache[key]!;
 }
 
 /**
  * Creates a procedural starfield background using points.
- * @returns {THREE.Points} The starfield particle system.
  */
-export function createStarfield() {
+export function createStarfield(): THREE.Points {
     const geometry = new THREE.BufferGeometry();
     const count = 5000;
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count * 3; i++) {
-        // High distribution range to keep stars in the background (far beyond Pluto/Oort)
         positions[i] = (Math.random() - 0.5) * 100000;
     }
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const material = new THREE.PointsMaterial({ color: 0xffffff, size: 2.0, transparent: true, opacity: 0.9, sizeAttenuation: true });
+    const material = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 2.0,
+        transparent: true,
+        opacity: 0.9,
+        sizeAttenuation: true
+    });
     return new THREE.Points(geometry, material);
 }
 
 /**
- * Creates an orbit line visualization by sampling the physics orbit
- * and transforming points to render space.
- *
- * @param {Object} physicsData - The orbital elements.
- * @returns {THREE.LineLoop} The orbit line object.
+ * Creates an orbit line visualization.
  */
-export function createOrbitLine(physicsData) {
-    const points = [];
-    const segments = 256; // High resolution for elliptical/inclined orbits
+export function createOrbitLine(physicsData: OrbitalParameters): THREE.LineLoop {
+    const points: THREE.Vector3[] = [];
+    const segments = 256;
 
     const period = Math.pow(physicsData.a, 1.5);
     const dt = period / segments;
@@ -102,43 +157,43 @@ export function createOrbitLine(physicsData) {
 }
 
 /**
- * Helper to create a radial gradient texture for the Sun's glow.
- * Uses an offscreen canvas to generate a procedural gradient.
- * @returns {THREE.CanvasTexture} The generated texture.
+ * Creates a radial gradient texture for the Sun's glow.
  */
-function createGlowTexture() {
+function createGlowTexture(): THREE.CanvasTexture {
     const canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 128;
     const context = canvas.getContext('2d');
 
-    const gradient = context.createRadialGradient(
-        64, 64, 0,
-        64, 64, 64
-    );
-    // Bright white/yellow center to transparent edge
-    gradient.addColorStop(0, 'rgba(255, 255, 240, 1)');
-    gradient.addColorStop(0.2, 'rgba(255, 255, 200, 0.8)');
-    gradient.addColorStop(0.5, 'rgba(255, 220, 100, 0.3)');
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    if (context) {
+        const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
+        gradient.addColorStop(0, 'rgba(255, 255, 240, 1)');
+        gradient.addColorStop(0.2, 'rgba(255, 255, 200, 0.8)');
+        gradient.addColorStop(0.5, 'rgba(255, 220, 100, 0.3)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, 128, 128);
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, 128, 128);
+    }
 
-    const texture = new THREE.CanvasTexture(canvas);
-    return texture;
+    return new THREE.CanvasTexture(canvas);
+}
+
+/**
+ * Extended Sun mesh with dispose method.
+ */
+export interface SunMesh extends THREE.Mesh {
+    dispose: () => void;
 }
 
 /**
  * Creates the central Sun mesh.
- * @param {THREE.TextureLoader} textureLoader - The loader instance for fetching textures.
- * @param {boolean} useTextures - Whether to apply the texture initially.
- * @returns {THREE.Mesh} The Sun mesh.
  */
-export function createSun(textureLoader, useTextures) {
-    const geometry = new THREE.SphereGeometry(2.5, 64, 64); // Visual Size 2.5
-
-    // We assume 'textures/sun.jpg' exists or will be loaded
+export function createSun(
+    textureLoader: THREE.TextureLoader,
+    useTextures: boolean
+): SunMesh {
+    const geometry = new THREE.SphereGeometry(2.5, 64, 64);
     const texture = textureLoader.load('textures/sun.jpg');
 
     const texturedMaterial = new THREE.MeshBasicMaterial({
@@ -148,20 +203,29 @@ export function createSun(textureLoader, useTextures) {
 
     const solidMaterial = new THREE.MeshBasicMaterial({ color: 0xffffaa });
 
-    const sun = new THREE.Mesh(geometry, useTextures ? texturedMaterial : solidMaterial);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sun = new THREE.Mesh(
+        geometry,
+        useTextures ? texturedMaterial : solidMaterial
+    ) as any as SunMesh;
+
     sun.castShadow = false;
     sun.receiveShadow = false;
-    sun.position.set(0, 0, 0); // Sun is at origin
+    sun.position.set(0, 0, 0);
 
-    sun.userData.name = "Sun";
-    sun.userData.type = "Star";
-    sun.userData.size = 2.5;
-    sun.userData.description = "The star at the center of the Solar System.";
-    sun.userData.distance = 0; // Legacy / Info Panel
-    sun.userData.solidMaterial = solidMaterial;
-    sun.userData.texturedMaterial = texturedMaterial;
+    sun.userData = {
+        name: "Sun",
+        type: "Star",
+        description: "The star at the center of the Solar System."
+    };
 
-    // --- Add Glow Sprite ---
+    // Additional legacy properties
+    (sun.userData as Record<string, unknown>).size = 2.5;
+    (sun.userData as Record<string, unknown>).distance = 0;
+    (sun.userData as Record<string, unknown>).solidMaterial = solidMaterial;
+    (sun.userData as Record<string, unknown>).texturedMaterial = texturedMaterial;
+
+    // Add Glow Sprite
     const glowTexture = createGlowTexture();
     const glowMaterial = new THREE.SpriteMaterial({
         map: glowTexture,
@@ -174,8 +238,7 @@ export function createSun(textureLoader, useTextures) {
     glowSprite.scale.set(12, 12, 1);
     sun.add(glowSprite);
 
-    // Bug 032 Fix: Custom minimize method for GPU memory
-    sun.dispose = () => {
+    sun.dispose = (): void => {
         glowTexture.dispose();
         glowMaterial.dispose();
         geometry.dispose();
@@ -186,19 +249,16 @@ export function createSun(textureLoader, useTextures) {
 
 /**
  * Creates the player ship group.
- * @returns {THREE.Group} The player ship group.
  */
-export function createPlayerShip() {
+export function createPlayerShip(): THREE.Group {
     const shipGroup = new THREE.Group();
 
-    // Main Body (Cone)
     const bodyGeo = new THREE.ConeGeometry(0.5, 2, 8);
     const bodyMat = new THREE.MeshNormalMaterial();
     const body = new THREE.Mesh(bodyGeo, bodyMat);
     body.rotation.x = Math.PI / 2;
     shipGroup.add(body);
 
-    // Engines
     const engineGeo = new THREE.CylinderGeometry(0.2, 0.1, 1.5, 8);
     const engineMat = new THREE.MeshNormalMaterial();
 
@@ -212,45 +272,37 @@ export function createPlayerShip() {
     rightEngine.rotation.x = Math.PI / 2;
     shipGroup.add(rightEngine);
 
-    shipGroup.position.set(20, 5, 20); // Initial position
+    shipGroup.position.set(20, 5, 20);
     return shipGroup;
 }
 
 /**
  * Recursively creates a celestial body system (planet + moons).
- *
- * @param {Object} data - Configuration object from `system.json`.
- * @param {THREE.TextureLoader} textureLoader - Loader instance.
- * @param {boolean} useTextures - Initial texture state.
- * @param {Object} [parentData] - Data of the parent body (for relative calculations).
- * @returns {Object} System components (pivot, orbit, interactables, etc.).
  */
-export function createSystem(data, textureLoader, useTextures, parentData = null) {
-    // 1. Pivot & Body Container
-    // This Group acts as the "Anchor". It will be moved to the calculated
-    // Render Position by the physics loop in `main.js`.
+export function createSystem(
+    data: SystemData,
+    textureLoader: ExtendedTextureLoader,
+    useTextures: boolean,
+    parentData: OrbitalParameters | null = null
+): SystemResult {
+    // Pivot & Body Container
     const pivot = new THREE.Group();
-    pivot.userData.physics = data.physics; // Store physics data for main loop
-    pivot.userData.type = data.type;
+    (pivot.userData as Record<string, unknown>).physics = data.physics;
+    (pivot.userData as Record<string, unknown>).type = data.type;
 
-    // 2. Orbit Line
-    let orbitLine = null;
+    // Orbit Line
+    let orbitLine: THREE.LineLoop | null = null;
     if (data.physics && data.physics.a > 0) {
-        // Only draw orbits for primary planets to avoid visual clutter/artifacts for moons
         if (data.type === 'Planet' || data.type === 'Dwarf Planet') {
             orbitLine = createOrbitLine(data.physics);
-        } else {
-            orbitLine = null;
         }
     }
 
-    // 3. Visual Mesh
+    // Visual Mesh
     const geometry = baseSphereGeometry;
     const solidMaterial = getSolidMaterial(data.visual.color);
-    let texturedMaterial = solidMaterial; // Default
+    let texturedMaterial: THREE.MeshStandardMaterial = solidMaterial;
 
-    // Lazy Load Texture
-    // Bolt Optimization: Load outer planets (>20AU) later to speed up initial render
     const isLazy = data.physics.a > 20;
     if (data.visual.texture) {
         if (isLazy && textureLoader.lazyLoadQueue) {
@@ -271,30 +323,28 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
         }
     }
 
-    const userData = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userData: any = {
         name: data.name,
         type: data.type,
+        description: data.description ?? "",
+        physicsOrbit: data.physics,
         size: data.visual.size,
-        description: data.description || "",
-        distance: data.physics.a, // Display AU
+        distance: data.physics.a,
         solidMaterial: solidMaterial,
         texturedMaterial: texturedMaterial,
-        physics: data.physics // Store here too
+        physics: data.physics
     };
 
-    // Visual Group handles Scale
-    // We separate Scale (Visual) from Position (Pivot)
+    // Visual Group
     const visualGroup = new THREE.Group();
     visualGroup.scale.set(data.visual.size, data.visual.size, data.visual.size);
     pivot.add(visualGroup);
 
     // Create Mesh or Register Instance
-    let mesh = null;
+    let mesh: THREE.Mesh | null = null;
     if (textureLoader.instanceRegistry) {
-        // Bolt Optimization: Use Instancing for performance
         const mat = useTextures ? texturedMaterial : solidMaterial;
-        // visualGroup is the object that will be moved/scaled.
-        // We pass visualGroup to registry.
         textureLoader.instanceRegistry.addInstance(visualGroup, geometry, mat, userData);
     } else {
         mesh = new THREE.Mesh(geometry, useTextures ? texturedMaterial : solidMaterial);
@@ -304,25 +354,24 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
         visualGroup.add(mesh);
     }
 
-    // 4. Rings (Saturn/Uranus)
-    const ringData = data.visual.ring || (data.visual.hasRing ? { inner: 1.4, outer: 2.2 } : null);
+    // Rings
+    const ringData = data.visual.ring ?? (data.visual.hasRing ? { inner: 1.4, outer: 2.2 } : null);
     if (ringData) {
-        const inner = ringData.inner || 1.4;
-        const outer = ringData.outer || 2.2;
+        const inner = ringData.inner ?? 1.4;
+        const outer = ringData.outer ?? 2.2;
         const ringGeo = new THREE.RingGeometry(inner, outer, 128);
 
-        // Fix UVs to map circular texture correctly
-        const pos = ringGeo.attributes.position;
-        const uv = ringGeo.attributes.uv;
+        const pos = ringGeo.attributes.position as THREE.BufferAttribute;
+        const uv = ringGeo.attributes.uv as THREE.BufferAttribute;
         const v3 = new THREE.Vector3();
-        for (let i = 0; i < pos.count; i++) {
-            v3.fromBufferAttribute(pos, i);
-            // Map x,y to 0..1 UV based on the square layout
-            // Normalizing v3.x/y from [-outer, outer] to [0, 1]
-            uv.setXY(i, (v3.x / (outer * 2)) + 0.5, (v3.y / (outer * 2)) + 0.5);
+        if (pos && uv) {
+            for (let i = 0; i < pos.count; i++) {
+                v3.fromBufferAttribute(pos, i);
+                uv.setXY(i, (v3.x / (outer * 2)) + 0.5, (v3.y / (outer * 2)) + 0.5);
+            }
         }
 
-        let ringMat;
+        let ringMat: THREE.MeshStandardMaterial;
         if (ringData.texture && useTextures) {
             const ringTexture = textureLoader.load(ringData.texture);
             ringMat = new THREE.MeshStandardMaterial({
@@ -335,7 +384,7 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
             });
         } else {
             ringMat = new THREE.MeshStandardMaterial({
-                color: ringData.color || 0xcfb096,
+                color: ringData.color ?? 0xcfb096,
                 side: THREE.DoubleSide,
                 transparent: true,
                 opacity: 0.6,
@@ -351,54 +400,41 @@ export function createSystem(data, textureLoader, useTextures, parentData = null
         visualGroup.add(ring);
     }
 
-    // 5. Label
+    // Label
     const labelDiv = document.createElement('div');
     labelDiv.className = 'planet-label';
     labelDiv.textContent = data.name;
     const label = new CSS2DObject(labelDiv);
-    // Position label above the planet (taking scale into account)
     label.position.set(0, data.visual.size + 1.0, 0);
-
-    // Visibility Logic: Tag moons so they can be hidden if parent isn't focused
     label.userData.isMoon = (data.type === 'Moon');
-    label.userData.parentPlanet = parentData ? parentData.name : null; // Label uses name for matching if needed, or we link via pivot later
-
+    label.userData.parentPlanet = parentData ? null : null;
     pivot.add(label);
 
-    // 6. Trails
-    // Register with manager if available
-    // Bug 044 Fix: Removed unused `trail` variable (was never assigned)
+    // Trails
     if (textureLoader.trailManager && (data.type === 'Planet' || data.type === 'Dwarf Planet')) {
-        // Trace the PIVOT (which moves).
         textureLoader.trailManager.register(pivot, data.visual.color);
     }
 
     // Collections
-    const interactables = [];
+    const interactables: THREE.Mesh[] = [];
     if (mesh) interactables.push(mesh);
 
-    const animated = [{
+    const animated: AnimatedBody[] = [{
         pivot: pivot,
-        mesh: visualGroup, // Self rotation
+        mesh: visualGroup,
         physics: data.physics,
-        parent: parentData // Store parent physics if this is a moon
+        parent: parentData
     }];
 
-    const orbits = orbitLine ? [orbitLine] : [];
-    const labels = [label];
-    const trails = []; // Bug 044 Fix: Simplified - trail registration is handled by trailManager
+    const orbits: THREE.LineLoop[] = orbitLine ? [orbitLine] : [];
+    const labels: CSS2DObject[] = [label];
+    const trails: unknown[] = [];
 
-    // 7. Recursion (Moons)
+    // Recursion (Moons)
     if (data.moons && data.moons.length > 0) {
         data.moons.forEach(moonData => {
-            // Pass current body's physics as parentData
             const result = createSystem(moonData, textureLoader, useTextures, data.physics);
-
-            // Hierarchy: Moons are children of the Planet Pivot.
-            // This ensures they move with the planet in Render Space.
-            // However, their position must be updated relative to the planet every frame.
             pivot.add(result.pivot);
-
             if (result.orbit) pivot.add(result.orbit);
 
             interactables.push(...result.interactables);

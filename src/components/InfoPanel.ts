@@ -1,5 +1,5 @@
 /**
- * @file InfoPanel.js
+ * @file InfoPanel.ts
  * @description Manages the "Info Panel" UI component that displays details for selected celestial objects.
  *
  * This class handles:
@@ -9,20 +9,53 @@
  * 4. **Accessibility**: Using ARIA attributes to ensure screen readers announce updates.
  */
 
-export class InfoPanel {
+import * as THREE from 'three';
+import type { Disposable, SolarSimUserData } from '../types';
+
+/**
+ * DOM element cache for InfoPanel.
+ */
+interface InfoPanelDOM {
+    panel: HTMLElement | null;
+    name: HTMLElement | null;
+    type: HTMLElement | null;
+    desc: HTMLElement | null;
+    radius: HTMLElement | null;
+    distance: HTMLElement | null;
+    distSun: HTMLElement | null;
+    btnFollow: HTMLButtonElement | null;
+}
+
+/**
+ * Callbacks for InfoPanel interactions.
+ */
+export interface InfoPanelCallbacks {
+    /** Callback triggered when "Follow" is clicked */
+    onFollow: (mesh: THREE.Object3D) => void;
+}
+
+/**
+ * Configuration for InfoPanel.
+ */
+export interface InfoPanelConfig {
+    callbacks: InfoPanelCallbacks;
+}
+
+/**
+ * Manages the Info Panel UI component.
+ */
+export class InfoPanel implements Disposable {
+    private callbacks: InfoPanelCallbacks;
+    private currentMesh: THREE.Object3D | null = null;
+    private dom: InfoPanelDOM;
+    private _handleFollowClick: ((e: MouseEvent) => void) | null = null;
+
     /**
      * Creates a new InfoPanel instance.
-     *
-     * @param {Object} config - Configuration object.
-     * @param {Object} config.callbacks - Interaction callbacks.
-     * @param {Function} config.callbacks.onFollow - Callback triggered when "Follow" is clicked. Signature: `(mesh: THREE.Object3D) => void`.
+     * @param config - Configuration object with callbacks.
      */
-    constructor({ callbacks }) {
-        /** @type {Object} External callbacks */
+    constructor({ callbacks }: InfoPanelConfig) {
         this.callbacks = callbacks;
-
-        /** @type {THREE.Object3D|null} Reference to the currently displayed object */
-        this.currentMesh = null;
 
         // Cache DOM elements
         this.dom = {
@@ -32,8 +65,8 @@ export class InfoPanel {
             desc: document.getElementById('info-desc'),
             radius: document.getElementById('info-radius'),
             distance: document.getElementById('info-distance'),
-            distSun: document.getElementById('info-dist-sun'), // Dynamic update target
-            btnFollow: document.getElementById('btn-follow'),
+            distSun: document.getElementById('info-dist-sun'),
+            btnFollow: document.getElementById('btn-follow') as HTMLButtonElement | null,
         };
 
         if (!this.dom.panel) {
@@ -46,10 +79,9 @@ export class InfoPanel {
     /**
      * Binds internal event listeners.
      */
-    bindEvents() {
+    private bindEvents(): void {
         if (this.dom.btnFollow) {
-            this._handleFollowClick = (e) => {
-                // Prevent bubbling if necessary, though usually fine here
+            this._handleFollowClick = (e: MouseEvent): void => {
                 e.stopPropagation();
                 if (this.currentMesh && this.callbacks.onFollow) {
                     this.callbacks.onFollow(this.currentMesh);
@@ -62,7 +94,7 @@ export class InfoPanel {
     /**
      * Cleans up event listeners.
      */
-    dispose() {
+    dispose(): void {
         if (this.dom.btnFollow && this._handleFollowClick) {
             this.dom.btnFollow.removeEventListener('click', this._handleFollowClick);
         }
@@ -70,38 +102,33 @@ export class InfoPanel {
 
     /**
      * Updates the panel with new object data and reveals it.
-     *
-     * @param {THREE.Object3D} mesh - The selected object.
-     * @param {Object} mesh.userData - The data object attached to the mesh.
-     * @param {string} mesh.userData.name - Display name (e.g., "Earth").
-     * @param {string} mesh.userData.type - Classification (e.g., "Planet").
-     * @param {string} [mesh.userData.description] - Description text.
-     * @param {number} [mesh.userData.size] - Radius relative to Earth.
-     * @param {number} [mesh.userData.distance] - Orbital distance in AU.
+     * @param mesh - The selected object.
      */
-    update(mesh) {
+    update(mesh: THREE.Object3D): void {
         if (!mesh) return;
 
         // Bug 039 Fix: Add null check for userData to prevent TypeError
-        const d = mesh.userData || {};
+        const d: SolarSimUserData = mesh.userData ?? {};
 
         this.currentMesh = mesh;
 
         // Safe text updates
-        if (this.dom.name) this.dom.name.textContent = d.name || 'Unknown';
-        if (this.dom.type) this.dom.type.textContent = d.type || 'Unknown Type';
-        if (this.dom.desc) this.dom.desc.textContent = d.description || 'No description available.';
+        if (this.dom.name) this.dom.name.textContent = d.name ?? 'Unknown';
+        if (this.dom.type) this.dom.type.textContent = d.type ?? 'Unknown Type';
+        if (this.dom.desc) this.dom.desc.textContent = d.description ?? 'No description available.';
 
         // Format numeric values
         if (this.dom.radius) {
-            this.dom.radius.textContent = d.size
-                ? `Radius: ${d.size.toFixed(2)} x Earth`
+            const size = (d as Record<string, unknown>).size as number | undefined;
+            this.dom.radius.textContent = size
+                ? `Radius: ${size.toFixed(2)} x Earth`
                 : 'Radius: -';
         }
 
         if (this.dom.distance) {
-            this.dom.distance.textContent = d.distance
-                ? `Orbit Radius: ${d.distance} units`
+            const distance = (d as Record<string, unknown>).distance as number | undefined;
+            this.dom.distance.textContent = distance
+                ? `Orbit Radius: ${distance} units`
                 : 'Orbit Radius: 0';
         }
 
@@ -118,19 +145,26 @@ export class InfoPanel {
      * Hides the info panel.
      * Clears `currentMesh` reference.
      */
-    hide() {
-        if (this.dom.panel && this.dom.panel.classList.contains('visible')) {
+    hide(): void {
+        if (this.dom.panel?.classList.contains('visible')) {
             this.dom.panel.classList.remove('visible');
             this.dom.panel.classList.remove('animate-in');
             this.dom.panel.classList.add('animate-out');
             this.dom.panel.setAttribute('aria-hidden', 'true');
 
             setTimeout(() => {
-                if (!this.dom.panel.classList.contains('visible')) {
-                    this.dom.panel.classList.remove('animate-out');
+                if (!this.dom.panel?.classList.contains('visible')) {
+                    this.dom.panel?.classList.remove('animate-out');
                 }
             }, 350);
         }
         this.currentMesh = null;
+    }
+
+    /**
+     * Gets the currently displayed mesh.
+     */
+    getCurrentMesh(): THREE.Object3D | null {
+        return this.currentMesh;
     }
 }
