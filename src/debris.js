@@ -7,6 +7,12 @@
  * - Orbit mechanics are calculated entirely in the Vertex Shader.
  * - NO CPU OVERHEAD for animation (0ms per frame).
  * - Supports Multi-Zone Scaling (Linear -> Log) in GLSL.
+ *
+ * PHYSICS NOTE:
+ * The orbital position is calculated in the Vertex Shader using a simplified Kepler Solver.
+ * Since high-precision iterative solvers are expensive on the GPU, we use a 5-step
+ * iteration for the Eccentric Anomaly (E), which provides sufficient visual accuracy
+ * for near-circular orbits (e < 0.2).
  */
 
 import * as THREE from 'three';
@@ -29,11 +35,27 @@ attribute vec4 aOrbit;  // x=a, y=e, z=i, w=M0
 attribute vec3 aParams; // x=omega, y=Omega, z=tumbleSpeed
 
 // Helper: Rotate vector by axis/angle
+/**
+ * Rotates a 3D vector by a given axis and angle using Rodrigues' rotation formula.
+ * @param {vec3} v - The vector to rotate.
+ * @param {vec3} axis - The unit axis of rotation.
+ * @param {float} angle - The rotation angle in radians.
+ * @returns {vec3} The rotated vector.
+ */
 vec3 rotateAxis(vec3 v, vec3 axis, float angle) {
     return v * cos(angle) + cross(axis, v) * sin(angle) + axis * dot(axis, v) * (1.0 - cos(angle));
 }
 
 // Helper: Piecewise Scale (Physics AU -> Render Units)
+/**
+ * Translates a position from physical AU units to Render units using Multi-Zone Scaling.
+ * Zones:
+ * 1. Inner (Linear): r <= 30 AU (Scaled by 40)
+ * 2. Mid (Log): 30 < r <= 50 AU
+ * 3. Outer (Log): r > 50 AU
+ * @param {vec3} pos - Heliocentric position in AU.
+ * @returns {vec3} Scaled position for Three.js rendering.
+ */
 vec3 physicsToRender(vec3 pos) {
     float r = length(pos);
     if (r == 0.0) return vec3(0.0);
@@ -51,9 +73,22 @@ vec3 physicsToRender(vec3 pos) {
 }
 
 // Helper: Kepler Solver
+/**
+ * Solves Keplerian orbital elements for a 3D position at a given time.
+ * Calculates Mean Anomaly (M), iterates for Eccentric Anomaly (E), 
+ * and computes Heliocentric coordinates.
+ * @param {float} a - Semi-major axis (AU).
+ * @param {float} e - Eccentricity.
+ * @param {float} i - Inclination (deg).
+ * @param {float} w - Argument of Periapsis (deg).
+ * @param {float} Om - Longitude of Ascending Node (deg).
+ * @param {float} M0 - Mean Anomaly at Epoch (deg).
+ * @param {float} time - Elapsed time in relative years.
+ * @returns {vec3} Heliocentric position (Three.js Y-up coordinate space).
+ */
 vec3 solveKepler(float a, float e, float i, float w, float Om, float M0, float time) {
     // 1. Mean Anomaly
-    // period = a^1.5
+    // period = a^1.5 (Kepler's Third Law)
     float period = pow(a, 1.5);
     float n = 360.0 / period; // degrees per year
     float M = radians(M0 + n * time);

@@ -57,6 +57,9 @@ test.describe('Camera & Time Controls', () => {
         }
     });
 
+    /**
+     * Verifies that the pause/resume functionality works via the UI button.
+     */
     test('should pause and resume simulation', async ({ page }) => {
         const pauseBtn = page.locator('#btn-pause');
 
@@ -69,6 +72,9 @@ test.describe('Camera & Time Controls', () => {
         await expect(pauseBtn).toHaveAttribute('aria-label', /Pause/i);
     });
 
+    /**
+     * Verifies that the simulation speed can be adjusted using the toolbar slider.
+     */
     test('should adjust simulation speed via slider', async ({ page }) => {
         const speedValue = page.locator('#speed-value');
 
@@ -80,6 +86,9 @@ test.describe('Camera & Time Controls', () => {
         await expect(speedValue).toHaveText('3.0x');
     });
 
+    /**
+     * Verifies that the camera toggle button switches camera modes.
+     */
     test('should toggle camera view', async ({ page }) => {
         const cameraBtn = page.locator('#btn-camera');
 
@@ -95,6 +104,9 @@ test.describe('Camera & Time Controls', () => {
         await expect(cameraBtn).toHaveAttribute('aria-pressed', 'false');
     });
 
+    /**
+     * Verifies that the 'Reset View' button is present and clickable.
+     */
     test('should reset view', async ({ page }) => {
         const resetBtn = page.locator('#btn-reset');
 
@@ -105,6 +117,9 @@ test.describe('Camera & Time Controls', () => {
         await expect(resetBtn).toBeVisible();
     });
 
+    /**
+     * Verifies that the bottom dock's texture button toggles high-quality textures.
+     */
     test('should toggle textures via bottom dock button', async ({ page }) => {
         const textureBtn = page.locator('#btn-texture');
 
@@ -120,6 +135,9 @@ test.describe('Camera & Time Controls', () => {
         await expect(textureBtn).toHaveAttribute('aria-pressed', 'true');
     });
 
+    /**
+     * Verifies that the bottom dock's labels button toggles label visibility.
+     */
     test('should toggle labels via button', async ({ page }) => {
         const labelsBtn = page.locator('#btn-labels');
 
@@ -131,6 +149,9 @@ test.describe('Camera & Time Controls', () => {
         await expect(labelsBtn).toHaveAttribute('aria-pressed', 'false');
     });
 
+    /**
+     * Verifies that the bottom dock's orbits button toggles orbit/trail visibility.
+     */
     test('should toggle orbits via button', async ({ page }) => {
         const orbitsBtn = page.locator('#btn-orbits');
 
@@ -142,6 +163,10 @@ test.describe('Camera & Time Controls', () => {
         await expect(orbitsBtn).toHaveAttribute('aria-pressed', 'false');
     });
 
+    /**
+     * Verifies that the 'Follow' button in the info panel correctly initiates 
+     * a camera follow state on the selected object.
+     */
     test('should follow selected object', async ({ page }) => {
         // First select a planet via navigation
         const openBtn = page.locator('#btn-planets');

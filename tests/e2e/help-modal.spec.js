@@ -1,8 +1,8 @@
 /**
  * 🧪 Verifier E2E Tests: Help Modal
- * Tests the help/welcome modal interactions and accessibility.
+ * Tests the Help/Welcome Modal interactions and accessibility.
  * 
- * @flow Modal -> Open via Button -> Close via Button -> Open via Keyboard -> Verify Content
+ * @flow Modal -> Open via Button -> Close via X -> Open via Shortcut -> Verify Content
  */
 import { test, expect } from '@playwright/test';
 
@@ -20,6 +20,9 @@ test.describe('Help Modal', () => {
         }
     });
 
+    /**
+     * Verifies that the Welcome Modal can be opened using the Help (?) button in the UI.
+     */
     test('should open help modal via button', async ({ page }) => {
         const helpBtn = page.locator('#btn-help');
         const modal = page.locator('#welcome-modal');
@@ -29,6 +32,9 @@ test.describe('Help Modal', () => {
         await expect(modal).toBeVisible();
     });
 
+    /**
+     * Verifies that the Welcome Modal can be closed using its internal close button.
+     */
     test('should close help modal via close button', async ({ page }) => {
         const helpBtn = page.locator('#btn-help');
         const modal = page.locator('#welcome-modal');
@@ -43,6 +49,9 @@ test.describe('Help Modal', () => {
         await expect(modal).not.toBeVisible();
     });
 
+    /**
+     * Verifies that the modal contains the expected "Controls & Shortcuts" content.
+     */
     test('should display controls and shortcuts content', async ({ page }) => {
         const helpBtn = page.locator('#btn-help');
         await helpBtn.click();
@@ -57,6 +66,9 @@ test.describe('Help Modal', () => {
         expect(count).toBeGreaterThan(0);
     });
 
+    /**
+     * Verifies that the modal closes when the 'Escape' key is pressed.
+     */
     test('should close modal with Escape key', async ({ page }) => {
         const helpBtn = page.locator('#btn-help');
         const modal = page.locator('#welcome-modal');
@@ -70,6 +82,9 @@ test.describe('Help Modal', () => {
         await expect(modal).not.toBeVisible();
     });
 
+    /**
+     * Verifies the presence of accessibility attributes on the close button.
+     */
     test('should have accessible close button', async ({ page }) => {
         const helpBtn = page.locator('#btn-help');
         await helpBtn.click();
@@ -79,6 +94,9 @@ test.describe('Help Modal', () => {
         await expect(closeBtn).toHaveAttribute('aria-label', 'Close dialog');
     });
 
+    /**
+     * Verifies that focus is correctly trapped or moved into the modal when opened.
+     */
     test('should have focusable elements within modal', async ({ page }) => {
         const helpBtn = page.locator('#btn-help');
         await helpBtn.click();

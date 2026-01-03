@@ -36,6 +36,10 @@ test.describe('Settings Panel', () => {
         }
     });
 
+    /**
+     * Verifies that the Settings Panel can be opened via the UI button
+     * and closed via the internal 'X' button.
+     */
     test('should open and close settings panel', async ({ page }) => {
         const settingsPanel = page.locator('#settings-panel');
         const settingsBtn = page.locator('#btn-settings');
@@ -53,6 +57,9 @@ test.describe('Settings Panel', () => {
         await expect(settingsPanel).toHaveAttribute('aria-hidden', 'true');
     });
 
+    /**
+     * Verifies that clicking the Textures toggle updates its checked state.
+     */
     test('should toggle textures setting', async ({ page }) => {
         const settingsBtn = page.locator('#btn-settings');
         await settingsBtn.click();
@@ -71,6 +78,9 @@ test.describe('Settings Panel', () => {
         await expect(textureToggle).toBeChecked();
     });
 
+    /**
+     * Verifies that clicking the Labels toggle updates its checked state.
+     */
     test('should toggle labels setting', async ({ page }) => {
         const settingsBtn = page.locator('#btn-settings');
         await settingsBtn.click();
@@ -85,6 +95,9 @@ test.describe('Settings Panel', () => {
         await expect(labelsToggle).not.toBeChecked();
     });
 
+    /**
+     * Verifies that clicking the Orbits toggle updates its checked state.
+     */
     test('should toggle orbits setting', async ({ page }) => {
         const settingsBtn = page.locator('#btn-settings');
         await settingsBtn.click();
@@ -99,6 +112,9 @@ test.describe('Settings Panel', () => {
         await expect(orbitsToggle).not.toBeChecked();
     });
 
+    /**
+     * Verifies that all three debris system toggles (Asteroid, Kuiper, Oort) work as expected.
+     */
     test('should toggle belt settings', async ({ page }) => {
         const settingsBtn = page.locator('#btn-settings');
         await settingsBtn.click();
@@ -125,6 +141,10 @@ test.describe('Settings Panel', () => {
         await expect(oortToggle).not.toBeChecked();
     });
 
+    /**
+     * Verifies that theme buttons correctly update the 'aria-pressed' state 
+     * to reflect the active theme.
+     */
     test('should change theme', async ({ page }) => {
         const settingsBtn = page.locator('#btn-settings');
         await settingsBtn.click();
@@ -148,6 +168,9 @@ test.describe('Settings Panel', () => {
         await expect(blueprintThemeBtn).toHaveAttribute('aria-pressed', 'false');
     });
 
+    /**
+     * Verifies that the speed slider updates the simulation time scale.
+     */
     test('should adjust simulation speed', async ({ page }) => {
         const settingsBtn = page.locator('#btn-settings');
         await settingsBtn.click();
@@ -166,6 +189,9 @@ test.describe('Settings Panel', () => {
         await expect(speedValue).toHaveText('5.0x');
     });
 
+    /**
+     * Verifies that user settings persist across page reloads using localStorage.
+     */
     test('should persist settings after refresh (localStorage)', async ({ page }) => {
         const settingsBtn = page.locator('#btn-settings');
         await settingsBtn.click();

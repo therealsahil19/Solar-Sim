@@ -110,4 +110,34 @@
     - **SettingsPanel**: Added extensive JSDoc including `@example` and `@private` markers. Clarified the relationship between the UI and `SettingsManager`.
     - **README.md**: Integrated the Settings Panel into the feature list, project structure, and architecture. Documented the `,` shortcut.
     - **CONTRIBUTING.md**: Updated the Core Components table to include `SettingsPanel`.
-- **Gap:** The `src/debris.js` asteroid generation logic is technically documented, but could benefit from a "Physics Note" explaining the GPU-side orbital math more formally.
+- [x] **Audit - The Literacy Check**
+    - [x] Project Level: Verify `README.md` (Getting Started, Features, Env Vars)
+    - [x] Code Level: Scan `src/debris.js` and `src/instancing.js` for "Physics Notes" and JSDoc gaps
+    - [x] Code Level: Check `tests/e2e/` for documentation coverage
+- [x] **Select - Choose the Chapter**
+    - [x] Target 1: `README.md` (Update for E2E tests and recent features)
+    - [x] Target 2: `CONTRIBUTING.md` (Add E2E testing section and diagrams)
+    - [x] Target 3: `src/debris.js` (Add formal GPU/Physics documentation)
+- [x] **Write - The Documentation**
+    - [x] Update `README.md`
+    - [x] Update `CONTRIBUTING.md`
+    - [x] Enhance `src/debris.js` JSDoc
+    - [x] Add JSDoc to `tests/e2e/*.spec.js`
+- [x] **Verify - The Proofread**
+    - [x] Check links and code examples
+    - [x] Spellcheck
+- [x] **Present - The Publication**
+    - [x] Log to `.Jules/scribe.md`
+    - [x] Notify user of completion
+
+### 2026-01-03 - The Testing & Physics Standardization
+- **Focus:** `README.md`, `CONTRIBUTING.md`, `src/debris.js`, `tests/e2e/`.
+- **Standard:**
+    - "Physics Note": Formalize GPU-side math explanations to distinguish from standard CPU physics.
+    - "Testing Guide": Every repository must have clear E2E setup and execution instructions in the README.
+- **Changes:**
+    - **README.md**: Added comprehensive **Testing** section (Playwright). Updated Features to include Debris Systems (Asteroid/Kuiper/Oort). Added Environment Variables placeholder.
+    - **CONTRIBUTING.md**: Added a dedicated **Testing Standards** section covering E2E file structure and best practices (Loading states, A11y).
+    - **debris.js**: Added a formal "Physics Note" explaining the GPU Kepler Solver and the O(N) tumble math. Documented all internal GLSL helpers.
+    - **E2E Tests**: Added meticulous JSDoc to all 5 spec files in `tests/e2e/`, documenting test flows, ARIA checks, and interaction logic.
+- **Gap:** Similar "Physics Notes" or "Optimization Notes" could be added to `instancing.js` and `trails.js` to explain their specific GPU-side buffers/attributes.

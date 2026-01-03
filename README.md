@@ -10,7 +10,10 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
     -   **Recursive Satellites**: Supports theoretically infinite nesting of moons (moons of moons).
     -   **Starfield**: Procedurally generated background stars.
     -   **Player Ship**: Procedurally generated spacecraft geometry (Cone + Cylinders).
+    -   **Debris Systems**:
     -   **Asteroid Belt**: A massive, GPU-animated asteroid belt with thousands of instances.
+    -   **Kuiper Belt**: Distant icy objects beyond Neptune.
+    -   **Oort Cloud**: A spherical shell of cometary nuclei (visualized for scale).
 -   **Interactive Controls**:
     -   **Orbit Controls**: Pan, zoom, and rotate around the scene with the mouse.
     -   **Focus Mode**: Double-click any planet (or use the Sidebar/Keys) to smoothly animate the camera to follow it.
@@ -30,7 +33,7 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
     -   **Responsive Design**: The interface (Glassmorphism panels, CSS Grid/Flexbox) adapts gracefully to mobile and desktop screens.
     -   **Toast Notifications**: Quick feedback for actions (e.g., "Textures: OFF", "View Reset").
     -   **On-Screen Controls**: Accessible buttons for camera, textures, pause, and speed.
-    -   **Settings Panel**: A slide-out panel (`comma` key) to manage all simulation preferences in one place (Textures, Labels, Orbits, Themes, Speed).
+    -   **Settings Panel**: A slide-out panel (`comma` key) to manage all simulation preferences in one place (Textures, Labels, Orbits, Themes, Speed, and **Belt Toggles**).
     -   **Speed Control**: Slider to adjust the time scale of the simulation.
     -   **Onboarding**: Loading screen with progress bar and an initial "Welcome" modal.
 
@@ -220,6 +223,42 @@ python3 -m http.server
 
 ### 4. View
 Open your browser to: `http://localhost:8000`
+
+## Testing
+
+The project uses [Playwright](https://playwright.dev/) for End-to-End (E2E) testing to ensure UI stability and performance.
+
+### 1. Install Browsers
+```bash
+npx playwright install
+```
+
+### 2. Run All Tests
+```bash
+npx playwright test
+```
+
+### 3. Run Specific Test
+```bash
+npx playwright test tests/e2e/settings-panel.spec.js
+```
+
+### 4. Debugging Tests
+To run tests with a UI or in headed mode:
+```bash
+npx playwright test --ui
+# OR
+npx playwright test --headed
+```
+
+## Environment Variables
+
+While the project currently relies on static assets and a simple HTTP server, you can configure the following environment variables if deploying to a formal environment (e.g., Vercel, Netlify):
+
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `PORT` | The port the server should listen on. | `8000` |
+| `DEBUG` | Enable verbose logging for simulation logic. | `false` |
 
 ## Controls
 

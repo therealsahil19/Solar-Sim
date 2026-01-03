@@ -41,6 +41,9 @@ test.describe('Navigation Sidebar', () => {
         }
     });
 
+    /**
+     * Verifies that the navigation sidebar can be opened and closed using UI buttons.
+     */
     test('should open and close navigation sidebar', async ({ page }) => {
         const navSidebar = page.locator('#nav-sidebar');
         const openBtn = page.locator('#btn-planets');
@@ -58,6 +61,9 @@ test.describe('Navigation Sidebar', () => {
         await expect(navSidebar).toHaveAttribute('aria-hidden', 'true');
     });
 
+    /**
+     * Verifies that the planet list is correctly populated after the sidebar is opened.
+     */
     test('should display planet list after loading', async ({ page }) => {
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();
@@ -70,6 +76,9 @@ test.describe('Navigation Sidebar', () => {
         await expect(sunButton).toBeVisible();
     });
 
+    /**
+     * Verifies the client-side search functionality filtering for specific planets.
+     */
     test('should filter planets via search', async ({ page }) => {
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();
@@ -86,6 +95,9 @@ test.describe('Navigation Sidebar', () => {
         await expect(marsButton.first()).toBeVisible({ timeout: 10000 });
     });
 
+    /**
+     * Verifies that clearing the search input restores all planets to the list.
+     */
     test('should clear search results when input is cleared', async ({ page }) => {
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();
@@ -106,6 +118,9 @@ test.describe('Navigation Sidebar', () => {
         await expect(sunButton).toBeVisible({ timeout: 10000 });
     });
 
+    /**
+     * Verifies that selecting a planet from the list updates the Info Panel data.
+     */
     test('should select a planet and update info panel', async ({ page }) => {
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();
@@ -121,6 +136,9 @@ test.describe('Navigation Sidebar', () => {
         await expect(infoName).toHaveText('Earth', { timeout: 10000 });
     });
 
+    /**
+     * Verifies that hierarchical objects (like Jupiter's moons) are searchable and selectable.
+     */
     test('should show Jupiter moons in navigation', async ({ page }) => {
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();

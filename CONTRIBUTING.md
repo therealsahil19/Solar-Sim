@@ -9,7 +9,8 @@ First off, thank you for considering contributing. It's people like you that mak
 2. [Project Structure](#project-structure)
 3. [Coding Standards](#coding-standards)
 4. [Documentation Standards](#documentation-standards)
-5. [Pull Request Process](#pull-request-process)
+5. [Testing Standards](#testing-standards)
+6. [Pull Request Process](#pull-request-process)
 
 ---
 
@@ -166,6 +167,31 @@ function getDistance(objA, objB) { ... }
 - **Why > What**: Explain *why* a complex logic block exists.
 - **No Magic Numbers**: If you use a number like `0.004`, explain it (e.g., `// Approximation of orbital speed`).
 - **Update the README**: If you add a feature, list it in `README.md`.
+
+---
+
+## Testing Standards
+
+We use **Playwright** for End-to-End (E2E) testing. All new UI features must include corresponding tests in the `tests/e2e/` directory.
+
+### 1. Structure
+Tests are organized by component or user flow:
+- `navigation-sidebar.spec.js`: Tests for the planet tree and search.
+- `settings-panel.spec.js`: Tests for toggles, themes, and persistence.
+- `keyboard-shortcuts.spec.js`: Verifies all global hotkeys.
+
+### 2. Best Practices
+- **Isolation**: Each `test()` block should ideally be independent.
+- **Wait for Loading**: Always wait for the `#loading-screen` to be hidden before interacting with the simulation.
+  ```javascript
+  await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 60000 });
+  ```
+- **A11y Checks**: When possible, use ARIA roles for selectors (`page.getByRole('button', { name: 'Close' })`).
+
+### 3. Running Tests
+- `npm run test` (if configured) or `npx playwright test`.
+- Use `--headed` to see the browser in action.
+- Use the **Playwright Report** (`npx playwright show-report`) to analyze failures.
 
 ---
 

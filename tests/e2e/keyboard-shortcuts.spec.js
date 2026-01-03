@@ -39,6 +39,10 @@ test.describe('Keyboard Shortcuts', () => {
         }
     });
 
+    /**
+     * Verifies that the 'Space' key toggles the simulation's pause state.
+     * Checks the 'aria-label' of the pause button for visual/aural feedback.
+     */
     test('should pause/play simulation with Space key', async ({ page }) => {
         const pauseBtn = page.locator('#btn-pause');
 
@@ -51,6 +55,10 @@ test.describe('Keyboard Shortcuts', () => {
         await expect(pauseBtn).toHaveAttribute('aria-label', /Pause/i);
     });
 
+    /**
+     * Verifies that the 'C' key toggles between Overview and Ship views.
+     * Checks the 'aria-pressed' state of the camera toggle button.
+     */
     test('should toggle camera with C key', async ({ page }) => {
         const cameraBtn = page.locator('#btn-camera');
 
@@ -66,6 +74,9 @@ test.describe('Keyboard Shortcuts', () => {
         await expect(cameraBtn).toHaveAttribute('aria-pressed', 'false');
     });
 
+    /**
+     * Verifies that the 'T' key toggles high-quality textures.
+     */
     test('should toggle textures with T key', async ({ page }) => {
         const textureBtn = page.locator('#btn-texture');
 
@@ -81,6 +92,9 @@ test.describe('Keyboard Shortcuts', () => {
         await expect(textureBtn).toHaveAttribute('aria-pressed', 'true');
     });
 
+    /**
+     * Verifies that the 'L' key toggles label visibility.
+     */
     test('should toggle labels with L key', async ({ page }) => {
         const labelsBtn = page.locator('#btn-labels');
 
@@ -92,6 +106,9 @@ test.describe('Keyboard Shortcuts', () => {
         await expect(labelsBtn).toHaveAttribute('aria-pressed', 'false');
     });
 
+    /**
+     * Verifies that the 'O' key toggles orbit and trail visibility.
+     */
     test('should toggle orbits with O key', async ({ page }) => {
         const orbitsBtn = page.locator('#btn-orbits');
 
@@ -103,6 +120,9 @@ test.describe('Keyboard Shortcuts', () => {
         await expect(orbitsBtn).toHaveAttribute('aria-pressed', 'false');
     });
 
+    /**
+     * Verifies that the 'Escape' key closes the navigation sidebar if open.
+     */
     test('should close sidebar with Escape key', async ({ page }) => {
         // Open navigation sidebar
         const openBtn = page.locator('#btn-planets');
@@ -123,6 +143,9 @@ test.describe('Keyboard Shortcuts', () => {
         await expect(navSidebar).toHaveAttribute('aria-hidden', 'true', { timeout: 5000 });
     });
 
+    /**
+     * Verifies that Ctrl+K opens the Command Palette.
+     */
     test('should open command palette with Cmd+K / Ctrl+K', async ({ page }) => {
         // Press Ctrl+K (or Cmd+K on Mac)
         await page.keyboard.press('Control+k');
@@ -134,6 +157,9 @@ test.describe('Keyboard Shortcuts', () => {
         // The test passes if no exception is thrown
     });
 
+    /**
+     * Verifies that the comma (,) key toggles the Settings Panel.
+     */
     test('should open settings with comma key', async ({ page }) => {
         const settingsPanel = page.locator('#settings-panel');
 
@@ -145,6 +171,9 @@ test.describe('Keyboard Shortcuts', () => {
         await expect(settingsPanel).toHaveAttribute('aria-hidden', 'false');
     });
 
+    /**
+     * Verifies that the question mark (?) key opens the Help/Welcome Modal.
+     */
     test('should open help modal with ? key', async ({ page }) => {
         // Press ? key (Wait for any existing transition to settle first)
         await page.waitForTimeout(300);
