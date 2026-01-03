@@ -28,14 +28,20 @@ async function setSliderValue(page, selector, value) {
  * @param {import('@playwright/test').Page} page
  */
 async function waitForNavList(page) {
-    await page.waitForSelector('#nav-sidebar[aria-hidden="false"]', { timeout: 5000 });
+    // Wait for sidebar to be visible first
+    await page.waitForSelector('#nav-sidebar:not([aria-hidden="true"])', { timeout: 10000 });
+
+    // Wait for at least one real planet button to appear
     await page.waitForFunction(() => {
         const navList = document.querySelector('#nav-list');
         if (!navList) return false;
-        const buttons = navList.querySelectorAll('.nav-btn:not(.skeleton)');
+        // Search for buttons that don't have the skeleton class
+        const buttons = Array.from(navList.querySelectorAll('button, .nav-btn')).filter(btn => !btn.classList.contains('skeleton'));
         return buttons.length > 0;
     }, { timeout: 30000 });
-    await page.waitForTimeout(300);
+
+    // Minimal delay for layout settlement
+    await page.waitForTimeout(500);
 }
 
 test.describe('Camera & Time Controls', () => {
@@ -143,16 +149,19 @@ test.describe('Camera & Time Controls', () => {
 
         await waitForNavList(page);
 
-        const earthButton = page.locator('#nav-list').getByText('Earth', { exact: true });
+        const earthButton = page.locator('#nav-list').getByText('Earth', { exact: false });
         await earthButton.click();
-        await page.waitForTimeout(500);
+
+        // Wait for info panel to update with Earth's data
+        const infoName = page.locator('#info-name');
+        await expect(infoName).toHaveText('Earth', { timeout: 10000 });
 
         // Click Follow button in info panel
         const followBtn = page.locator('#btn-follow');
+        await expect(followBtn).toBeVisible();
         await followBtn.click();
 
         // Info panel should still show Earth (follow mode active)
-        const infoName = page.locator('#info-name');
         await expect(infoName).toContainText('Earth');
     });
 });

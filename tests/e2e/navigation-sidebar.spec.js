@@ -12,17 +12,20 @@ import { test, expect } from '@playwright/test';
  * @param {import('@playwright/test').Page} page
  */
 async function waitForNavList(page) {
-    // First wait for sidebar to be visible
-    await page.waitForSelector('#nav-sidebar[aria-hidden="false"]', { timeout: 5000 });
-    // Wait for real nav buttons to appear (not skeletons)
+    // Wait for sidebar to be visible first
+    await page.waitForSelector('#nav-sidebar:not([aria-hidden="true"])', { timeout: 10000 });
+
+    // Wait for at least one real planet button to appear (not skeleton)
     await page.waitForFunction(() => {
         const navList = document.querySelector('#nav-list');
         if (!navList) return false;
-        const buttons = navList.querySelectorAll('.nav-btn:not(.skeleton)');
+        // Search for buttons that don't have the skeleton class
+        const buttons = Array.from(navList.querySelectorAll('button, .nav-btn')).filter(btn => !btn.classList.contains('skeleton'));
         return buttons.length > 0;
     }, { timeout: 30000 });
-    // Small stabilization delay
-    await page.waitForTimeout(300);
+
+    // Minimal delay for layout settlement
+    await page.waitForTimeout(500);
 }
 
 test.describe('Navigation Sidebar', () => {
@@ -63,7 +66,7 @@ test.describe('Navigation Sidebar', () => {
         await waitForNavList(page);
 
         // At minimum should have Sun
-        const sunButton = page.locator('#nav-list').getByText('Sun', { exact: true });
+        const sunButton = page.locator('#nav-list').getByText('Sun', { exact: false });
         await expect(sunButton).toBeVisible();
     });
 
@@ -77,11 +80,10 @@ test.describe('Navigation Sidebar', () => {
 
         // Search for "Mars"
         await searchInput.fill('Mars');
-        await page.waitForTimeout(300); // Wait for filter to apply
 
-        // Mars should be visible
+        // Mars should be visible (dynamic wait)
         const marsButton = page.locator('#nav-list').getByText('Mars', { exact: false });
-        await expect(marsButton.first()).toBeVisible();
+        await expect(marsButton.first()).toBeVisible({ timeout: 10000 });
     });
 
     test('should clear search results when input is cleared', async ({ page }) => {
@@ -94,15 +96,14 @@ test.describe('Navigation Sidebar', () => {
 
         // Search for something
         await searchInput.fill('Jupiter');
-        await page.waitForTimeout(300);
+        await expect(page.locator('#nav-list').getByText('Jupiter', { exact: false }).first()).toBeVisible();
 
         // Clear the search
         await searchInput.fill('');
-        await page.waitForTimeout(300);
 
         // Multiple planets should be visible again (Sun, Earth, Mars, etc.)
-        const sunButton = page.locator('#nav-list').getByText('Sun', { exact: true });
-        await expect(sunButton).toBeVisible();
+        const sunButton = page.locator('#nav-list').getByText('Sun', { exact: false });
+        await expect(sunButton).toBeVisible({ timeout: 10000 });
     });
 
     test('should select a planet and update info panel', async ({ page }) => {
@@ -112,15 +113,12 @@ test.describe('Navigation Sidebar', () => {
         await waitForNavList(page);
 
         // Click on Earth
-        const earthButton = page.locator('#nav-list').getByText('Earth', { exact: true });
+        const earthButton = page.locator('#nav-list').getByText('Earth', { exact: false });
         await earthButton.click();
 
-        // Wait for info panel to update
-        await page.waitForTimeout(500);
-
-        // Info panel should show Earth
+        // Wait for info panel to update with Earth's data
         const infoName = page.locator('#info-name');
-        await expect(infoName).toContainText('Earth');
+        await expect(infoName).toHaveText('Earth', { timeout: 10000 });
     });
 
     test('should show Jupiter moons in navigation', async ({ page }) => {

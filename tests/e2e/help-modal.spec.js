@@ -16,7 +16,7 @@ test.describe('Help Modal', () => {
         const modal = page.locator('#welcome-modal');
         if (await modal.isVisible()) {
             await page.locator('.modal-close-btn').click();
-            await page.waitForTimeout(300);
+            await page.waitForTimeout(500); // Wait for transition
         }
     });
 
@@ -86,17 +86,19 @@ test.describe('Help Modal', () => {
         const modal = page.locator('#welcome-modal');
         await expect(modal).toBeVisible();
 
-        // Wait for modal to be fully interactive
-        await page.waitForTimeout(300);
+        // Wait for modal to be fully interactive and transitions to complete
+        await page.waitForTimeout(500);
 
-        // Tab to move focus
+        // Tab to move focus - should move into the modal
         await page.keyboard.press('Tab');
 
-        // Check that focus is somewhere in the document (not lost)
-        const hasFocus = await page.evaluate(() => {
-            return document.activeElement !== null && document.activeElement !== document.body;
+        // Check that focus is within the modal and not lost to body
+        const isFocusedInModal = await page.evaluate(() => {
+            const modal = document.querySelector('#welcome-modal');
+            const active = document.activeElement;
+            return active && modal.contains(active) && active !== document.body;
         });
 
-        expect(hasFocus).toBe(true);
+        expect(isFocusedInModal).toBe(true);
     });
 });

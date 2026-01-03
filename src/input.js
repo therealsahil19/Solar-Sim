@@ -279,9 +279,15 @@ export function setupInteraction(context, callbacks) {
         } else if (key === ' ' || key === 'spacebar') {
             const btn = document.getElementById('btn-pause');
             callbacks.onTogglePause(btn);
+        } else if (key === '?' || (key === '/' && e.shiftKey)) {
+            openModal();
         } else if (key === 'escape') {
-            callbacks.onResetCamera();
-            infoPanel.hide();
+            if (sidebar && sidebar.isOpen) {
+                sidebar.close();
+            } else {
+                callbacks.onResetCamera();
+                infoPanel.hide();
+            }
         } else {
             const num = parseInt(key);
             if (!isNaN(num) && num >= 1 && num <= 9) {

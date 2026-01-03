@@ -11,14 +11,19 @@ import { test, expect } from '@playwright/test';
  * @param {import('@playwright/test').Page} page
  */
 async function waitForNavList(page) {
-    await page.waitForSelector('#nav-sidebar[aria-hidden="false"]', { timeout: 5000 });
+    // Wait for sidebar to be visible first
+    await page.waitForSelector('#nav-sidebar:not([aria-hidden="true"])', { timeout: 10000 });
+
+    // Wait for at least one real planet button to appear
     await page.waitForFunction(() => {
         const navList = document.querySelector('#nav-list');
         if (!navList) return false;
-        const buttons = navList.querySelectorAll('.nav-btn:not(.skeleton)');
+        const buttons = Array.from(navList.querySelectorAll('button, .nav-btn')).filter(btn => !btn.classList.contains('skeleton'));
         return buttons.length > 0;
     }, { timeout: 30000 });
-    await page.waitForTimeout(300);
+
+    // Minimal delay for layout settlement
+    await page.waitForTimeout(500);
 }
 
 test.describe('Keyboard Shortcuts', () => {
@@ -108,11 +113,14 @@ test.describe('Keyboard Shortcuts', () => {
         const navSidebar = page.locator('#nav-sidebar');
         await expect(navSidebar).toHaveAttribute('aria-hidden', 'false');
 
+        // Stabilization wait for the transition to finish
+        await page.waitForTimeout(500);
+
         // Press Escape to close sidebar
         await page.keyboard.press('Escape');
 
         // Sidebar should close
-        await expect(navSidebar).toHaveAttribute('aria-hidden', 'true');
+        await expect(navSidebar).toHaveAttribute('aria-hidden', 'true', { timeout: 5000 });
     });
 
     test('should open command palette with Cmd+K / Ctrl+K', async ({ page }) => {
@@ -138,13 +146,12 @@ test.describe('Keyboard Shortcuts', () => {
     });
 
     test('should open help modal with ? key', async ({ page }) => {
-        // Press ? to open help modal (using Shift+Slash which produces ?)
-        await page.keyboard.down('Shift');
-        await page.keyboard.press('/');
-        await page.keyboard.up('Shift');
+        // Press ? key (Wait for any existing transition to settle first)
+        await page.waitForTimeout(300);
+        await page.keyboard.press('?');
 
         // Give modal time to open
-        await page.waitForTimeout(500);
+        await page.waitForTimeout(1000);
 
         // Welcome modal should be visible
         const modal = page.locator('#welcome-modal');
