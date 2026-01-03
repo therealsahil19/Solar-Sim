@@ -14,12 +14,19 @@
 /**
  * Starts a frame timing benchmark.
  * @param {number} [durationMs=5000] - Duration of the benchmark in milliseconds.
+ * @returns {{ promise: Promise<Object>, cancel: Function }} Object with promise for results and cancel function.
  */
 export function startBenchmark(durationMs = 5000) {
     const frameTimes = [];
     let startTime = performance.now();
     let lastFrame = startTime;
     let frameId = null;
+    let resolvePromise = null;
+
+    // Bug 047 Fix: Added Promise-based API for programmatic result capture
+    const resultPromise = new Promise((resolve) => {
+        resolvePromise = resolve;
+    });
 
     function measure() {
         const now = performance.now();
@@ -55,12 +62,12 @@ export function startBenchmark(durationMs = 5000) {
             console.log(`   Std Dev:    ${stdDev.toFixed(2)}ms`);
             console.log('   ─────────────────────────');
 
-            // Jank detection (frames > 16.67ms for 60fps target)
+            // Jank detection (frames >16.67ms for 60fps target)
             const jankFrames = frameTimes.filter(t => t > 16.67).length;
             const jankPercent = ((jankFrames / frameTimes.length) * 100).toFixed(1);
             console.log(`   Jank Frames (>16.67ms): ${jankFrames} (${jankPercent}%)`);
 
-            return {
+            const result = {
                 frames: frameTimes.length,
                 avgFps: 1000 / avg,
                 avgFrame: avg,
@@ -72,6 +79,9 @@ export function startBenchmark(durationMs = 5000) {
                 stdDev: stdDev,
                 jankPercent: parseFloat(jankPercent)
             };
+
+            // Resolve the promise with results
+            if (resolvePromise) resolvePromise(result);
         }
     }
 
@@ -79,9 +89,11 @@ export function startBenchmark(durationMs = 5000) {
     frameId = requestAnimationFrame(measure);
 
     return {
+        promise: resultPromise,
         cancel: () => {
             if (frameId) cancelAnimationFrame(frameId);
             console.log('Benchmark cancelled.');
+            if (resolvePromise) resolvePromise(null);
         }
     };
 }

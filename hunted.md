@@ -46,9 +46,9 @@
 | 042| [FIXED] | 🟢 LOW   | `src/components/CommandPalette.js:249` | TypeError Risk: Accessing `.toLowerCase()` on possibly undefined |
 | 043| [FIXED] | 🟢 LOW   | `src/physics.js:116-126` | Magic Numbers: Hardcoded scale constants without documentation |
 | 044| [FIXED] | 🟢 LOW   | `src/procedural.js:337` | Zombie Code: Unused `trail` variable |
-| 045| [OPEN] | 🟢 LOW   | `src/procedural.js:30-33` | Memory Leak: `clearMaterialCache` never called |
-| 046| [OPEN] | 🟢 LOW   | `src/instancing.js:76-78` | Silent Failure: `group.mesh.dispose()` called on non-existent method |
-| 047| [OPEN] | 🟢 LOW   | `src/benchmark.js:75` | Logic Flaw: No return value in final else branch |
+| 045| [FIXED] | 🟢 LOW   | `src/procedural.js:30-33` | Memory Leak: `clearMaterialCache` never called |
+| 046| [FIXED] | 🟢 LOW   | `src/instancing.js:76-78` | Silent Failure: `group.mesh.dispose()` called on non-existent method |
+| 047| [FIXED] | 🟢 LOW   | `src/benchmark.js:75` | Logic Flaw: No return value in final else branch |
 
 ## Details
 
@@ -362,4 +362,13 @@ The `benchmark.js:measure()` function has a return statement in the `else` branc
 **Impact:** Low - The console.log output still works. But if a caller tries to programmatically capture benchmark results via `await`, they won't get them. This is more of a design inconsistency than a crash risk.
 
 **Recommendation:** Either use a Promise-based API or add a callback option for result delivery.
+
+### 045 - Memory Leak: `clearMaterialCache` Never Called
+[FIXED] Added import of `clearMaterialCache` in `src/main.js` and called it at the start of `init()` to clear cached materials on scene reset.
+
+### 046 - Silent Failure: `group.mesh.dispose()` No-Op
+[FIXED] Replaced the no-op `group.mesh.dispose()` call in `src/instancing.js:build()` with proper manual disposal of geometry and material resources.
+
+### 047 - Logic Flaw: No Return Value in Benchmark
+[FIXED] Added Promise-based API to `src/benchmark.js` - `startBenchmark()` now returns `{ promise, cancel }` where `promise` resolves with benchmark results.
 

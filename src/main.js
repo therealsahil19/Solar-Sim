@@ -7,7 +7,7 @@
 
 import * as THREE from 'three';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
-import { createStarfield, createSun, createPlayerShip, createSystem } from './procedural.js';
+import { createStarfield, createSun, createPlayerShip, createSystem, clearMaterialCache } from './procedural.js';
 import { createAsteroidBelt, createKuiperBelt, createOortCloud } from './debris.js';
 import { setupControls, setupInteraction } from './input.js';
 import { InstanceRegistry } from './instancing.js';
@@ -93,6 +93,9 @@ export async function init() {
     allOrbits.length = 0;
     allTrails.length = 0;
     allLabels.length = 0;
+
+    // Bug 045 Fix: Clear material cache to prevent GPU memory leaks on reset
+    clearMaterialCache();
 
     // 1. Setup Basic Three.js Components
     scene = new THREE.Scene();
@@ -643,7 +646,14 @@ function animate() {
         renderer.render(scene, camera);
         if (showLabels || labelsNeedUpdate) {
             // Conditional Visibility for Moons (Bolt Optimization)
+            // VIS-01 Fix: Viewport edge detection for labels
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const edgeMargin = 40; // px from edge to start fading
+            const fadeZone = 60;   // px fade transition zone
+
             allLabels.forEach(label => {
+                // Moon visibility logic
                 if (label.userData.isMoon) {
                     const parentName = label.userData.parentPlanet;
                     const isParentFocused = focusTarget && focusTarget.userData.name === parentName;
@@ -652,6 +662,30 @@ function animate() {
                     label.visible = showLabels && (isParentFocused || isParentSelected);
                 } else {
                     label.visible = showLabels;
+                }
+
+                // VIS-01 Fix: Edge fade for visible labels
+                if (label.visible && label.element) {
+                    const rect = label.element.getBoundingClientRect();
+                    let opacity = 1;
+
+                    // Calculate distance from each edge
+                    const distLeft = rect.left;
+                    const distRight = viewportWidth - rect.right;
+                    const distTop = rect.top;
+                    const distBottom = viewportHeight - rect.bottom;
+
+                    // Find minimum distance to any edge
+                    const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+
+                    // Fade when approaching edge
+                    if (minDist < edgeMargin) {
+                        opacity = 0;
+                    } else if (minDist < edgeMargin + fadeZone) {
+                        opacity = (minDist - edgeMargin) / fadeZone;
+                    }
+
+                    label.element.style.opacity = opacity;
                 }
             });
 

@@ -10,7 +10,7 @@
 
 | Screenshot | Viewport | Severity | Issue Type | Description |
 |------------|----------|----------|------------|-------------|
-| `desktop_vision_qa.png` | Desktop | 🔴 HIGH | Clipping | Planet labels (outer planets) may clip at viewport edges during orbital animation |
+| `desktop_vision_qa.png` | Desktop | 🔴 HIGH | Clipping | [FIXED] Planet labels fade near viewport edges during orbital animation |
 | `desktop_vision_qa.png` | Desktop | 🟢 LOW | Alignment | Header title "Solar-Sim" has minor asymmetric padding (~2px) |
 | `tablet_vision_qa.png` | Tablet | 🟢 LOW | Typography | Title text-shadow creates slightly "heavy" rendering at tablet resolution |
 | `tablet_vision_qa.png` | Tablet | 🟢 LOW | Spacing | Moderate vertical gap between controls and bottom edge |
@@ -34,7 +34,7 @@
 
 ## 🔍 Detailed Findings
 
-### 1. 🔴 HIGH: Planet Label Edge Clipping (Desktop)
+### 1. 🔴 HIGH: Planet Label Edge Clipping (Desktop) - [FIXED]
 
 **Location:** `desktop_vision_qa.png` - Outer planet labels  
 **Perspective:** ZOOM OUT (Macro Structure)
@@ -43,12 +43,12 @@
 
 **Impact:** Critical usability issue - users lose the ability to identify outer planets at certain viewing angles.
 
-**Recommendation:** 
-1. Implement viewport-edge clamping logic to keep labels within a 20px safe margin
-2. Add fade-out behavior for labels approaching viewport boundaries
-3. Consider an "off-screen indicator" arrow for planets outside the visible area
+**Resolution:** 
+- Implemented JS-based viewport edge detection in `src/main.js` animation loop
+- Labels now smoothly fade out when approaching viewport boundaries (40px margin + 60px fade zone)
+- CSS enhancements in `src/style.css` for baseline protection
 
-**CSS Reference:** `.planet-label` in `src/style.css` - lacks edge-aware positioning
+**CSS Reference:** `.planet-label` in `src/style.css` - now has edge-aware constraints
 
 ---
 

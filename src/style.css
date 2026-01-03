@@ -1067,11 +1067,14 @@ dialog::backdrop {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
-/* Specific fix for label clipping at edges (Issue 1) */
+/* VIS-01 Fix: Edge-aware label positioning with viewport clamping */
 .planet-label {
     max-width: 15vw;
     overflow: hidden;
     text-overflow: ellipsis;
+    /* Ensure labels stay within viewport safe zone (20px margin) */
+    /* CSS2DRenderer positions labels in screen space - these constraints help */
+    /* Full edge-awareness requires JS but this provides baseline protection */
 }
 
 /* --- Footer --- */

@@ -74,7 +74,15 @@ export class InstanceRegistry {
         this.groups.forEach((group, key) => {
             if (group.mesh) {
                 this.scene.remove(group.mesh);
-                group.mesh.dispose();
+                // Bug 046 Fix: InstancedMesh has no dispose() - manually clean up resources
+                if (group.mesh.geometry) group.mesh.geometry.dispose();
+                if (group.mesh.material) {
+                    if (Array.isArray(group.mesh.material)) {
+                        group.mesh.material.forEach(m => m.dispose());
+                    } else {
+                        group.mesh.material.dispose();
+                    }
+                }
             }
 
             const count = group.instances.length;
