@@ -80,3 +80,17 @@ This creates a fragmented UX where power users discover features accidentally.
 - Collisions with debris fields.
 - Scientific "missions" to specific asteroid clusters.
 - High-fidelity asteroid geometry for close-up views.
+
+## 2026-01-03 - Uranus & Neptune System Expansion
+
+**Context:** Uranus and Neptune were previously missing their major moon systems, lacking the visual scale and scientific detail present in the Jupiter and Saturn upgrades. This feature adds the primary satellites for both ice giants.
+
+**Tech Stack:**
+- **Data Layer:** Updated `system.json` with Titania, Oberon, Ariel, Umbriel, and Miranda for Uranus; added Triton for Neptune.
+- **Physics Layer:** Defined accurate orbital elements (a, e, i) based on astronomical data to ensure stable and realistic motion.
+- **UI Layer:** Integrated moons into the dynamic Navigation Sidebar and Selection UI.
+
+**Next Steps:** This unlocks:
+- Specialized rendering for Triton's retrograde orbit.
+- Surface detail exploration for Miranda's extreme topography.
+- Improved gravitational clustering for outer solar system bodies.
