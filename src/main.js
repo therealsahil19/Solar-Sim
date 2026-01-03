@@ -276,6 +276,34 @@ export async function init() {
 
     interactionHelpers = setupInteraction(context, callbacks);
 
+    // 7. Apply Saved Settings from SettingsPanel
+    if (interactionHelpers.settingsPanel) {
+        const savedSettings = interactionHelpers.settingsPanel.getSettings();
+
+        // Apply textures setting (if different from default)
+        if (!savedSettings.textures && useTextures) {
+            toggleTextures(document.getElementById('btn-texture'));
+        }
+
+        // Apply labels setting
+        if (!savedSettings.labels && showLabels) {
+            toggleLabels();
+        }
+
+        // Apply orbits setting
+        if (!savedSettings.orbits && showOrbits) {
+            toggleOrbits();
+        }
+
+        // Apply speed setting
+        if (savedSettings.speed !== 1.0) {
+            updateTimeScale(savedSettings.speed);
+            const dockSlider = document.getElementById('slider-speed');
+            const dockValue = document.getElementById('speed-value');
+            if (dockSlider) dockSlider.value = savedSettings.speed;
+            if (dockValue) dockValue.textContent = `${savedSettings.speed.toFixed(1)}x`;
+        }
+    }
 
     if (textureLoader.lazyLoadQueue.length > 0) {
         setTimeout(() => {

@@ -18,7 +18,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CommandPalette } from './components/CommandPalette.js';
 import { NavigationSidebar } from './components/NavigationSidebar.js';
 import { InfoPanel } from './components/InfoPanel.js';
-import { Modal } from './components/Modal.js'; // Import Modal
+import { Modal } from './components/Modal.js';
+import { SettingsPanel } from './components/SettingsPanel.js';
 import { ThemeManager } from './managers/ThemeManager.js';
 
 /**
@@ -70,6 +71,40 @@ export function setupInteraction(context, callbacks) {
             }
         });
     }
+
+    // 4. Settings Panel
+    const settingsPanel = new SettingsPanel({
+        callbacks: {
+            onToggleTextures: (value) => {
+                // If value matches current state, toggle is a no-op
+                const btn = document.getElementById('btn-texture');
+                callbacks.onToggleTexture(btn);
+            },
+            onToggleLabels: () => {
+                callbacks.onToggleLabels();
+            },
+            onToggleOrbits: () => {
+                callbacks.onToggleOrbits();
+            },
+            onChangeTheme: (themeName) => {
+                themeManager.setTheme(themeName);
+                const toast = document.getElementById('toast');
+                if (toast) {
+                    toast.textContent = `Theme: ${themeName.toUpperCase()}`;
+                    toast.classList.add('visible');
+                    setTimeout(() => toast.classList.remove('visible'), 2000);
+                }
+            },
+            onChangeSpeed: (value) => {
+                callbacks.onUpdateTimeScale(value);
+                // Sync the dock slider too
+                const dockSlider = document.getElementById('slider-speed');
+                const dockValue = document.getElementById('speed-value');
+                if (dockSlider) dockSlider.value = value;
+                if (dockValue) dockValue.textContent = `${value.toFixed(1)}x`;
+            }
+        }
+    });
 
     /**
      * Updates the Side Panel and Toast with details about the selected object.
@@ -286,6 +321,7 @@ export function setupInteraction(context, callbacks) {
         updateSelectionUI,
         openModal,
         closeModal,
+        settingsPanel, // Expose for main.js to read initial settings
         dispose: () => {
             rendererDomElement.removeEventListener('pointerup', onPointerUp);
             window.removeEventListener('keydown', onKeyDown);
@@ -302,7 +338,8 @@ export function setupInteraction(context, callbacks) {
 
             // Clean up components if they have dispose methods
             if (commandPalette && commandPalette.destroy) commandPalette.destroy();
-            if (welcomeModal && welcomeModal.dispose) welcomeModal.dispose(); // Dispose Modal
+            if (welcomeModal && welcomeModal.dispose) welcomeModal.dispose();
+            if (settingsPanel && settingsPanel.dispose) settingsPanel.dispose();
         }
     };
 }

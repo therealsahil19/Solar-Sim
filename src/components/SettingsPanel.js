@@ -1,0 +1,269 @@
+/**
+ * @file SettingsPanel.js
+ * @description A slide-out settings panel component for managing simulation preferences.
+ * 
+ * This component follows the same pattern as InfoPanel.js and NavigationSidebar.js:
+ * 1. **DOM Caching**: References DOM elements once at construction.
+ * 2. **Event Binding**: Centralizes event handlers with cleanup.
+ * 3. **Callbacks**: Communicates changes via callback functions.
+ * 4. **Accessibility**: Uses ARIA attributes for screen reader support.
+ */
+
+import { SettingsManager } from '../managers/SettingsManager.js';
+
+export class SettingsPanel {
+    /**
+     * Creates a new SettingsPanel instance.
+     * 
+     * @param {Object} config - Configuration object.
+     * @param {Object} config.callbacks - Interaction callbacks.
+     * @param {Function} config.callbacks.onToggleTextures - Called when textures toggle changes.
+     * @param {Function} config.callbacks.onToggleLabels - Called when labels toggle changes.
+     * @param {Function} config.callbacks.onToggleOrbits - Called when orbits toggle changes.
+     * @param {Function} config.callbacks.onChangeTheme - Called with theme name when theme changes.
+     * @param {Function} config.callbacks.onChangeSpeed - Called with speed value when speed changes.
+     */
+    constructor({ callbacks }) {
+        /** @type {Object} External callbacks */
+        this.callbacks = callbacks;
+
+        /** @type {SettingsManager} Settings persistence */
+        this.settingsManager = new SettingsManager();
+
+        /** @type {boolean} Panel visibility state */
+        this.isOpen = false;
+
+        // Cache DOM elements
+        this.dom = {
+            panel: document.getElementById('settings-panel'),
+            btnOpen: document.getElementById('btn-settings'),
+            btnClose: document.getElementById('btn-close-settings'),
+            // Toggles
+            toggleTextures: document.getElementById('setting-textures'),
+            toggleLabels: document.getElementById('setting-labels'),
+            toggleOrbits: document.getElementById('setting-orbits'),
+            // Theme buttons
+            themeButtons: document.querySelectorAll('.theme-btn'),
+            // Speed
+            sliderSpeed: document.getElementById('setting-speed'),
+            speedValue: document.getElementById('setting-speed-value'),
+        };
+
+        if (!this.dom.panel) {
+            console.error('SettingsPanel: #settings-panel not found in DOM.');
+            return;
+        }
+
+        this.initializeFromSettings();
+        this.bindEvents();
+    }
+
+    /**
+     * Initializes UI controls from saved settings.
+     */
+    initializeFromSettings() {
+        const settings = this.settingsManager.getAll();
+
+        // Toggles
+        if (this.dom.toggleTextures) {
+            this.dom.toggleTextures.checked = settings.textures;
+        }
+        if (this.dom.toggleLabels) {
+            this.dom.toggleLabels.checked = settings.labels;
+        }
+        if (this.dom.toggleOrbits) {
+            this.dom.toggleOrbits.checked = settings.orbits;
+        }
+
+        // Theme selection
+        this.updateThemeButtons(settings.theme);
+
+        // Speed slider
+        if (this.dom.sliderSpeed) {
+            this.dom.sliderSpeed.value = settings.speed;
+            if (this.dom.speedValue) {
+                this.dom.speedValue.textContent = `${settings.speed.toFixed(1)}x`;
+            }
+        }
+    }
+
+    /**
+     * Updates the visual state of theme buttons.
+     * @param {string} activeTheme - The currently active theme name.
+     */
+    updateThemeButtons(activeTheme) {
+        this.dom.themeButtons.forEach(btn => {
+            const isActive = btn.dataset.theme === activeTheme;
+            btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            btn.classList.toggle('active', isActive);
+        });
+    }
+
+    /**
+     * Binds event listeners to UI controls.
+     */
+    bindEvents() {
+        // Panel open/close
+        if (this.dom.btnOpen) {
+            this.dom.btnOpen.addEventListener('click', () => this.toggle());
+        }
+        if (this.dom.btnClose) {
+            this.dom.btnClose.addEventListener('click', () => this.close());
+        }
+
+        // Close on click outside
+        this.dom.panel.addEventListener('click', (e) => {
+            if (e.target === this.dom.panel) {
+                this.close();
+            }
+        });
+
+        // Keyboard: Escape to close, comma to toggle
+        this._keyHandler = (e) => {
+            if (e.key === 'Escape' && this.isOpen) {
+                e.preventDefault();
+                this.close();
+            }
+            if (e.key === ',' && !e.metaKey && !e.ctrlKey) {
+                // Don't trigger if in input field
+                if (document.activeElement.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    this.toggle();
+                }
+            }
+        };
+        document.addEventListener('keydown', this._keyHandler);
+
+        // Toggle: Textures
+        if (this.dom.toggleTextures) {
+            this.dom.toggleTextures.addEventListener('change', (e) => {
+                const value = e.target.checked;
+                this.settingsManager.set('textures', value);
+                if (this.callbacks.onToggleTextures) {
+                    this.callbacks.onToggleTextures(value);
+                }
+            });
+        }
+
+        // Toggle: Labels
+        if (this.dom.toggleLabels) {
+            this.dom.toggleLabels.addEventListener('change', (e) => {
+                const value = e.target.checked;
+                this.settingsManager.set('labels', value);
+                if (this.callbacks.onToggleLabels) {
+                    this.callbacks.onToggleLabels(value);
+                }
+            });
+        }
+
+        // Toggle: Orbits
+        if (this.dom.toggleOrbits) {
+            this.dom.toggleOrbits.addEventListener('change', (e) => {
+                const value = e.target.checked;
+                this.settingsManager.set('orbits', value);
+                if (this.callbacks.onToggleOrbits) {
+                    this.callbacks.onToggleOrbits(value);
+                }
+            });
+        }
+
+        // Theme buttons
+        this.dom.themeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const theme = btn.dataset.theme;
+                this.settingsManager.set('theme', theme);
+                this.updateThemeButtons(theme);
+                if (this.callbacks.onChangeTheme) {
+                    this.callbacks.onChangeTheme(theme);
+                }
+            });
+        });
+
+        // Speed slider
+        if (this.dom.sliderSpeed) {
+            this.dom.sliderSpeed.addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                if (this.dom.speedValue) {
+                    this.dom.speedValue.textContent = `${value.toFixed(1)}x`;
+                }
+                this.settingsManager.set('speed', value);
+                if (this.callbacks.onChangeSpeed) {
+                    this.callbacks.onChangeSpeed(value);
+                }
+            });
+        }
+    }
+
+    /**
+     * Opens the settings panel.
+     */
+    open() {
+        if (this.isOpen) return;
+        this.isOpen = true;
+
+        this.dom.panel.setAttribute('aria-hidden', 'false');
+        this.dom.panel.classList.add('open');
+
+        // Announce to screen readers
+        const srStatus = document.getElementById('sr-status');
+        if (srStatus) {
+            srStatus.textContent = 'Settings panel opened';
+        }
+
+        // Focus first interactive element
+        const firstInput = this.dom.panel.querySelector('input, button:not(.modal-close-btn)');
+        if (firstInput) {
+            firstInput.focus();
+        }
+    }
+
+    /**
+     * Closes the settings panel.
+     */
+    close() {
+        if (!this.isOpen) return;
+        this.isOpen = false;
+
+        this.dom.panel.setAttribute('aria-hidden', 'true');
+        this.dom.panel.classList.remove('open');
+
+        // Announce to screen readers
+        const srStatus = document.getElementById('sr-status');
+        if (srStatus) {
+            srStatus.textContent = 'Settings panel closed';
+        }
+
+        // Return focus to trigger button
+        if (this.dom.btnOpen) {
+            this.dom.btnOpen.focus();
+        }
+    }
+
+    /**
+     * Toggles the panel open/closed state.
+     */
+    toggle() {
+        if (this.isOpen) {
+            this.close();
+        } else {
+            this.open();
+        }
+    }
+
+    /**
+     * Gets the current settings values for initialization.
+     * @returns {Object} Current settings.
+     */
+    getSettings() {
+        return this.settingsManager.getAll();
+    }
+
+    /**
+     * Cleans up event listeners.
+     */
+    dispose() {
+        if (this._keyHandler) {
+            document.removeEventListener('keydown', this._keyHandler);
+        }
+    }
+}
