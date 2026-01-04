@@ -56,7 +56,53 @@
 | 052| [FIXED] | 🟡 MED   | `src/main.js:107` | Redundant WebGLRenderer Creation |
 
 
+| 053 | [OPEN] | 🟡 MED   | `src/main.ts:708` | Zombie Code: Global `resize` listener persists after dispose |
+| 054 | [OPEN] | 🟢 LOW   | `src/main.ts:332` | Performance: Multiple `TextureLoader` instances in loop |
+| 055 | [OPEN] | 🟡 MED   | `src/main.ts:299` | Type Safety: Unnecessary `as any` casting disabling checks |
+| 056 | [OPEN] | 🟢 LOW   | `src/input.ts:266` | UX: `pointerup` used for clicks (triggers on drag release) |
+
 ## Details
+
+### 053 - Zombie Code: Global `resize` Listener
+The `resize` event listener is added at the top-level scope of `main.ts`, outside `init()`.
+1. It is not re-added if `init()` is called a second time after `dispose()`.
+2. Attempts to fix it by removing it in `dispose()` only solve the cleanup, but break re-initialization.
+
+```typescript
+// src/main.ts:708
+window.addEventListener('resize', onWindowResize); // Executed once on module load
+// If dispose() removes this, subsequent init() calls will lack resize handling.
+```
+
+### 054 - Performance: Multiple TextureLoaders
+The lazy loading loop creates a `new THREE.TextureLoader()` for *every single texture* in the queue. This is inefficient. It should reuse the main `extendedTextureLoader` or valid instance.
+
+```typescript
+// src/main.ts:332
+textureLoader.lazyLoadQueue.forEach(item => {
+    const tex = new THREE.TextureLoader().load(item.url); // ❌ New instance every iteration
+    // ...
+});
+```
+
+### 055 - Type Safety: Unnecessary/Dangerous Casting
+`setupInteraction` is called with `context as any` and `callbacks as any`. The types actually appear to match `InteractionContext` and `InteractionCallbacks`. Casting to `any` hides potential future breaking changes in the contract between `main.ts` and `input.ts`.
+
+```typescript
+// src/main.ts:299
+interactionHelpers = setupInteraction(context as any, callbacks as any); // ❌ Disables type checking
+```
+
+### 056 - UX: `pointerup` Misuse
+Using `pointerup` for selection without checking for drag distance means that panning the camera (clicking and dragging) often accidentally selects objects when the mouse button is released.
+
+```typescript
+// src/input.ts:266
+rendererDomElement.addEventListener('pointerup', onPointerUp);
+// Should distinguish between click (select) and drag (pan)
+```
+
+## New Diagnosed Issues
 
 ### 022 - Persistent State Pollution in Global Arrays
 [FIXED] Added logic to `init()` in `src/main.js` to manually clear all global arrays (`interactionTargets`, `animatedObjects`, etc.) before repopulating them.
