@@ -636,7 +636,12 @@ function animate(): void {
             const edgeMargin = 40;
             const fadeZone = 60;
 
-            const visibleLabels: Array<{ label: CSS2DObject; rect: DOMRect }> = [];
+            // ⚡ Bolt Optimization: Use mathematical projection instead of getBoundingClientRect
+            // to avoid Layout Thrashing (Read-Write-Read-Write cycle).
+            // We approximate label size for edge fading and overlap detection.
+            const approxLabelWidth = 100;
+            const approxLabelHeight = 20;
+            const visibleLabels: Array<{ label: CSS2DObject; x: number; y: number; width: number; height: number }> = [];
 
             allLabels.forEach(label => {
                 if (label.userData.isMoon) {
@@ -649,16 +654,34 @@ function animate(): void {
                 }
 
                 if (label.visible && label.element) {
-                    const rect = label.element.getBoundingClientRect();
+                    // Project 3D position to 2D screen coordinates
+                    // We assume the label is attached to a parent object or has its own position
+                    // CSS2DObject.position is in World Space.
+                    tempVec.copy(label.position);
+                    tempVec.project(camera); // Now in NDC (-1 to +1)
+
+                    const x = (tempVec.x * .5 + .5) * viewportWidth;
+                    const y = (-(tempVec.y * .5) + .5) * viewportHeight;
+
+                    // Approximate bounding box centered on the point
+                    const left = x - (approxLabelWidth / 2);
+                    const right = x + (approxLabelWidth / 2);
+                    const top = y - (approxLabelHeight / 2);
+                    const bottom = y + (approxLabelHeight / 2);
+
                     let opacity = 1;
 
-                    const distLeft = rect.left;
-                    const distRight = viewportWidth - rect.right;
-                    const distTop = rect.top;
-                    const distBottom = viewportHeight - rect.bottom;
+                    // Edge Fading Logic using projected coordinates
+                    const distLeft = left;
+                    const distRight = viewportWidth - right;
+                    const distTop = top;
+                    const distBottom = viewportHeight - bottom;
                     const minDist = Math.min(distLeft, distRight, distTop, distBottom);
 
-                    if (minDist < edgeMargin) {
+                    // Check if behind camera (NDC z > 1)
+                    if (tempVec.z > 1) {
+                        opacity = 0;
+                    } else if (minDist < edgeMargin) {
                         opacity = 0;
                     } else if (minDist < edgeMargin + fadeZone) {
                         opacity = (minDist - edgeMargin) / fadeZone;
@@ -667,7 +690,13 @@ function animate(): void {
                     label.element.style.opacity = String(opacity);
 
                     if (opacity > 0 && !label.userData.isMoon && viewportWidth < 768) {
-                        visibleLabels.push({ label, rect });
+                        visibleLabels.push({
+                            label,
+                            x: left,
+                            y: top,
+                            width: approxLabelWidth,
+                            height: approxLabelHeight
+                        });
                     }
                 }
             });
@@ -675,12 +704,16 @@ function animate(): void {
             if (viewportWidth < 768) {
                 for (let i = 0; i < visibleLabels.length; i++) {
                     for (let j = i + 1; j < visibleLabels.length; j++) {
-                        const a = visibleLabels[i]?.rect;
-                        const b = visibleLabels[j]?.rect;
+                        const a = visibleLabels[i];
+                        const b = visibleLabels[j];
                         if (!a || !b) continue;
 
-                        const overlap = !(a.right < b.left || a.left > b.right ||
-                            a.bottom < b.top || a.top > b.bottom);
+                        const overlap = !(
+                            (a.x + a.width) < b.x ||
+                            a.x > (b.x + b.width) ||
+                            (a.y + a.height) < b.y ||
+                            a.y > (b.y + b.height)
+                        );
 
                         if (overlap) {
                             const labelElement = visibleLabels[j]?.label.element;
