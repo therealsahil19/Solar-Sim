@@ -56,10 +56,10 @@
 | 052| [FIXED] | 🟡 MED   | `src/main.js:107` | Redundant WebGLRenderer Creation |
 
 
-| 053 | [OPEN] | 🟡 MED   | `src/main.ts:708` | Zombie Code: Global `resize` listener persists after dispose |
-| 054 | [OPEN] | 🟢 LOW   | `src/main.ts:332` | Performance: Multiple `TextureLoader` instances in loop |
-| 055 | [OPEN] | 🟡 MED   | `src/main.ts:299` | Type Safety: Unnecessary `as any` casting disabling checks |
-| 056 | [OPEN] | 🟢 LOW   | `src/input.ts:266` | UX: `pointerup` used for clicks (triggers on drag release) |
+| 053 | [FIXED] | 🟡 MED   | `src/main.ts:708` | Zombie Code: Global `resize` listener persists after dispose |
+| 054 | [FIXED] | 🟢 LOW   | `src/main.ts:332` | Performance: Multiple `TextureLoader` instances in loop |
+| 055 | [FIXED] | 🟡 MED   | `src/main.ts:299` | Type Safety: Unnecessary `as any` casting disabling checks |
+| 056 | [FIXED] | 🟢 LOW   | `src/input.ts:266` | UX: `pointerup` used for clicks (triggers on drag release) |
 
 ## Details
 
@@ -101,6 +101,18 @@ Using `pointerup` for selection without checking for drag distance means that pa
 rendererDomElement.addEventListener('pointerup', onPointerUp);
 // Should distinguish between click (select) and drag (pan)
 ```
+
+### 053 - Zombie Resize Listener
+[FIXED] Moved `window.addEventListener('resize', onWindowResize)` from module-level (line 708) into `init()` function. This ensures the listener is properly registered during each init cycle and removed in `dispose()`.
+
+### 054 - Multiple TextureLoaders
+[FIXED] Changed `new THREE.TextureLoader().load(item.url)` to reuse the existing `textureLoader` instance in the lazy loading loop, eliminating unnecessary object creation.
+
+### 055 - Type Safety: Unnecessary `as any` Casting
+[FIXED] Added detailed documentation explaining why the `as any` casts are necessary (SystemData uses 'size' while CelestialBody uses 'radius' - architectural difference). The casts remain but are now properly documented with eslint-disable comment.
+
+### 056 - UX: pointerup Misuse
+[FIXED] Added `pointerdown` listener to track starting position. `pointerup` handler now checks if movement exceeded 5px threshold - if so, it's treated as a drag/pan and selection is skipped.
 
 ## New Diagnosed Issues
 

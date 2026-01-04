@@ -1574,6 +1574,104 @@ dialog::backdrop {
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* ==========================================================================
+   RESPONSIVE: Mobile Styles (Visual Bug Fixes)
+   ========================================================================== */
+
+/* VIS-01 Fix: Speed control label overlap on mobile */
+/* VIS-02 Fix: Cramped dock buttons on mobile */
+@media (max-width: 480px) {
+    /* Bottom Dock: Reduce gap and padding for narrow screens */
+    .dock-group {
+        padding: var(--space-xs) var(--space-md);
+        gap: var(--space-sm);
+    }
+
+    /* Icon buttons: Slightly smaller on mobile */
+    .icon-btn {
+        width: 38px;
+        height: 38px;
+        font-size: var(--text-base);
+    }
+
+    /* Speed control in dock: Stack vertically */
+    .speed-control-dock {
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 80px;
+    }
+
+    .speed-control-dock label,
+    .speed-control-dock span {
+        font-size: var(--text-xs);
+    }
+
+    .speed-control-dock input[type="range"] {
+        width: 60px;
+    }
+
+    /* Settings panel speed control: Stack header vertically */
+    .speed-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-xs);
+    }
+
+    /* Info panel: Reduce width and hide on very small screens if needed */
+    #info-panel {
+        width: 260px;
+        padding: var(--space-md);
+    }
+
+    /* Top bar: Compact on mobile */
+    #top-bar {
+        padding: 0 var(--space-md);
+    }
+
+    #top-bar h1 {
+        font-size: var(--text-lg);
+    }
+
+    /* App overlay: Reduce padding */
+    #app-overlay {
+        padding: var(--space-xs);
+        gap: var(--space-xs);
+    }
+
+    /* Nav sidebar: Full width on mobile */
+    #nav-sidebar {
+        width: calc(100vw - var(--space-md) * 2);
+        max-width: 320px;
+    }
+
+    /* Settings panel: Full width on mobile */
+    #settings-panel {
+        width: calc(100vw - var(--space-md) * 2);
+        max-width: 300px;
+    }
+
+    /* Toast: Smaller on mobile */
+    #toast {
+        bottom: 100px;
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--text-sm);
+    }
+}
+
+/* Tablet breakpoint */
+@media (max-width: 768px) {
+    /* Slightly reduced dock spacing */
+    .dock-group {
+        gap: var(--space-sm);
+    }
+
+    /* Command palette: Full width on tablet */
+    .cmd-panel {
+        max-width: 90vw;
+    }
+}
+
 /* Reduced Motion Preference (WCAG 2.3.3) */
 @media (prefers-reduced-motion: reduce) {
 

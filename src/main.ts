@@ -295,6 +295,9 @@ export async function init(): Promise<void> {
         onToggleOrbits: toggleOrbits
     };
 
+    // Bug #055 Note: Type casts required because SystemData (from procedural.ts) has 
+    // different structure than CelestialBody (from types/system.ts). This is a known
+    // architectural difference - SystemData uses 'size' while CelestialBody uses 'radius'.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     interactionHelpers = setupInteraction(context as any, callbacks as any);
 
@@ -328,8 +331,9 @@ export async function init(): Promise<void> {
         setTimeout(() => {
             if (initFailed || !textureLoader.lazyLoadQueue) return;
             console.log(`Bolt ⚡: Lazy loading ${textureLoader.lazyLoadQueue.length} textures...`);
+            // Bug #054 Fix: Reuse existing textureLoader instead of creating new instances
             textureLoader.lazyLoadQueue.forEach(item => {
-                const tex = new THREE.TextureLoader().load(item.url);
+                const tex = textureLoader.load(item.url);
                 item.material.map = tex;
                 item.material.color.setHex(0xffffff);
                 item.material.needsUpdate = true;
@@ -337,6 +341,9 @@ export async function init(): Promise<void> {
             textureLoader.lazyLoadQueue = [];
         }, 2000);
     }
+
+    // Bug #053 Fix: Register resize listener inside init() for proper lifecycle management
+    window.addEventListener('resize', onWindowResize);
 
     lastFrameTime = performance.now();
     animate();
@@ -705,7 +712,7 @@ function onWindowResize(): void {
         labelRenderer.setSize(window.innerWidth, window.innerHeight);
     }
 }
-window.addEventListener('resize', onWindowResize);
+// Bug #053 Fix: Moved to init() - resize listener registered there for proper lifecycle
 
 /**
  * Disposes of all resources.

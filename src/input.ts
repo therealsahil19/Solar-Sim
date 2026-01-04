@@ -210,6 +210,11 @@ export function setupInteraction(
     let lastClickedMeshId: string | null = null;
     const doubleClickDelay = 300;
 
+    // Bug #056 Fix: Track pointer start position to distinguish click from drag
+    let pointerDownX = 0;
+    let pointerDownY = 0;
+    const DRAG_THRESHOLD = 5; // Pixels - movement below this is considered a click
+
     let width = window.innerWidth;
     let height = window.innerHeight;
 
@@ -219,8 +224,26 @@ export function setupInteraction(
     };
     window.addEventListener('resize', onWindowResize);
 
+    // Bug #056 Fix: Track pointer start position
+    const onPointerDown = (event: PointerEvent): void => {
+        if (event.button !== 0) return;
+        pointerDownX = event.clientX;
+        pointerDownY = event.clientY;
+    };
+    rendererDomElement.addEventListener('pointerdown', onPointerDown);
+
     const onPointerUp = (event: PointerEvent): void => {
         if (event.button !== 0) return;
+
+        // Bug #056 Fix: Check if this was a drag (camera pan) vs a click
+        const dx = event.clientX - pointerDownX;
+        const dy = event.clientY - pointerDownY;
+        const distanceMoved = Math.sqrt(dx * dx + dy * dy);
+
+        if (distanceMoved > DRAG_THRESHOLD) {
+            // This was a drag/pan, not a click - don't select anything
+            return;
+        }
 
         mouse.x = (event.clientX / width) * 2 - 1;
         mouse.y = -(event.clientY / height) * 2 + 1;
@@ -416,6 +439,7 @@ export function setupInteraction(
         closeModal,
         settingsPanel,
         dispose: (): void => {
+            rendererDomElement.removeEventListener('pointerdown', onPointerDown);
             rendererDomElement.removeEventListener('pointerup', onPointerUp);
             window.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('resize', onWindowResize);
