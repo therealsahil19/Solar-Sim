@@ -1581,6 +1581,7 @@ dialog::backdrop {
 /* VIS-01 Fix: Speed control label overlap on mobile */
 /* VIS-02 Fix: Cramped dock buttons on mobile */
 @media (max-width: 480px) {
+
     /* Bottom Dock: Reduce gap and padding for narrow screens */
     .dock-group {
         padding: var(--space-xs) var(--space-md);
@@ -1661,6 +1662,7 @@ dialog::backdrop {
 
 /* Tablet breakpoint */
 @media (max-width: 768px) {
+
     /* Slightly reduced dock spacing */
     .dock-group {
         gap: var(--space-sm);
@@ -1701,8 +1703,93 @@ dialog::backdrop {
         transform: translateY(20px) scale(0.98);
     }
 
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
+    }
+}
+
+/* ==========================================================================
+   6. TOAST SYSTEM
+   ========================================================================== */
+
+#toast-container {
+    position: fixed;
+    bottom: var(--space-xl);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--space-sm);
+    z-index: var(--z-toast);
+    pointer-events: none;
+    width: auto;
+    max-width: 90vw;
+}
+
+.toast-notification {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: 12px 20px;
+    background: var(--color-surface-floating);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    box-shadow: 0 4px 12px var(--color-shadow);
+    color: var(--color-text-primary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    min-width: 200px;
+
+    /* Animation defaults */
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all var(--duration-normal) var(--ease-spring);
+}
+
+.toast-notification.animate-in-right {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-notification.animate-out-right {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+}
+
+.toast-icon {
+    font-size: 1.2em;
+}
+
+/* Toast Variants */
+.toast-info {
+    border-color: var(--palette-brand-main);
+}
+
+.toast-success {
+    border-color: var(--color-success);
+}
+
+.toast-warning {
+    border-color: var(--color-warning);
+}
+
+.toast-error {
+    border-color: var(--color-danger);
+}
+
+/* ==========================================================================
+   7. ANIMATION UTILITIES
+   ========================================================================== */
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
     }
 }

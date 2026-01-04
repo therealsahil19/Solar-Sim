@@ -24,6 +24,7 @@ import { setupControls, setupInteraction, type InteractionResult } from './input
 import { InstanceRegistry } from './instancing';
 import { TrailManager } from './trails';
 import { getOrbitalPosition, physicsToRender } from './physics';
+import { ToastManager } from './managers/ToastManager';
 import './benchmark'; // Auto-load performance benchmark
 
 // ============================================================================
@@ -173,20 +174,15 @@ export async function init(): Promise<void> {
     scene.add(ambientLight);
 
     // Loading Manager
-    const loadingScreen = document.getElementById('loading-screen');
-    const loadingBar = document.getElementById('loading-bar');
+    // Note: We no longer have a blocking loading screen.
+    // The UI is shown immediately with skeletons.
     const manager = new THREE.LoadingManager();
     let initFailed = false;
 
-    manager.onProgress = function (_url, itemsLoaded, itemsTotal): void {
-        if (loadingBar) {
-            const width = (itemsLoaded / itemsTotal) * 100;
-            loadingBar.style.width = width + '%';
-            loadingBar.setAttribute('aria-valuenow', String(Math.round(width)));
-        }
-    };
     manager.onLoad = function (): void {
         if (initFailed) return;
+        // Optionally notify user when everything is ready
+        // ToastManager.getInstance().show("Simulation Ready", { type: 'success' });
     };
 
     const textureLoader = new THREE.TextureLoader(manager) as ExtendedTextureLoader;
@@ -255,13 +251,8 @@ export async function init(): Promise<void> {
             if (group.mesh) interactionTargets.push(group.mesh);
         });
 
-        if (loadingScreen && !initFailed) {
-            loadingScreen.style.opacity = '0';
-            setTimeout(() => {
-                if (initFailed) return;
-                loadingScreen.style.display = 'none';
-                loadingScreen.setAttribute('aria-hidden', 'true');
-            }, 500);
+        if (!initFailed) {
+            // Reveal content if hidden (though we are now optimistic)
         }
 
     } catch (error) {
@@ -388,14 +379,14 @@ function resetCamera(): void {
         camera.position.set(0, 60, 100);
         controls.update();
     }
-    showToast("View Reset");
+    ToastManager.getInstance().show("View Reset");
 }
 
 function setFocusTarget(mesh: THREE.Object3D): void {
     focusTarget = mesh;
     isShipView = false;
     const name = mesh.userData.name ?? "Object";
-    showToast(`Following ${name}`);
+    ToastManager.getInstance().show(`Following ${name}`);
 }
 
 function updateTimeScale(scale: number): void {
@@ -428,7 +419,7 @@ function toggleTextures(btnElement: HTMLElement | null): void {
             }
         });
     }
-    showToast(`Textures: ${useTextures ? "ON" : "OFF"}`);
+    ToastManager.getInstance().show(`Textures: ${useTextures ? "ON" : "OFF"}`);
 }
 
 function toggleLabels(): void {
@@ -437,7 +428,7 @@ function toggleLabels(): void {
     const btn = document.getElementById('btn-labels');
     if (btn) btn.setAttribute('aria-pressed', String(showLabels));
     allLabels.forEach(label => { label.visible = showLabels; });
-    showToast(`Labels: ${showLabels ? "ON" : "OFF"}`);
+    ToastManager.getInstance().show(`Labels: ${showLabels ? "ON" : "OFF"}`);
 }
 
 function toggleBelt(type: string, visible: boolean): void {
@@ -457,7 +448,7 @@ function toggleOrbits(): void {
             (trail as THREE.Object3D).visible = showOrbits;
         }
     });
-    showToast(`Orbits: ${showOrbits ? "ON" : "OFF"}`);
+    ToastManager.getInstance().show(`Orbits: ${showOrbits ? "ON" : "OFF"}`);
 }
 
 function togglePause(btnElement: HTMLElement | null): void {
@@ -468,11 +459,10 @@ function togglePause(btnElement: HTMLElement | null): void {
             btnElement.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
             btnElement.setAttribute('aria-label', "Resume Simulation");
         } else {
-            btnElement.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
             btnElement.setAttribute('aria-label', "Pause Simulation");
         }
     }
-    showToast(isPaused ? "Simulation Paused" : "Simulation Resumed");
+    ToastManager.getInstance().show(isPaused ? "Simulation Paused" : "Simulation Resumed", { type: isPaused ? 'info' : 'success' });
 
     const srStatus = document.getElementById('sr-status');
     if (srStatus) {
@@ -493,15 +483,7 @@ function handleObjectSelection(mesh: THREE.Object3D): void {
     selectedObject = mesh;
 }
 
-function showToast(message: string): void {
-    const toast = document.getElementById('toast') as HTMLElement & { timeout?: ReturnType<typeof setTimeout> };
-    if (toast) {
-        toast.textContent = message;
-        toast.classList.add('visible');
-        if (toast.timeout) clearTimeout(toast.timeout);
-        toast.timeout = setTimeout(() => toast.classList.remove('visible'), 2000);
-    }
-}
+
 
 // Pre-allocated vectors for animate loop
 const tempVec = new THREE.Vector3();
@@ -743,20 +725,24 @@ export function dispose(): void {
 if (!window.__SKIP_INIT__) {
     init().catch((err: Error) => {
         console.error("Initialization failed:", err);
-        const loading = document.getElementById('loading-screen');
-        if (loading) {
-            loading.style.display = 'block';
-            loading.style.opacity = '1';
-            loading.setAttribute('aria-hidden', 'false');
-            loading.innerHTML = `
-                <div class="glass-panel" style="color:var(--text-primary); text-align:center; padding: 2rem; border: 1px solid var(--accent-red);">
-                    <h1 style="color:var(--accent-red); margin-bottom: 1rem;">Simulation Error</h1>
-                    <p style="margin-bottom: 2rem;">${err.message || 'An unexpected error occurred during initialization.'}</p>
-                    <button onclick="window.location.reload()" class="nav-btn" style="padding: 0.5rem 1rem; cursor: pointer;">
+        // Show error toast even if init fails
+        ToastManager.getInstance().show(`Initialization Error: ${err.message}`, { type: 'error', duration: 10000 });
+
+        // Fallback visual
+        const overlay = document.getElementById('app-overlay');
+        if (overlay) {
+            overlay.innerHTML = `
+
+                < div class="glass-panel" style = "color:var(--text-primary); text-align:center; padding: 2rem; border: 1px solid var(--color-danger); margin: auto;" >
+                    <h1 style="color:var(--color-danger); margin-bottom: 1rem;" > Simulation Error </h1>
+                        < p style = "margin-bottom: 2rem;" > ${err.message || 'An unexpected error occurred during initialization.'} </p>
+                            < button onclick = "window.location.reload()" class="btn-primary" style = "cursor: pointer;" >
                         🔄 Reload Simulation
-                    </button>
+                </button>
                 </div>
-            `;
+                    `;
+            // Ensure overlay is visible
+            overlay.style.display = 'grid';
         }
     });
 }
