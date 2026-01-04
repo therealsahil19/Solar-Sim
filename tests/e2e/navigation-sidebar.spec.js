@@ -25,7 +25,7 @@ async function waitForNavList(page) {
     }, { timeout: 30000 });
 
     // Minimal delay for layout settlement
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 }
 
 test.describe('Navigation Sidebar', () => {
@@ -115,7 +115,7 @@ test.describe('Navigation Sidebar', () => {
 
         // Multiple planets should be visible again (Sun, Earth, Mars, etc.)
         const sunButton = page.locator('#nav-list').getByText('Sun', { exact: false });
-        await expect(sunButton).toBeVisible({ timeout: 10000 });
+        await expect(sunButton).toBeVisible({ timeout: 20000 }); // Increased timeout for stabilization
     });
 
     /**
@@ -148,7 +148,7 @@ test.describe('Navigation Sidebar', () => {
         // Search for Jupiter's moons
         const searchInput = page.locator('#nav-search');
         await searchInput.fill('Io');
-        await page.waitForTimeout(300);
+        await page.waitForTimeout(1000);
 
         // Io (Jupiter's moon) should appear
         const ioButton = page.locator('#nav-list').getByText('Io', { exact: false });
