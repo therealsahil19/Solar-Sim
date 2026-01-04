@@ -221,10 +221,6 @@ function createDebrisSystem(config: DebrisConfig): DebrisMesh {
             vec3 orbitPosPhys = solveKepler(aOrbit.x, aOrbit.y, aOrbit.z, aParams.x, aParams.y, aOrbit.w, uTime);
             vec3 orbitPosRender = physicsToRender(orbitPosPhys);
 
-            #ifdef USE_INSTANCING
-                mvPosition = instanceMatrix * mvPosition;
-            #endif
-
             // Add Orbital Offset (World Space)
             mvPosition.xyz += orbitPosRender;
 
