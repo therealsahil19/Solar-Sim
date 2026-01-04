@@ -11,6 +11,7 @@
  */
 
 import type { Disposable, CelestialBody } from '../types';
+import { removeSkeletons } from '../utils/SkeletonUtils';
 
 /**
  * DOM element cache for NavigationSidebar.
@@ -100,6 +101,10 @@ export class NavigationSidebar implements Disposable {
      * Initializes the component by rendering the tree and binding event listeners.
      */
     private init(): void {
+        // Clear skeletons before rendering
+        if (this.dom.list) {
+            removeSkeletons(this.dom.list);
+        }
         this.renderTree();
         this.bindEvents();
     }

@@ -21,6 +21,7 @@ import {
 } from './procedural';
 import { createBelt } from './debris';
 import { setupControls, setupInteraction, type InteractionResult } from './input';
+import { injectSkeletons } from './utils/SkeletonUtils';
 import { InstanceRegistry } from './instancing';
 import { TrailManager } from './trails';
 import { getOrbitalPosition, physicsToRender } from './physics';
@@ -176,12 +177,17 @@ export async function init(): Promise<void> {
     // Loading Manager
     // Note: We no longer have a blocking loading screen.
     // The UI is shown immediately with skeletons.
+    const navList = document.getElementById('nav-list');
+    if (navList) {
+        injectSkeletons(navList, 5, { height: '32px' }, 'nav-btn');
+    }
     const manager = new THREE.LoadingManager();
     let initFailed = false;
 
     manager.onLoad = function (): void {
         if (initFailed) return;
-        // Optionally notify user when everything is ready
+        const screen = document.getElementById('loading-screen');
+        if (screen) screen.setAttribute('aria-hidden', 'true');
         // ToastManager.getInstance().show("Simulation Ready", { type: 'success' });
     };
 
