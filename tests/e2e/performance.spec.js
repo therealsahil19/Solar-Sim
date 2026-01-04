@@ -50,6 +50,13 @@ test.describe('Performance Benchmarks', () => {
     });
 
     test('should complete initialization within acceptable time', async ({ page }) => {
+        // Capture browser console logs
+        page.on('console', msg => {
+            if (msg.text().startsWith('⚡ Init:')) {
+                console.log(msg.text());
+            }
+        });
+
         const startTime = Date.now();
 
         await page.goto('/');

@@ -206,6 +206,12 @@ export async function init(): Promise<void> {
     scene.add(playerShip);
     window.playerShip = playerShip;
 
+    // ⚡ Bolt Optimization: Start Rendering Immediately
+    // Start the loop now so the user sees the starfield/sun while
+    // the rest of the system streams in via chunked loading.
+    lastFrameTime = performance.now();
+    animate();
+
     // Load System Data
     let planetData: SystemData[] | null = null;
     try {
@@ -219,31 +225,42 @@ export async function init(): Promise<void> {
             throw new Error('Invalid configuration: planetData must be an array.');
         }
 
-        planetData.forEach(config => {
-            if (config.type === 'Belt') {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const belt = createBelt(config as any);
-                scene.add(belt);
-                belts.push(belt);
-                return;
-            }
+        // ⚡ Bolt Optimization: Chunked Loading
+        // Instead of processing all systems in one blocking call, we process them
+        // in chunks to allow the browser to paint and handle events.
+        const CHUNK_SIZE = 5;
+        for (let i = 0; i < planetData.length; i += CHUNK_SIZE) {
+            const chunk = planetData.slice(i, i + CHUNK_SIZE);
 
-            const systemNode = createSystem(config, textureLoader, useTextures, null);
+            chunk.forEach(config => {
+                if (config.type === 'Belt') {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const belt = createBelt(config as any);
+                    scene.add(belt);
+                    belts.push(belt);
+                    return;
+                }
 
-            scene.add(systemNode.pivot);
-            if (systemNode.orbit) scene.add(systemNode.orbit);
+                const systemNode = createSystem(config, textureLoader, useTextures, null);
 
-            interactionTargets.push(...systemNode.interactables);
-            animatedObjects.push(...systemNode.animated);
-            allOrbits.push(...systemNode.orbits);
-            allTrails.push(...systemNode.trails);
-            allLabels.push(...systemNode.labels);
+                scene.add(systemNode.pivot);
+                if (systemNode.orbit) scene.add(systemNode.orbit);
 
-            if (systemNode.animated.length > 0) {
-                const primary = systemNode.animated[0];
-                if (primary?.pivot) planets.push(primary.pivot);
-            }
-        });
+                interactionTargets.push(...systemNode.interactables);
+                animatedObjects.push(...systemNode.animated);
+                allOrbits.push(...systemNode.orbits);
+                allTrails.push(...systemNode.trails);
+                allLabels.push(...systemNode.labels);
+
+                if (systemNode.animated.length > 0) {
+                    const primary = systemNode.animated[0];
+                    if (primary?.pivot) planets.push(primary.pivot);
+                }
+            });
+
+            // Yield to main thread
+            await new Promise(resolve => requestAnimationFrame(resolve));
+        }
 
         instanceRegistry.build();
 
@@ -337,7 +354,7 @@ export async function init(): Promise<void> {
     window.addEventListener('resize', onWindowResize);
 
     lastFrameTime = performance.now();
-    animate();
+
 }
 
 // ============================================================================
