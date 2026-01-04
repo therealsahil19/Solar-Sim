@@ -31,11 +31,11 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
     -   **Navigation Sidebar**: A collapsible sidebar listing all celestial bodies (hierarchically) for quick "fast travel" to any object, with search functionality.
     -   **Info Panel**: Detailed information overlay for selected celestial bodies, including dynamic distance calculations.
     -   **Responsive Design**: The interface (Glassmorphism panels, CSS Grid/Flexbox) adapts gracefully to mobile and desktop screens.
-    -   **Toast Notifications**: Quick feedback for actions (e.g., "Textures: OFF", "View Reset").
-    -   **On-Screen Controls**: Accessible buttons for camera, textures, pause, and speed.
-    -   **Settings Panel**: A slide-out panel (`comma` key) to manage all simulation preferences in one place (Textures, Labels, Orbits, Themes, Speed, and **Belt Toggles**).
-    -   **Speed Control**: Slider to adjust the time scale of the simulation.
-    -   **Onboarding**: Loading screen with progress bar and an initial "Welcome" modal.
+    -   **Toast Notifications**: Quick feedback for actions (e.g., "Textures: OFF", "View Reset") managed by `ToastManager`.
+-   **On-Screen Controls**: Accessible buttons for camera, textures, pause, and speed.
+-   **Settings Panel**: A slide-out panel (`comma` key) to manage all simulation preferences in one place (Textures, Labels, Orbits, Themes, Speed, and **Belt Toggles**).
+-   **Speed Control**: Slider to adjust the time scale of the simulation.
+-   **Onboarding**: Immediate UI shell visibility with **Skeleton UI** states during initialization, replacing the old blocking loading screen. Includes an initial "Welcome" modal.
 
 ## Performance & Optimizations ("Bolt")
 
@@ -62,6 +62,9 @@ This project implements several optimization strategies (internally referred to 
     -   **Asteroid Belt**: Uses `THREE.InstancedMesh` with Vertex Shader injection to animate orbits entirely on the GPU.
     -   **Trails (`TrailManager`)**: Renders thousands of orbit trails using a single `THREE.LineSegments` geometry, massively reducing draw calls.
 
+6.  **Benchmarking**:
+    -   **Bolt Benchmark (`benchmark.ts`)**: A built-in performance suite that measures frame timing statistics, P95/P99 latency, and jank percentage.
+
 ## Security ("Sentinel")
 
 The application enforces strict security measures:
@@ -87,6 +90,7 @@ The project is organized into a modular architecture:
 │   ├── debris.ts         # "Generator" - creates GPU-accelerated asteroid belt
 │   ├── instancing.ts     # "Optimizer" - manages InstancedMesh groups
 │   ├── trails.ts         # "Optimizer" - manages unified orbit trail geometry
+│   ├── benchmark.ts      # "Bolt" - performance benchmarking tool
 │   ├── style.css         # Design System tokens and styles
 │   ├── components/
 │   │   ├── CommandPalette.ts    # Searchable command menu (Cmd+K)
@@ -96,7 +100,8 @@ The project is organized into a modular architecture:
 │   │   └── SettingsPanel.ts    # Slide-out simulation preferences panel
 │   ├── managers/
 │   │   ├── SettingsManager.ts   # "State" - persists user preferences
-│   │   └── ThemeManager.ts      # "State" - handles visual themes
+│   │   ├── ThemeManager.ts      # "State" - handles visual themes
+│   │   └── ToastManager.ts      # "State" - manages stackable notifications
 └── README.md             # This documentation
 ```
 
@@ -162,6 +167,14 @@ The simulation is built on a decoupled, event-driven architecture designed for h
     -   **Unified UI**: Provides a single interface for all simulation settings.
     -   **Persistence**: Interfaces with `SettingsManager` to save/load user preferences.
     -   **Accessibility**: Implements keyboard shortcuts (`,`) and focus management.
+
+12. **`src/managers/ToastManager.ts`**:
+    -   **Notifications**: Manages stackable, accessible toast notifications.
+    -   **Feedback**: Decoupled from core logic, triggered by UI events or status changes.
+
+13. **`src/benchmark.ts`**:
+    -   **Tooling**: Provides the `boltBenchmark()` global function for performance auditing.
+    -   **Metrics**: Calculates average FPS, jank percentage, and P99 frame times.
 
 ## Configuration (`system.json`)
 

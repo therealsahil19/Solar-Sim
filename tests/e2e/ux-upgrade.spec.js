@@ -1,7 +1,22 @@
+/**
+ * @file ux-upgrade.spec.js
+ * @description End-to-End tests for the Solar-Sim UX Upgrade.
+ *
+ * This suite verifies:
+ * 1. The removal of the blocking loading screen in favor of Skeleton UI.
+ * 2. The functionality and accessibility of the Toast Notification system.
+ * 3. Robustness against network failures (System JSON errors).
+ * 4. Responsive behavior on mobile viewports.
+ */
+
 import { test, expect } from '@playwright/test';
 
 test.describe('Palette UX Upgrade', () => {
 
+    /**
+     * Verifies that the application shell is visible immediately
+     * without being blocked by a full-screen loading overlay.
+     */
     test('should show UI immediately (Skeletons or Real Data) without blocking', async ({ page }) => {
         await page.goto('/');
 
@@ -16,6 +31,10 @@ test.describe('Palette UX Upgrade', () => {
         await expect(sidebarItems.first()).toBeVisible();
     });
 
+    /**
+     * Verifies that interaction with the simulation triggers
+     * toast notifications for user feedback.
+     */
     test('should show toast notifications on interaction', async ({ page }) => {
         await page.goto('/');
 
@@ -33,6 +52,10 @@ test.describe('Palette UX Upgrade', () => {
     });
 
     // 🌟 UNHAPPY PATH: Network Failure
+    /**
+     * Verifies that the application displays a graceful error overlay
+     * when the core system data fails to load.
+     */
     test('should show error overlay on system.json 500 failure', async ({ page }) => {
         // Mock a failed request with function matcher for robustness
         await page.route(url => url.toString().includes('system.json'), route => route.fulfill({
@@ -56,6 +79,10 @@ test.describe('Palette UX Upgrade', () => {
     });
 
     // 🌟 EDGE CASE: Responsive Design (Mobile)
+    /**
+     * Verifies that the UI elements (Sidebar, Toasts) settle correctly
+     * within the viewport on mobile devices.
+     */
     test('should collapse sidebar on mobile viewport', async ({ page }) => {
         await page.setViewportSize({ width: 375, height: 667 });
         await page.goto('/');

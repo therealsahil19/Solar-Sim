@@ -1,3 +1,11 @@
+/**
+ * @file visual-audit.spec.js
+ * @description Automated scripts for capturing visual snapshots across viewports.
+ *
+ * These snapshots are used for manual visual regression testing and are
+ * stored in the `.jules/screenshots` directory.
+ */
+
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';

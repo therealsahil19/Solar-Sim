@@ -50,7 +50,8 @@ We follow a modular architecture without bundlers.
 - **`src/procedural.ts`**: The "Factory". Pure functions that generate 3D objects (planets, stars).
 - **`src/input.ts`**: The "Controller". Handles user input, raycasting, and UI updates.
 - **`src/components/`**: UI classes (e.g., `CommandPalette.ts`, `NavigationSidebar.ts`).
-- **`src/managers/`**: State managers (e.g., `ThemeManager.ts`).
+- **`src/managers/`**: State managers (e.g., `ThemeManager.ts`, `ToastManager.ts`).
+- **`src/benchmark.ts`**: Performance benchmarking utility.
 - **`system.json`**: The data source for the solar system hierarchy.
 
 ### Component Architecture
@@ -71,6 +72,7 @@ The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D 
 | **CommandPalette** | "Cmd+K" power menu. | Executes callbacks for global actions (e.g., `onToggleOrbits`). |
 | **Modal** | Accessible `<dialog>` wrapper. | Manages focus trapping and lifecycle (`open`/`close`). |
 | **SettingsPanel** | Slide-out preferences menu. | Subscribes to `SettingsManager` and triggers callbacks. |
+| **ToastManager** | Notification system. | Singleton that provides `show(msg, options)` for feedback. |
 
 ### Architecture Visualization
 
@@ -113,6 +115,7 @@ We avoid global state objects. Instead, we use dedicated **Managers** (`src/mana
 | :--- | :--- | :--- |
 | **SettingsManager** | Source of truth for all simulation preferences (speed, textures, visibility). | `localStorage` (JSON string) |
 | **ThemeManager** | Manages visual aesthetic (Default, Blueprint, OLED) via CSS variables. | `localStorage` (Theme ID) |
+| **ToastManager** | Transient UI feedback (no state persistence). | N/A |
 
 - **SettingsManager**: Components `subscribe()` to changes for reactive UI updates.
 - **ThemeManager**: Orchestrates theme shifts by updating the `data-theme` attribute on the `<html>` element.
