@@ -58,7 +58,7 @@ interface NavItem {
 export class NavigationSidebar implements Disposable {
     private data: CelestialBody[];
     private callbacks: NavigationSidebarCallbacks;
-    private isOpen: boolean = false;
+    private _isOpen: boolean = false;
     private dom: NavigationSidebarDOM;
 
     // Event handler references
@@ -243,7 +243,7 @@ export class NavigationSidebar implements Disposable {
     open(): void {
         if (!this.dom.sidebar) return;
 
-        this.isOpen = true;
+        this._isOpen = true;
         this.dom.sidebar.setAttribute('aria-hidden', 'false');
         this.dom.sidebar.classList.remove('animate-out');
         this.dom.sidebar.classList.add('animate-in');
@@ -259,12 +259,12 @@ export class NavigationSidebar implements Disposable {
     close(): void {
         if (!this.dom.sidebar) return;
 
-        this.isOpen = false;
+        this._isOpen = false;
         this.dom.sidebar.classList.remove('animate-in');
         this.dom.sidebar.classList.add('animate-out');
 
         setTimeout(() => {
-            if (!this.isOpen && this.dom.sidebar) {
+            if (!this._isOpen && this.dom.sidebar) {
                 this.dom.sidebar.setAttribute('aria-hidden', 'true');
                 this.dom.sidebar.classList.remove('animate-out');
             }
@@ -272,6 +272,13 @@ export class NavigationSidebar implements Disposable {
 
         if (this.dom.btnOpen) this.dom.btnOpen.focus();
         if (this.callbacks.onClose) this.callbacks.onClose();
+    }
+
+    /**
+     * Returns whether the sidebar is currently open.
+     */
+    isOpen(): boolean {
+        return this._isOpen;
     }
 
     /**

@@ -37,12 +37,15 @@ interface Trail {
 }
 
 /**
- * Manages the unified trail system.
+ * High-performance orbit trail renderer.
  *
- * Architecture:
- * - A single `Float32Array` stores position data for ALL trails.
- * - `LineSegments` is used instead of `LineStrip` to allow independent trails without "degenerate lines" connecting them.
- * - Each trail is assigned a slice of the global buffer.
+ * Optimization Strategy:
+ * 1. "Single Draw Call": Uses one THREE.LineSegments for ALL trails in the system.
+ * 2. "Zero GC Churn": Uses a pre-allocated cyclic Ring Buffer (history) for each trail.
+ * 3. "Piecewise Geometry": Since lines are disjoint segments (LineSegments), it handles
+ *    the gaps between trails automatically without extra draw calls.
+ *
+ * @implements {Disposable}
  */
 export class TrailManager implements Disposable {
     private scene: THREE.Scene;
@@ -114,12 +117,17 @@ export class TrailManager implements Disposable {
     }
 
     /**
-     * Registers a new object to track with a trail.
+     * Registers a new object to have its orbit traced.
+     * Memory is allocated up-front for the history buffer.
      *
-     * @param target - The object to follow (must have a valid world matrix).
-     * @param color - Color of the trail.
+     * @param target - The 3D object to track.
+     * @param color - The trail color (usually matches the planet).
+     * @param maxPoints - Optional override for points in this specific trail.
      */
-    register(target: THREE.Object3D, color: THREE.ColorRepresentation): void {
+    register(
+        target: THREE.Object3D,
+        color: THREE.ColorRepresentation
+    ): void {
         if (this.nextTrailIndex >= this.maxTrails) {
             console.warn("TrailManager: Max trails reached.");
             return;
@@ -207,12 +215,14 @@ export class TrailManager implements Disposable {
     }
 
     /**
-     * Reconstructs the vertex data for a single trail based on its history.
+     * Updates the global Float32Arrays with new position and color data.
+     * Internal implementation uses a Ring Buffer to avoid expensive array shifting.
      *
-     * @param trailIndex - Unique index of the trail.
-     * @param history - The ring buffer of positions.
-     * @param head - The current index of the newest position in `history`.
-     * @param color - The base color.
+     * @private
+     * @param trailIndex - Index of the trail in the registry.
+     * @param history - The cyclic array of positions.
+     * @param head - The current pointer in the ring buffer.
+     * @param color - The base color of the trail.
      */
     private updateTrailGeometry(
         trailIndex: number,

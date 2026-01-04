@@ -19,14 +19,22 @@ import * as THREE from 'three';
 
 /**
  * Distribution configuration for debris orbital parameters.
+ * Defines the spatial boundaries for the procedurally generated objects.
  */
 export interface DebrisDistribution {
+    /** Minimum semi-major axis in AU */
     minA: number;
+    /** Maximum semi-major axis in AU */
     maxA: number;
+    /** Minimum eccentricity (0.0 to 1.0) */
     minE: number;
+    /** Maximum eccentricity */
     maxE: number;
+    /** Minimum inclination in degrees */
     minI: number;
+    /** Maximum inclination */
     maxI: number;
+    /** If true, generates a spherical shell distribution (like Oort Cloud) instead of a disk */
     isSpherical?: boolean;
 }
 
@@ -34,10 +42,15 @@ export interface DebrisDistribution {
  * Material configuration for debris particles.
  */
 export interface DebrisMaterialConfig {
+    /** Color representation (hex or string) */
     color?: number | string;
+    /** Base size of the geometry */
     size?: number;
+    /** PBR roughness (0.0 to 1.0) */
     roughness?: number;
+    /** PBR metalness (0.0 to 1.0) */
     metalness?: number;
+    /** Transparency (0.0 to 1.0) */
     opacity?: number;
 }
 
@@ -106,6 +119,11 @@ vec3 rotateAxis(vec3 v, vec3 axis, float angle) {
 }
 
 // Helper: Piecewise Scale (Physics AU -> Render Units)
+// This GLSL function mirrors the CPU-side physicsToRender logic.
+// It maps vast distances into renderable zones using a Linear -> Log -> Log function.
+// Zone 1: [0, 30] AU -> Linear Scale (dist * AU_SCALE)
+// Zone 2: [30, 50] AU -> Mild Logarithmic Compression (Kuiper Belt)
+// Zone 3: [50, inf] AU -> Aggressive Logarithmic Compression (Oort Cloud)
 vec3 physicsToRender(vec3 pos) {
     float r = length(pos);
     if (r == 0.0) return vec3(0.0);
@@ -304,6 +322,16 @@ function createDebrisSystem(config: DebrisConfig): DebrisMesh {
 
 /**
  * Creates a belt system (asteroid belt, Kuiper belt, etc.).
+ *
+ * @param config - High-level configuration from system.json.
+ * @returns An optimized InstancedMesh with GPU animation.
+ *
+ * @example
+ * const asteroidBelt = createBelt({
+ *   name: 'Asteroid Belt',
+ *   visual: { count: 5000, color: 0x888888, size: 0.1 },
+ *   distribution: { minA: 2.1, maxA: 3.3, minE: 0.0, maxE: 0.1, minI: 0.0, maxI: 10.0 }
+ * });
  */
 export function createBelt(config: BeltSystemConfig): DebrisMesh {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

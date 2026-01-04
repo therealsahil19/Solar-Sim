@@ -11,9 +11,9 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
     -   **Starfield**: Procedurally generated background stars.
     -   **Player Ship**: Procedurally generated spacecraft geometry (Cone + Cylinders).
     -   **Debris Systems**:
-    -   **Asteroid Belt**: A massive, GPU-animated asteroid belt with thousands of instances.
+    -   **Asteroid Belt**: A massive, GPU-animated asteroid belt with thousands of instances. Animated via Vertex Shader for 0ms CPU overhead.
     -   **Kuiper Belt**: Distant icy objects beyond Neptune.
-    -   **Oort Cloud**: A spherical shell of cometary nuclei (visualized for scale).
+    -   **Oort Cloud**: A spherical shell of cometary nuclei (visualized for scale). Uses Multi-Zone Scaling for visibility across 100,000 AU.
 -   **Interactive Controls**:
     -   **Orbit Controls**: Pan, zoom, and rotate around the scene with the mouse.
     -   **Focus Mode**: Double-click any planet (or use the Sidebar/Keys) to smoothly animate the camera to follow it.
@@ -80,49 +80,59 @@ The project is organized into a modular architecture:
 ├── textures/             # Directory for texture assets
 ├── download_textures.py  # Helper script to fetch assets
 ├── src/
-│   ├── main.js           # The "Conductor" - initializes scene and loop
-│   ├── procedural.js     # "Factory" - creates 3D objects (planets, stars)
-│   ├── input.js          # "Controller" - handles user input and UI events
-│   ├── physics.js        # "Engineer" - handles Keplerian orbits and multi-zone scaling
-│   ├── debris.js         # "Generator" - creates GPU-accelerated asteroid belt
-│   ├── instancing.js     # "Optimizer" - manages InstancedMesh groups
-│   ├── trails.js         # "Optimizer" - manages unified orbit trail geometry
+│   ├── main.ts           # The "Conductor" - initializes scene and loop
+│   ├── procedural.ts     # "Factory" - creates 3D objects (planets, stars)
+│   ├── input.ts          # "Controller" - handles user input and UI events
+│   ├── physics.ts        # "Engineer" - handles Keplerian orbits and multi-zone scaling
+│   ├── debris.ts         # "Generator" - creates GPU-accelerated asteroid belt
+│   ├── instancing.ts     # "Optimizer" - manages InstancedMesh groups
+│   ├── trails.ts         # "Optimizer" - manages unified orbit trail geometry
 │   ├── style.css         # Design System tokens and styles
 │   ├── components/
-│   │   ├── CommandPalette.js    # Searchable command menu (Cmd+K)
-│   │   ├── InfoPanel.js         # Object details overlay panel
-│   │   ├── Modal.js             # Reusable accessible <dialog> wrapper
-│   │   ├── NavigationSidebar.js # Hierarchical planet navigation tree
-│   │   └── SettingsPanel.js    # Slide-out simulation preferences panel
+│   │   ├── CommandPalette.ts    # Searchable command menu (Cmd+K)
+│   │   ├── InfoPanel.ts         # Object details overlay panel
+│   │   ├── Modal.ts             # Reusable accessible <dialog> wrapper
+│   │   ├── NavigationSidebar.ts # Hierarchical planet navigation tree
+│   │   └── SettingsPanel.ts    # Slide-out simulation preferences panel
 │   ├── managers/
-│   │   ├── SettingsManager.js   # "State" - persists user preferences
-│   │   └── ThemeManager.js      # "State" - handles visual themes
+│   │   ├── SettingsManager.ts   # "State" - persists user preferences
+│   │   └── ThemeManager.ts      # "State" - handles visual themes
 └── README.md             # This documentation
 ```
 
 ### Architecture
 
-1.  **`src/main.js`**:
+### Architecture Patterns
+
+The simulation is built on a decoupled, event-driven architecture designed for high performance and maintainability:
+
+1.  **Conductor (main.ts)**: Orchestrates the initialization and the high-frequency render loop.
+2.  **Factory (procedural.ts)**: Pure functions that build Three.js objects from configuration data.
+3.  **Controller (input.ts)**: Manages all user interactions and UI events using dependency injection.
+4.  **Optimizers (instancing.ts, trails.ts)**: Low-level modules that batch draw calls to the GPU.
+5.  **State (managers/)**: Independent modules that handle persistence and cross-component state.
+
+1.  **`src/main.ts`**:
     -   **Orchestrator**: Sets up the Three.js `Scene`, `Camera`, `Renderer`, and `Lighting`.
     -   **Render Loop**: Manages the animation loop, split into Pre-Render (updates) and Post-Render (trails) phases for optimization.
     -   **Throttling**: Uses `frameCount` to throttle expensive operations like UI updates and Nearest Neighbor search for the ship.
 
-2.  **`src/procedural.js`**:
+2.  **`src/procedural.ts`**:
     -   **Factory Pattern**: Pure functions that accept dependencies (like `TextureLoader`) and return Three.js objects.
     -   **Recursion**: `createSystem` recursively builds the scene graph for planets and their moons.
     -   **Material Management**: Creates both Textured and Solid materials for runtime switching.
 
-3.  **`src/input.js`**:
+3.  **`src/input.ts`**:
     -   **Dependency Injection**: Receives scene context to attach controls without global state dependency.
     -   **Event Handling**: Centralizes `OrbitControls`, Raycasting (Mouse Clicks), and Keyboard Listeners.
     -   **UI Updates**: Manages the DOM overlays (Info Panel, Toasts) based on interaction.
     -   **Component Initialization**: Initializes the `CommandPalette` and `ThemeManager`.
 
-4.  **`src/instancing.js`**:
+4.  **`src/instancing.ts`**:
     -   **Instance Registry**: Centralizes `THREE.InstancedMesh` management.
     -   **Batching**: Groups objects by geometry and material to reduce draw calls from O(N) to O(G*M).
 
-5.  **`src/trails.js`**:
+5.  **`src/trails.ts`**:
     -   **Trail Manager**: Manages a single `THREE.LineSegments` mesh for all orbit trails.
     -   **Performance**: Avoids creating thousands of individual `THREE.Line` objects.
 
@@ -145,10 +155,10 @@ The project is organized into a modular architecture:
     -   **Client-side Search**: Implements a "Show Matches & Parents" filter strategy.
     -   **Decoupled Design**: Communicates with the 3D scene purely via callbacks, maintaining separation of concerns.
 
-10. **`src/managers/ThemeManager.js`**:
+10. **`src/managers/ThemeManager.ts`**:
     -   **State Management**: Handles theme switching and persistence via localStorage.
 
-11. **`src/components/SettingsPanel.js`**:
+11. **`src/components/SettingsPanel.ts`**:
     -   **Unified UI**: Provides a single interface for all simulation settings.
     -   **Persistence**: Interfaces with `SettingsManager` to save/load user preferences.
     -   **Accessibility**: Implements keyboard shortcuts (`,`) and focus management.

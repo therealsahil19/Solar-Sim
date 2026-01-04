@@ -101,6 +101,19 @@ window.isPaused = isPaused;
 // ============================================================================
 
 /**
+ * Solar-Sim: The "Conductor" Module.
+ *
+ * Responsibilities:
+ * 1. Scene Orchestration: Setting up Three.js WebGLRenderer, Camera, and Scene.
+ * 2. Lifecycle Management: Handling window resizing, loading data, and disposal.
+ * 3. Physics Loop: Driving the animation loop and synchronizing all sub-modules.
+ * 4. State Integration: Bridging UI Settings with low-level rendering logic.
+ */
+
+// Simulation constants
+
+
+/**
  * Initializes the application.
  */
 export async function init(): Promise<void> {
@@ -496,6 +509,23 @@ const _renderPos = new THREE.Vector3();
 // Animation Loop
 // ============================================================================
 
+/**
+ * The main animation loop (RequestAnimationFrame).
+ * Processed in distinct phases:
+ *
+ * Phase 1: Logic Synchronization
+ * - Increments simulation time based on speed factor.
+ * - Updates orbital positions for all tracked planets/moons.
+ * - Checks for camera following constraints.
+ *
+ * Phase 2: Optimization Updates ("Bolt")
+ * - Updates InstancedMesh matrices in InstanceRegistry.
+ * - Appends new vertices to the TrailManager ring buffers.
+ * - Updates uniforms in GPU-based debris systems.
+ *
+ * Phase 3: Rendering
+ * - Executes the Three.js render pass.
+ */
 function animate(): void {
     animationFrameId = requestAnimationFrame(animate);
 

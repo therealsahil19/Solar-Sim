@@ -36,7 +36,7 @@ export interface CommandPaletteCallbacks {
  */
 export class CommandPalette implements Disposable {
     private callbacks: CommandPaletteCallbacks;
-    private isOpen: boolean = false;
+    private _isOpen: boolean = false;
     private selectedIndex: number = 0;
     private filteredItems: PaletteItem[] = [];
     private previousActiveElement: Element | null = null;
@@ -240,13 +240,13 @@ export class CommandPalette implements Disposable {
 
     /** Toggles open/close state */
     toggle(): void {
-        if (this.isOpen) this.close();
+        if (this._isOpen) this.close();
         else this.open();
     }
 
     /** Opens the command palette */
     open(): void {
-        this.isOpen = true;
+        this._isOpen = true;
         this.overlay.hidden = false;
         this.overlay.classList.add('visible');
         this.overlay.classList.remove('animate-out');
@@ -260,13 +260,13 @@ export class CommandPalette implements Disposable {
 
     /** Closes the command palette */
     close(): void {
-        this.isOpen = false;
+        this._isOpen = false;
         this.overlay.classList.remove('visible');
         this.overlay.classList.remove('animate-in');
         this.overlay.classList.add('animate-out');
 
         setTimeout(() => {
-            if (!this.isOpen) {
+            if (!this._isOpen) {
                 this.overlay.hidden = true;
                 this.overlay.classList.remove('animate-out');
             }
@@ -275,6 +275,11 @@ export class CommandPalette implements Disposable {
         if (this.previousActiveElement instanceof HTMLElement) {
             this.previousActiveElement.focus();
         }
+    }
+
+    /** Returns whether the palette is currently open */
+    isOpen(): boolean {
+        return this._isOpen;
     }
 
     /**

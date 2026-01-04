@@ -75,7 +75,14 @@ export function setupControls(
 }
 
 /**
- * Initializes all user interaction handlers.
+ * Orchestrates all user input, raycasting, and UI component lifecycles.
+ *
+ * Architecture: "Callback Injection"
+ * Instead of importing main.ts directly (avoiding circular deps), this module
+ * receives a set of callbacks (InteractionCallbacks) to manipulate the simulation.
+ *
+ * @param context - The global interaction context (Three.js objects + UI state).
+ * @param callbacks - Hooks into the main simulation logic.
  */
 export function setupInteraction(
     context: InteractionContext,
@@ -301,33 +308,61 @@ export function setupInteraction(
     }
 
     // --- Global Shortcuts ---
+    /**
+     * Keyboard Shortcut System
+     *
+     * Map of keys and their associated actions:
+     * - [Space]: Toggle Pause/Resume
+     * - [C]: Cycle Camera View (Free -> Top-down)
+     * - [T]: Toggle Textures (Performance mode)
+     * - [L]: Toggle Labels
+     * - [O]: Toggle Orbits
+     * - [Cmd+K] / [Ctrl+K]: Open Command Palette
+     * - [,]: Open Settings Panel
+     * - [?]: Open Help Modal
+     */
     const onKeyDown = (e: KeyboardEvent): void => {
         const key = e.key.toLowerCase();
+        // Prevent shortcuts from firing when typing in an input field
         if (document.activeElement?.tagName === 'INPUT') return;
 
-        if (key === 'c') callbacks.onToggleCamera();
-        else if (key === 'l') callbacks.onToggleLabels();
-        else if (key === 'o') callbacks.onToggleOrbits();
-        else if (key === 't') {
-            const btn = document.getElementById('btn-texture');
-            callbacks.onToggleTexture(btn);
-        } else if (key === ' ' || key === 'spacebar') {
+        if (key === ' ') { // Spacebar
+            e.preventDefault(); // Prevent page scroll
             const btn = document.getElementById('btn-pause');
             callbacks.onTogglePause(btn);
+        } else if (key === 'c') {
+            callbacks.onToggleCamera();
+        } else if (key === 'l') {
+            callbacks.onToggleLabels();
+        } else if (key === 'o') {
+            callbacks.onToggleOrbits();
+        } else if (key === 't') {
+            const btn = document.getElementById('btn-texture');
+            callbacks.onToggleTexture(btn);
+        } else if ((e.metaKey || e.ctrlKey) && key === 'k') { // Cmd+K or Ctrl+K
+            e.preventDefault(); // Prevent browser shortcuts
+            commandPalette?.toggle();
+        } else if (key === ',') {
+            e.preventDefault();
+            settingsPanel.open();
         } else if (key === '?' || (key === '/' && e.shiftKey)) {
             openModal();
         } else if (key === 'escape') {
-            if (sidebar) {
+            if (sidebar && sidebar.isOpen()) {
                 sidebar.close();
+            } else if (commandPalette && commandPalette.isOpen()) {
+                commandPalette.close();
+            } else if (welcomeModal.isOpen()) {
+                welcomeModal.close();
+            } else if (settingsPanel.isOpen()) {
+                settingsPanel.close();
             } else {
                 callbacks.onResetCamera();
                 infoPanel.hide();
             }
-        } else {
-            const num = parseInt(key);
-            if (!isNaN(num) && num >= 1 && num <= 9) {
-                callbacks.onFocusPlanet(num - 1);
-            }
+        } else if (e.key >= '1' && e.key <= '9') {
+            const num = parseInt(e.key);
+            callbacks.onFocusPlanet(num - 1);
         }
     };
     window.addEventListener('keydown', onKeyDown);

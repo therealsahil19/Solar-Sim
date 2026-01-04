@@ -55,7 +55,7 @@ export interface SettingsPanelConfig {
 export class SettingsPanel implements Disposable {
     private callbacks: SettingsPanelCallbacks;
     private settingsManager: SettingsManager;
-    private isOpen: boolean = false;
+    private _isOpen: boolean = false;
     private dom: SettingsPanelDOM;
     private _abortController: AbortController | null = null;
 
@@ -164,7 +164,7 @@ export class SettingsPanel implements Disposable {
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isOpen) {
+            if (e.key === 'Escape' && this._isOpen) {
                 e.preventDefault();
                 this.close();
             }
@@ -263,8 +263,8 @@ export class SettingsPanel implements Disposable {
 
     /** Opens the settings panel */
     open(): void {
-        if (this.isOpen || !this.dom.panel) return;
-        this.isOpen = true;
+        if (this._isOpen || !this.dom.panel) return;
+        this._isOpen = true;
 
         this.dom.panel.setAttribute('aria-hidden', 'false');
         this.dom.panel.classList.add('open');
@@ -280,8 +280,8 @@ export class SettingsPanel implements Disposable {
 
     /** Closes the settings panel */
     close(): void {
-        if (!this.isOpen || !this.dom.panel) return;
-        this.isOpen = false;
+        if (!this._isOpen || !this.dom.panel) return;
+        this._isOpen = false;
 
         this.dom.panel.setAttribute('aria-hidden', 'true');
         this.dom.panel.classList.remove('open');
@@ -296,7 +296,7 @@ export class SettingsPanel implements Disposable {
 
     /** Toggles the panel open/closed state */
     toggle(): void {
-        if (this.isOpen) {
+        if (this._isOpen) {
             this.close();
         } else {
             this.open();
@@ -306,6 +306,11 @@ export class SettingsPanel implements Disposable {
     /** Gets the current settings values */
     getSettings(): Settings {
         return this.settingsManager.getAll();
+    }
+
+    /** Returns whether the panel is currently open */
+    isOpen(): boolean {
+        return this._isOpen;
     }
 
     /** Cleans up event listeners */

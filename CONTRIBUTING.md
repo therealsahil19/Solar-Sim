@@ -45,12 +45,12 @@ Since this project uses vanilla ES Modules and Three.js via CDN, you don't need 
 
 We follow a modular architecture without bundlers.
 
-- **`index.html`**: The entry point. Loads styles, Three.js (via Import Map), and `src/main.js`.
-- **`src/main.js`**: The "Conductor". Initializes the scene, render loop, and coordinates modules.
-- **`src/procedural.js`**: The "Factory". Pure functions that generate 3D objects (planets, stars).
-- **`src/input.js`**: The "Controller". Handles user input, raycasting, and UI updates.
-- **`src/components/`**: UI classes (e.g., `CommandPalette.js`, `NavigationSidebar.js`).
-- **`src/managers/`**: State managers (e.g., `ThemeManager.js`).
+- **`index.html`**: The entry point. Loads styles, Three.js (via Import Map), and `src/main.ts`.
+- **`src/main.ts`**: The "Conductor". Initializes the scene, render loop, and coordinates modules.
+- **`src/procedural.ts`**: The "Factory". Pure functions that generate 3D objects (planets, stars).
+- **`src/input.ts`**: The "Controller". Handles user input, raycasting, and UI updates.
+- **`src/components/`**: UI classes (e.g., `CommandPalette.ts`, `NavigationSidebar.ts`).
+- **`src/managers/`**: State managers (e.g., `ThemeManager.ts`).
 - **`system.json`**: The data source for the solar system hierarchy.
 
 ### Component Architecture
@@ -58,8 +58,8 @@ We follow a modular architecture without bundlers.
 The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D scene (Three.js) remains performant and independent of the DOM.
 
 **Separation of Concerns:**
-1.  **Scene (`main.js`)**: The "Conductor". It knows nothing about the UI. It exposes methods to manipulate the camera or focus on objects.
-2.  **Input (`input.js`)**: The "Controller". It bridges the gap. It listens for user actions (clicks, keys) and updates the UI or the Scene accordingly.
+1.  **Scene (`main.ts`)**: The "Conductor". It knows nothing about the UI. It exposes methods to manipulate the camera or focus on objects.
+2.  **Input (`input.ts`)**: The "Controller". It bridges the gap. It listens for user actions (clicks, keys) and updates the UI or the Scene accordingly.
 3.  **Components (`src/components/`)**: Pure UI classes. They do not import Three.js directly (mostly). They receive data and callbacks via their constructors.
 
 **Core Components:**
@@ -78,7 +78,7 @@ The following diagram illustrates the flow of data and events between the core m
 
 ```mermaid
 graph TD
-    User([User Interaction]) --> CONTROLLERS["Controllers (input.js)"]
+    User([User Interaction]) --> CONTROLLERS["Controllers (input.ts)"]
     
     subgraph "Logic & State"
         MANAGERS["Managers (Settings, Theme)"]
@@ -86,8 +86,8 @@ graph TD
     end
     
     subgraph "Visual Engine"
-        CONDUCTOR["Conductor (main.js)"]
-        FACTORY["Factory (procedural.js)"]
+        CONDUCTOR["Conductor (main.ts)"]
+        FACTORY["Factory (procedural.ts)"]
         OPTIMIZERS["Optimizers (instancing, trails)"]
     end
     
@@ -108,27 +108,34 @@ graph TD
 ### State Management
 
 We avoid global state objects. Instead, we use dedicated **Managers** (`src/managers/`) that follow the Observer pattern.
-- **SettingsManager**: The source of truth for user preferences (speed, textures, visibility). Components `subscribe()` to changes.
-- **ThemeManager**: Orchestrates visual themes by updating CSS variables via the `data-theme` attribute.
+
+| Manager | Responsibility | Persistence |
+| :--- | :--- | :--- |
+| **SettingsManager** | Source of truth for all simulation preferences (speed, textures, visibility). | `localStorage` (JSON string) |
+| **ThemeManager** | Manages visual aesthetic (Default, Blueprint, OLED) via CSS variables. | `localStorage` (Theme ID) |
+
+- **SettingsManager**: Components `subscribe()` to changes for reactive UI updates.
+- **ThemeManager**: Orchestrates theme shifts by updating the `data-theme` attribute on the `<html>` element.
 
 ### Data Flow: From JSON to Scene
 
 Understanding how `system.json` turns into a 3D orbit:
 
-1.  **Loading**: `main.js` fetches `system.json`.
-2.  **Factory**: `procedural.js` (`createSystem`) iterates through the data.
+1.  **Loading**: `main.ts` fetches `system.json`.
+2.  **Factory**: `procedural.ts` (`createSystem`) iterates through the data.
 3.  **Physics**: For each body, the `physics` elements are stored in `mesh.userData.orbit`.
-4.  **Integration**: In the `animate` loop (in `main.js`), `physics.getOrbitalPosition(orbit, time)` calculates the AU position.
+4.  **Integration**: In the `animate` loop (in `main.ts`), `physics.getOrbitalPosition(orbit, time)` calculates the AU position.
 5.  **Scaling**: `physics.physicsToRender(auVector)` applies Multi-Zone Scaling to transform AU into Three.js units.
-6.  **Rendering**: The mesh position is updated, and `trails.js` adds a vertex to the trail.
+6.  **Rendering**: The mesh position is updated, and `trails.ts` adds a vertex to the trail.
 
 ---
 
 ## Coding Standards
 
-### 1. Vanilla JavaScript
-- Use **ES Modules** (`import`/`export`).
-- No build tools (Webpack, Vite, etc.) — the code you write is the code that runs.
+### 1. TypeScript
+- Use **TypeScript** for all logic. Prefer interfaces over inline types.
+- Strict mode is enabled: avoid `any` whenever possible.
+- Use ES Modules (`import`/`export`).
 - Use `const` and `let` (avoid `var`).
 - Prefer `async/await` over raw Promises.
 
@@ -150,17 +157,17 @@ Understanding how `system.json` turns into a 3D orbit:
 
 We believe that **"If it isn't documented, it doesn't exist."**
 
-### JSDoc
-All functions and classes must be documented using JSDoc.
+### JSDoc / TSDoc
+All functions and classes must be documented using JSDoc/TSDoc. Include parameter types and return values where applicable.
 
-```javascript
+```typescript
 /**
  * Calculates the distance between two objects.
- * @param {THREE.Object3D} objA - The first object.
- * @param {THREE.Object3D} objB - The second object.
- * @returns {number} The Euclidean distance.
+ * @param objA - The first object.
+ * @param objB - The second object.
+ * @returns The Euclidean distance.
  */
-function getDistance(objA, objB) { ... }
+function getDistance(objA: THREE.Object3D, objB: THREE.Object3D): number { ... }
 ```
 
 ### Key Principles

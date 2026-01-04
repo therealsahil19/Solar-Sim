@@ -35,8 +35,11 @@ interface InstanceGroup {
 }
 
 /**
- * Manages InstancedMeshes to reduce draw calls.
- * Groups objects by geometry and material UUIDs.
+ * Memory management and draw-call optimization system.
+ * Groups similar celestial objects (moons, rocks) into a single THREE.InstancedMesh.
+ * This is a core "Bolt" optimization, reducing N draw calls to 1 per group.
+ *
+ * @implements {Disposable}
  */
 export class InstanceRegistry implements Disposable {
     private scene: THREE.Scene;
@@ -54,11 +57,13 @@ export class InstanceRegistry implements Disposable {
     }
 
     /**
-     * Registers an object to be rendered via instancing.
-     * @param pivot - The scene graph object that determines position/rotation.
-     * @param geometry - The geometry to use.
-     * @param material - The material to use.
-     * @param userData - Metadata for the object (name, type, etc).
+     * Registers a new instance to a geometry/material group.
+     * If the group doesn't exist, it will be created on the next build().
+     *
+     * @param pivot - The logical parent object (used for world matrix).
+     * @param geometry - The geometry to instance.
+     * @param material - The material to instance.
+     * @param userData - Metadata for raycasting and UI identification.
      */
     addInstance(
         pivot: THREE.Object3D,
@@ -94,8 +99,9 @@ export class InstanceRegistry implements Disposable {
     }
 
     /**
-     * Builds/Rebuilds the InstancedMeshes.
-     * Call this after adding all instances.
+     * Reifies the registered instances into actual THREE.InstancedMesh objects.
+     * This method is "Lazy" - it only executes if the registry is 'dirty'.
+     * Previous InstancedMesh objects are disposed of to prevent memory leaks.
      */
     build(): void {
         if (!this.dirty) return;
@@ -156,11 +162,12 @@ export class InstanceRegistry implements Disposable {
     }
 
     /**
-     * Gets the intersection data for an instance.
-     * Helper for Raycaster.
-     * @param instanceMesh - The instanced mesh that was hit.
-     * @param instanceId - The index of the instance that was hit.
-     * @returns The userData associated with the instance pivot.
+     * Retrieves metadata for a specific instance in an InstancedMesh.
+     * Used by the Raycaster to identify which planet/moon was clicked.
+     *
+     * @param instanceMesh - The THREE.InstancedMesh that was intersected.
+     * @param instanceId - The index of the instance.
+     * @returns The associated metadata or null if not found.
      */
     getIntersectionData(
         instanceMesh: THREE.InstancedMesh,

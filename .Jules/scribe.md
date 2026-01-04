@@ -141,3 +141,20 @@
     - **debris.js**: Added a formal "Physics Note" explaining the GPU Kepler Solver and the O(N) tumble math. Documented all internal GLSL helpers.
     - **E2E Tests**: Added meticulous JSDoc to all 5 spec files in `tests/e2e/`, documenting test flows, ARIA checks, and interaction logic.
 - **Gap:** Similar "Physics Notes" or "Optimization Notes" could be added to `instancing.js` and `trails.js` to explain their specific GPU-side buffers/attributes.
+
+### 2026-01-04 - The Scribe Mission: TypeScript Alignment & Architectural Depth
+- **Focus:** `README.md`, `CONTRIBUTING.md`, `src/debris.ts`, `src/instancing.ts`, `src/trails.ts`, `src/physics.ts`, `src/main.ts`, `src/input.ts`.
+- **Standard:**
+    - "TS-First Documentation": All JSDoc/TSDoc must reflect TypeScript types, interfaces, and generic constraints.
+    - "System Phase": Critical systems must document their execution "Phases" (e.g., in `animate`).
+    - "Scaling Philosophy": Explicitly document the "Why" behind Multi-Zone scaling for future data maintainers.
+- **Changes:**
+    - **README.md**: Aligned all project structure references with `.ts` extensions. Added "Architecture Patterns" section (Conductor/Factory/Controller). Enhanced "Bolt" optimization descriptions.
+    - **CONTRIBUTING.md**: Switched coding standards to TypeScript. Added "State Managers" persistence table. Integrated Mermaid diagrams into the TS workflow.
+    - **debris.ts**: Refined `DebrisDistribution` and `DebrisMaterialConfig` JSDoc for Type safety. Added technical notes on GPU-side `physicsToRender` logic.
+    - **instancing.ts**: Documented `InstanceRegistry` lifecycle (Dirty flag) and intersection metadata extraction role.
+    - **trails.ts**: Formalized the "Ring Buffer" optimization strategy and `LineSegments` disjoint segment logic.
+    - **physics.ts**: Deep-dived into Newton-Raphson iteration for Kepler solving. Detailed the Linear -> Log -> Log scaling zones.
+    - **main.ts**: Defined the "Conductor" responsibilities. Structured the `animate` loop into three distinct phases for clarity.
+    - **input.ts**: Documented the "Callback Injection" pattern to explain decoupling from the world engine. Formalized global hotkeys map.
+- **Verification:** Verified all changes with `npm run typecheck`.

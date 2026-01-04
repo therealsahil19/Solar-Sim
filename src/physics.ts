@@ -24,14 +24,18 @@ const DEG_TO_RAD = Math.PI / 180;
  *
  * Logic:
  * 1. Calculates Mean Anomaly (M) based on time and orbital period.
- * 2. Solves Kepler's Equation (M = E - e*sin(E)) for Eccentric Anomaly (E) using Newton-Raphson iteration.
- * 3. Derives True Anomaly (nu) and Radius (r) from E.
- * 4. Transforms polar coordinates to 3D Cartesian coordinates using orbital elements (i, Omega, omega).
+ * Calculates the astronomical position of a body based on its orbital parameters.
  *
- * @param orbit - The Keplerian orbital elements.
- * @param time - Current simulation time in Earth Years.
- * @param out - Optional output vector to avoid allocation.
- * @returns The physical position vector in AU (before visual scaling).
+ * Technical Details:
+ * 1. Mean Anomaly (M) is calculated from Time and Period.
+ * 2. Eccentric Anomaly (E) is solved via Newton-Raphson iteration of Kepler's Equation: M = E - e*sin(E).
+ * 3. True Anomaly (nu) and Radius (r) are derived from E.
+ * 4. 2D Polar coordinates (r, nu) are rotated into 3D Cartesian space using orbit orientation.
+ *
+ * @param orbit - Orbital elements (a, e, i, etc.).
+ * @param time - Cumulative simulation time in days.
+ * @param out - Optional vector to store results (avoids GC).
+ * @returns 3D Position in Astronomical Units (AU).
  */
 export function getOrbitalPosition(
     orbit: OrbitalParameters,
@@ -170,12 +174,21 @@ const VISUAL_OFFSET_K = Math.log(1 + (LIMIT_2 - LIMIT_1)) * AU_SCALE * LOG_FACTO
 const VISUAL_LIMIT_2 = VISUAL_LIMIT_1 + VISUAL_OFFSET_K; // ~1382.67 units
 
 /**
- * Transforms a physical position vector (in AU) to a render-ready position vector.
- * Applies the Multi-Zone Piecewise Scaling function.
+ * Transforms physical distances (AU) into renderable Three.js units.
+ * Uses Multi-Zone Piecewise Scaling (Linear -> Log -> Log).
  *
- * @param vector - The physical position (x, y, z) in AU.
- * @param out - Optional output vector to avoid allocation.
- * @returns A Vector3 representing the visual position in the scene.
+ * Motivation:
+ * Space is too vast for linear scaling. A linear 1 AU = 40 units scale makes the
+ * Oort Cloud (100,000 AU) impossible to render or see.
+ *
+ * Scaling Zones:
+ * 1. Inner System [0 - 30 AU]: Linear (dist * 40). Accurate up to Neptune.
+ * 2. Kuiper Belt [30 - 50 AU]: Mild Logarithmic. Compresses the distance between Neptune and Eris.
+ * 3. Deep Space [50+ AU]: Aggressive Logarithmic. Allows the Oort Cloud to be visible.
+ *
+ * @param vector - Input position in AU.
+ * @param out - Optional vector to store results.
+ * @returns Scaled position for Three.js rendering.
  */
 export function physicsToRender(
     vector: THREE.Vector3,
