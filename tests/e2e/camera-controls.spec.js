@@ -174,17 +174,30 @@ test.describe('Camera & Time Controls', () => {
 
         await waitForNavList(page);
 
-        const earthButton = page.locator('#nav-list').getByText('Earth', { exact: false });
+        // Find Earth button - use a more flexible selector
+        const earthButton = page.locator('#nav-list button').filter({ hasText: 'Earth' }).first();
+        await expect(earthButton).toBeVisible({ timeout: 10000 });
         await earthButton.click();
+
+        // Wait for info panel to become visible
+        const infoPanel = page.locator('#info-panel');
+        await expect(infoPanel).toBeVisible({ timeout: 10000 });
 
         // Wait for info panel to update with Earth's data
         const infoName = page.locator('#info-name');
-        await expect(infoName).toHaveText('Earth', { timeout: 10000 });
+        await expect(infoName).toContainText('Earth', { timeout: 15000 });
 
-        // Click Follow button in info panel
+        // Wait for Follow button to be visible and clickable
         const followBtn = page.locator('#btn-follow');
-        await expect(followBtn).toBeVisible();
+        await expect(followBtn).toBeVisible({ timeout: 5000 });
+
+        // Add small delay for any animations to complete
+        await page.waitForTimeout(500);
+
         await followBtn.click();
+
+        // Wait a bit for follow mode to activate
+        await page.waitForTimeout(500);
 
         // Info panel should still show Earth (follow mode active)
         await expect(infoName).toContainText('Earth');

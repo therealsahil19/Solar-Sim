@@ -36,6 +36,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Copy static assets
+        run: |
+          cp -r textures dist/textures
+          cp system.json dist/system.json
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

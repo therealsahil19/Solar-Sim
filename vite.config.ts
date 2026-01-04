@@ -6,11 +6,15 @@ import { resolve } from 'path';
  * 
  * Key settings:
  * - base: './' for GitHub Pages relative path compatibility
+ * - publicDir: '.' to include textures and system.json from root
  * - Path aliases matching tsconfig.json
  * - Optimized chunk splitting for Three.js
  */
 export default defineConfig({
     base: './',
+
+    // Use root as public dir to include textures folder and system.json
+    publicDir: false,  // Disable default public dir
 
     resolve: {
         alias: {
@@ -31,6 +35,8 @@ export default defineConfig({
                 },
             },
         },
+        // Copy static assets that aren't in public folder
+        copyPublicDir: false,
     },
 
     server: {
@@ -42,3 +48,4 @@ export default defineConfig({
         port: 8080,
     },
 });
+
