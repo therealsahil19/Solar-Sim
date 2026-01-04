@@ -1,6 +1,6 @@
 # 👁️ Visual Inspection Report
 
-**Audit Date:** January 3, 2026 (Fresh Audit)  
+**Audit Date:** January 4, 2026 (Fresh Audit)  
 **Auditor:** Optic - Visual QA Specialist  
 **Application:** Solar-Sim (Interactive 3D Solar System)
 
@@ -9,76 +9,69 @@
 ## 📊 Summary Table
 
 | Screenshot | Viewport | Severity | Issue Type | Description | Status |
-|------------|----------|----------|------------|-------------|--------|
-| `desktop_audit.png` | Desktop | 🟢 LOW | Alignment | Header title "Solar-Sim" still has minor asymmetric padding (~2px) | [FIXED] |
-| `mobile_audit.png` | Mobile | 🟡 MED | Overlap | Earth and Venus labels overlap when planets are in close proximity | [FIXED] |
-| `mobile_audit.png` | Mobile | 🟢 LOW | Density | Label font-size (9px) remains large relative to planet bodies at 375px | N/A |
-| `tablet_audit.png` | Tablet | 🟢 LOW | Spacing | Bottom dock buttons have slightly inconsistent horizontal spacing (~1px difference) | [FIXED] |
+|---|---|---|---|---|---|
+| `mobile_audit.png` | Mobile | 🔴 HIGH | Overflow | 'Speed' labels ('Speed' text and '1.0x' value) overlap with each other and the slider thumb. | NEW |
+| `mobile_audit.png` | Mobile | 🟡 MED | Spacing | Bottom dock buttons are cramped/touching, creating a poor touch target experience. | NEW |
+| `desktop_audit.png`| Desktop| 🟢 LOW | Validation | Previous header alignment fixes verified. Title is centered. | VERIFIED |
+| `tablet_audit.png` | Tablet | 🟢 LOW | Validation | Previous dock button spacing fixes verified. | VERIFIED |
 
 ---
 
 ## 📸 Visual Evidence
 
 ### Desktop Viewport (1920x1080)
-![Desktop fresh audit](file:///C:/Users/mehna/.gemini/antigravity/brain/84def022-b01d-4d3c-9cf9-2629d5fb8cd1/desktop_audit_1767448977014.png)
+![Desktop fresh audit](file:///c:/Users/mehna/OneDrive/Desktop/Solar-Sim/.jules/screenshots/desktop_audit.png)
 
 ### Tablet Viewport (768x1024)
-![Tablet fresh audit](file:///C:/Users/mehna/.gemini/antigravity/brain/84def022-b01d-4d3c-9cf9-2629d5fb8cd1/tablet_audit_1767448990252.png)
+![Tablet fresh audit](file:///c:/Users/mehna/OneDrive/Desktop/Solar-Sim/.jules/screenshots/tablet_audit.png)
 
 ### Mobile Viewport (375x667)
-![Mobile fresh audit](file:///C:/Users/mehna/.gemini/antigravity/brain/84def022-b01d-4d3c-9cf9-2629d5fb8cd1/mobile_audit_1767449006556.png)
+![Mobile fresh audit](file:///c:/Users/mehna/OneDrive/Desktop/Solar-Sim/.jules/screenshots/mobile_audit.png)
 
 ---
 
 ## 🔍 Detailed Findings
 
-### 1. 🟡 MED: Persistent Label Overlap on Mobile
-**Location:** `mobile_audit.png` - Inner Planets  
-**Perspective:** NORMAL VIEW (Content & Typography)
-
-**Observation:** As noted in previous audits, Earth and Venus labels still overlap when their orbital paths bring them close together. The current collision detection or lack thereof makes the labels unreadable.
-
-**Impact:** Reduced usability on mobile devices.
-
-**[FIXED]** Added label collision detection in `main.js` render loop. When labels overlap on mobile viewports (<768px), the lower-priority label is hidden to prevent overlap.
-
----
-
-### 2. 🟢 LOW: Header Padding Asymmetry
-**Location:** `desktop_audit.png` - Top Bar  
+### 1. 🔴 HIGH: Speed Control Label Overlap (Mobile)
+**Location:** `mobile_audit.png` - Settings Panel  
 **Perspective:** ZOOM IN (Fine Details)
 
-**Observation:** The "Solar-Sim" title text is still slightly off-center vertically within the top bar. There is ~2px more space above the text than below.
+**Observation:**
+In the Mobile view (375px), the speed control area is too narrow. The text "Speed" and the value "1.0x" overlap with the slider control or each other, rendering them difficult to read.
 
-**Impact:** Minor visual jank; pixel-peeping priority.
+**Impact:**
+User cannot clearly see the current speed setting or label.
 
-**[FIXED]** Added `line-height: 1`, `display: flex`, and `align-items: center` to `#top-bar h1` in CSS for perfect vertical centering.
+### 2. 🟡 MED: Cramped Control Dock (Mobile)
+**Location:** `mobile_audit.png` - Bottom Dock  
+**Perspective:** MACRO (Layout)
+
+**Observation:**
+The circular control buttons at the bottom of the screen have insufficient margin between them on mobile. They appear almost touching, which increases the likelihood of accidental clicks (fat-finger error).
+
+**Impact:**
+Degraded usability and aesthetics on mobile devices.
+
+### 3. 🟢 LOW: WebGL Console Warnings
+**Location:** Console  
+**Perspective:** CODE (Invisible but relevant)
+
+**Observation:**
+Multiple `WebGL: INVALID_OPERATION: useProgram: program not valid` warnings observed during simulation start. While not immediately visible in the render, this suggests underlying shader or state issues.
 
 ---
 
-### 3. 🟢 LOW: Tablet Dock Button Spacing
-**Location:** `tablet_audit.png` - Bottom Dock  
-**Perspective:** ZOOM IN (Fine Details)
-
-**Observation:** The spacing between the 'Reset View' and 'Toggle Trails' icons appears to be 1px wider than the spacing between other icons in the dock.
-
-**Impact:** Inconsistent rhythm in control group.
-
-**[FIXED]** Changed `.dock-group` gap from `var(--space-lg)` to `var(--space-md)` for consistent, uniform spacing between all buttons.
-
----
-
-## ✅ Verified Improvements
-- [x] **Planet Label Edge Clipping:** Resolved. No clipping observed at desktop edges.
-- [x] **Title Text Shadow:** Resolved. Rendering appears clean at tablet resolution.
-- [x] **Z-Index Wars:** No overlap issues between modals and header observed.
+## ✅ Verified Improvements (From Previous Audit)
+- [x] **Header Alignment:** Verified on Desktop. Title is centered.
+- [x] **Planet Label Overlap:** Verified on Mobile (Static location). Labels appear distinct for Earth/Venus in current position, though dynamic overlap risk remains.
+- [x] **Tablet Spacing:** Verified on Tablet. Dock spacing looks consistent.
 
 ---
 
 ## 🎯 Severity Legend
 
 | Icon | Severity | Description |
-|------|----------|-------------|
+|---|---|---|
 | 🔴 | HIGH | Unusable UI, overlapping text making it unreadable, broken layout on standard view |
 | 🟡 | MED | Visual jank, obvious misalignment, poor spacing, macro layout issues |
 | 🟢 | LOW | Minor aesthetic nitpicks visible only upon "zooming in" (1-2px off) |
