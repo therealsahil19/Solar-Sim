@@ -18,6 +18,7 @@ import { InfoPanel } from './components/InfoPanel';
 import { Modal } from './components/Modal';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ThemeManager } from './managers/ThemeManager';
+import { ToastManager } from './managers/ToastManager';
 import type { SolarSimUserData } from './types';
 import type { CelestialBody } from './types/system';
 import type { InstanceRegistry } from './instancing';
@@ -131,12 +132,7 @@ export function setupInteraction(
             },
             onChangeTheme: (themeName) => {
                 themeManager.setTheme(themeName);
-                const toast = document.getElementById('toast');
-                if (toast) {
-                    toast.textContent = `Theme: ${themeName.toUpperCase()}`;
-                    toast.classList.add('visible');
-                    setTimeout(() => toast.classList.remove('visible'), 2000);
-                }
+                ToastManager.getInstance().show(`Theme: ${themeName.toUpperCase()}`, { type: 'info' });
             },
             onChangeSpeed: (value) => {
                 callbacks.onUpdateTimeScale(value);
@@ -170,14 +166,7 @@ export function setupInteraction(
             }
         }
 
-        const toast = document.getElementById('toast') as HTMLElement & { timeout?: ReturnType<typeof setTimeout> };
-        if (toast) {
-            toast.textContent = toastText;
-            toast.classList.add('visible');
-            if (toast.timeout) clearTimeout(toast.timeout);
-            toast.timeout = setTimeout(() => toast.classList.remove('visible'), 2000);
-        }
-
+        ToastManager.getInstance().show(toastText, { type: 'info', duration: 4000 });
         infoPanel.update(mesh);
     }
 
@@ -319,12 +308,7 @@ export function setupInteraction(
             openModal: openModal,
             onToggleTheme: () => {
                 const next = themeManager.cycleTheme();
-                const toast = document.getElementById('toast');
-                if (toast) {
-                    toast.textContent = `Theme: ${next.toUpperCase()}`;
-                    toast.classList.add('visible');
-                    setTimeout(() => toast.classList.remove('visible'), 2000);
-                }
+                ToastManager.getInstance().show(`Theme: ${next.toUpperCase()}`, { type: 'info' });
             }
         };
         commandPalette = new CommandPalette(context.planetData, paletteCallbacks);

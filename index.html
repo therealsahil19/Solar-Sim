@@ -44,12 +44,7 @@
             </header>
             <input type="search" id="nav-search" placeholder="Find planet..." aria-label="Search Planets">
             <nav id="nav-list" role="tree">
-                <!-- Skeleton State (Optimistic UI) -->
-                <div class="nav-btn skeleton" style="width: 100%; height: 32px; margin-bottom: 8px;"></div>
-                <div class="nav-btn skeleton" style="width: 85%; height: 32px; margin-bottom: 8px;"></div>
-                <div class="nav-btn skeleton" style="width: 90%; height: 32px; margin-bottom: 8px;"></div>
-                <div class="nav-btn skeleton" style="width: 75%; height: 32px; margin-bottom: 8px;"></div>
-                <div class="nav-btn skeleton" style="width: 80%; height: 32px; margin-bottom: 8px;"></div>
+                <!-- Skeletons will be injected here via JS if needed, but for now we keep clean -->
             </nav>
         </aside>
 
@@ -203,8 +198,8 @@
 
     </div>
 
-    <!-- Notification Toast Container -->
-    <div id="toast-container"></div>
+    <!-- Notification Toast Container (Managed by ToastManager) -->
+    <div id="toast-container" role="region" aria-label="Notifications"></div>
 
     <!-- Screen Reader Status Announcements (WCAG 4.1.3) -->
     <div id="sr-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
