@@ -90,7 +90,9 @@ const DEBRIS_SHADER_HEAD = `
 #define LOG_FACTOR_K 1.5
 #define VISUAL_LIMIT_2 1382.67
 #define LOG_FACTOR_O 4.0
+#ifndef PI
 #define PI 3.14159265359
+#endif
 
 uniform float uTime;
 
