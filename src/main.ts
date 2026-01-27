@@ -550,6 +550,8 @@ function animate(): void {
         simulationTime += dt * 0.2 * timeScale;
 
         for (let i = 0, l = animatedObjects.length; i < l; i++) {
+        const len = animatedObjects.length;
+        for (let i = 0; i < len; i++) {
             const obj = animatedObjects[i];
             if (!obj) continue;
             const physics = obj.physics;
