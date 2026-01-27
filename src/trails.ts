@@ -2,50 +2,108 @@
  * @file trails.ts
  * @description Orbit Trail Rendering System ("Bolt" Optimization).
  *
- * Problem: Rendering thousands of individual `THREE.Line` objects (one per moon/planet) kills performance
- * due to excessive draw calls (CPU overhead).
+ * Problem: Rendering thousands of individual `THREE.Line` objects (one per moon/planet) kills performance.
+ * Solution: GPU-based trail rendering using a single merged geometry and DataTexture history.
  *
- * Solution ("Bolt"):
- * 1. Single Geometry: We merge ALL trails into one massive `THREE.LineSegments` geometry.
- * 2. Ring Buffer: Each trail uses a fixed-size cyclic buffer to store positions, avoiding
- *    expensive array shifting (O(N) -> O(1)).
- * 3. Draw Calls: Reduces draw calls from N (number of planets) to 1.
+ * Optimization Strategy:
+ * 1. Single Draw Call: Uses one THREE.LineSegments for ALL trails.
+ * 2. GPU History: Stores trail positions in a Float32 DataTexture.
+ *    - Layout: Transposed (Width = MaxTrails, Height = Points).
+ *    - This ensures that all trails' positions for a specific time step (row) are contiguous in memory.
+ * 3. Zero CPU Loop: Updates are done via `gl.texSubImage2D` (one ROW per frame), replacing the O(N*M) CPU loop.
+ * 4. Vertex Shader: Handles ring buffer unwinding and fading.
  */
 
 import * as THREE from 'three';
 import type { Disposable } from './types';
 
-// Bug 036 Fix: Module-level temp vector to avoid GC allocation in update loop
-const _tempVec = new THREE.Vector3();
+// ============================================================================
+// Shaders
+// ============================================================================
+
+const TRAIL_VERTEX_SHADER = `
+uniform sampler2D uHistory;
+uniform float uHead; // Current global head index
+uniform float uPointsPerTrail;
+uniform float uMaxTrails;
+
+attribute float aSegmentIndex;
+attribute float aVertexIndex; // 0 = start of segment, 1 = end of segment
+attribute float aTrailIndex;
+attribute vec3 aColor;
+
+varying vec3 vColor;
+varying float vAlpha;
+
+void main() {
+    float head = floor(uHead);
+    float segIdx = aSegmentIndex;
+
+    // 1. Collapse the "Gap" segment (Head -> Head+1 in ring buffer logic)
+    // The segment starting at 'head' connects the newest point to the oldest point.
+    // We want to hide it.
+    if (abs(segIdx - head) < 0.1) {
+        gl_Position = vec4(0.0, 0.0, 0.0, 0.0);
+        return;
+    }
+
+    // 2. Determine which history point we need
+    // If VertexIndex=0, we want point at segIdx.
+    // If VertexIndex=1, we want point at (segIdx + 1) % Points.
+    float historyIdx = segIdx;
+    if (aVertexIndex > 0.5) {
+        historyIdx = mod(segIdx + 1.0, uPointsPerTrail);
+    }
+
+    // 3. Texture Lookup (Transposed Layout)
+    // X = Trail Index, Y = History Index
+    vec2 uv = vec2(
+        (aTrailIndex + 0.5) / uMaxTrails,
+        (historyIdx + 0.5) / uPointsPerTrail
+    );
+
+    vec3 pos = texture2D(uHistory, uv).xyz;
+
+    // 4. Calculate Fade/Alpha
+    // Distance in segments from the head (backwards)
+    float age = mod(head - segIdx + uPointsPerTrail, uPointsPerTrail);
+    float alpha = 1.0 - (age / uPointsPerTrail);
+
+    // Enhance fade curve (pow 2)
+    alpha = alpha * alpha;
+
+    vColor = aColor;
+    vAlpha = alpha;
+
+    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
+}
+`;
+
+const TRAIL_FRAGMENT_SHADER = `
+varying vec3 vColor;
+varying float vAlpha;
+
+void main() {
+    gl_FragColor = vec4(vColor, vAlpha);
+}
+`;
+
+// ============================================================================
+// Trail Manager
+// ============================================================================
 
 /**
- * Individual trail data structure.
+ * Individual trail metadata.
  */
 interface Trail {
-    /** The object being tracked */
     target: THREE.Object3D;
-    /** Base color for the trail */
-    baseColor: THREE.Color;
-    /** Ring buffer of historical positions */
-    history: THREE.Vector3[];
-    /** Current head index in the ring buffer */
-    head: number;
-    /** Unique index for this trail */
     index: number;
-    /** Whether the trail has been initialized with valid motion */
-    initialized: boolean;
+    baseColor: THREE.Color;
 }
 
 /**
- * High-performance orbit trail renderer.
- *
- * Optimization Strategy:
- * 1. "Single Draw Call": Uses one THREE.LineSegments for ALL trails in the system.
- * 2. "Zero GC Churn": Uses a pre-allocated cyclic Ring Buffer (history) for each trail.
- * 3. "Piecewise Geometry": Since lines are disjoint segments (LineSegments), it handles
- *    the gaps between trails automatically without extra draw calls.
- *
- * @implements {Disposable}
+ * GPU-accelerated orbit trail renderer.
  */
 export class TrailManager implements Disposable {
     private scene: THREE.Scene;
@@ -54,80 +112,127 @@ export class TrailManager implements Disposable {
     private segmentsPerTrail: number;
 
     private geometry: THREE.BufferGeometry;
-    private positions: Float32Array;
-    private colors: Float32Array;
-    private material: THREE.LineBasicMaterial;
-
-    /** The visible mesh added to the scene */
+    private material: THREE.ShaderMaterial;
     public mesh: THREE.LineSegments;
+
+    // GPU Data
+    private historyTexture: THREE.DataTexture;
+    private historyData: Float32Array; // The CPU-side backing buffer for the texture
 
     private trails: Trail[];
     private nextTrailIndex: number;
+    private globalHead: number; // 0..pointsPerTrail-1
+    private updateRowBuffer: Float32Array; // Buffer for one ROW update (MaxTrails * 4)
+
+    // Reuse vector to avoid GC
+    private _tempVec: THREE.Vector3;
 
     /**
      * Initializes the trail system.
-     *
-     * @param scene - The scene where the trail mesh will be added.
-     * @param maxTrails - Hard limit on the number of objects that can have trails.
-     * @param pointsPerTrail - Resolution of each trail. Higher = smoother but more memory.
-     * @example
-     * const trails = new TrailManager(scene, 100, 200);
-     * trails.register(earthMesh, 0x2233ff);
-     * // In loop:
-     * trails.update();
      */
-    constructor(scene: THREE.Scene, maxTrails: number = 5000, pointsPerTrail: number = 500) {
+    constructor(scene: THREE.Scene, maxTrails: number = 5000, pointsPerTrail: number = 100) {
         this.scene = scene;
-        this.maxTrails = maxTrails;
-        this.pointsPerTrail = pointsPerTrail;
+        // Clamp maxTrails to 4096 to ensure compatibility with most devices
+        this.maxTrails = Math.min(maxTrails, 4096);
+        if (maxTrails > 4096) {
+            console.warn(`TrailManager: Clamping maxTrails from ${maxTrails} to ${this.maxTrails} for texture compatibility.`);
+        }
 
-        // Logic for LineSegments:
-        // A trail of N points consists of N-1 segments.
-        // Each segment needs 2 vertices (Start, End).
-        // Total Vertices = MaxTrails * (Points - 1) * 2.
-        this.segmentsPerTrail = pointsPerTrail - 1;
-        const totalVertices = maxTrails * this.segmentsPerTrail * 2;
+        this.pointsPerTrail = pointsPerTrail;
+        this.segmentsPerTrail = pointsPerTrail;
+        this._tempVec = new THREE.Vector3();
+
+        // 1. Setup DataTexture (History)
+        // Transposed Layout: Width = MaxTrails, Height = Points
+        const width = this.maxTrails;
+        const height = pointsPerTrail;
+        const totalPixels = width * height;
+
+        this.historyData = new Float32Array(totalPixels * 4);
+        this.historyTexture = new THREE.DataTexture(
+            this.historyData,
+            width,
+            height,
+            THREE.RGBAFormat,
+            THREE.FloatType
+        );
+        this.historyTexture.minFilter = THREE.NearestFilter;
+        this.historyTexture.magFilter = THREE.NearestFilter;
+        this.historyTexture.generateMipmaps = false;
+        this.historyTexture.needsUpdate = true;
+
+        // 2. Setup Geometry
+        const totalSegments = this.maxTrails * this.segmentsPerTrail;
+        const totalVertices = totalSegments * 2;
 
         this.geometry = new THREE.BufferGeometry();
-        this.positions = new Float32Array(totalVertices * 3);
-        this.colors = new Float32Array(totalVertices * 3);
 
-        this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
-        this.geometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
+        // Attributes arrays
+        const indices = new Float32Array(totalVertices); // aSegmentIndex
+        const vertexIndices = new Float32Array(totalVertices); // aVertexIndex
+        const trailIndices = new Float32Array(totalVertices); // aTrailIndex
+        const colors = new Float32Array(totalVertices * 3); // aColor
+        const positions = new Float32Array(totalVertices * 3);
 
-        this.material = new THREE.LineBasicMaterial({
-            vertexColors: true,
+        // Fill static attributes
+        let ptr = 0;
+        for (let t = 0; t < this.maxTrails; t++) {
+            for (let s = 0; s < this.segmentsPerTrail; s++) {
+                // Vertex 0 (Start)
+                indices[ptr] = s;
+                vertexIndices[ptr] = 0;
+                trailIndices[ptr] = t;
+                ptr++;
+
+                // Vertex 1 (End)
+                indices[ptr] = s;
+                vertexIndices[ptr] = 1;
+                trailIndices[ptr] = t;
+                ptr++;
+            }
+        }
+
+        this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        this.geometry.setAttribute('aSegmentIndex', new THREE.BufferAttribute(indices, 1));
+        this.geometry.setAttribute('aVertexIndex', new THREE.BufferAttribute(vertexIndices, 1));
+        this.geometry.setAttribute('aTrailIndex', new THREE.BufferAttribute(trailIndices, 1));
+        this.geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+
+        // 3. Setup Material
+        this.material = new THREE.ShaderMaterial({
+            vertexShader: TRAIL_VERTEX_SHADER,
+            fragmentShader: TRAIL_FRAGMENT_SHADER,
+            uniforms: {
+                uHistory: { value: this.historyTexture },
+                uHead: { value: 0 },
+                uPointsPerTrail: { value: pointsPerTrail },
+                uMaxTrails: { value: maxTrails }
+            },
             transparent: true,
-            opacity: 0.4,
-            depthWrite: false, // Performance
+            depthWrite: false,
             blending: THREE.AdditiveBlending
         });
 
         this.mesh = new THREE.LineSegments(this.geometry, this.material);
-        this.mesh.frustumCulled = false; // Always render
-        this.mesh.userData = { isTrailSystem: true };
+        this.mesh.frustumCulled = false;
 
-        // Initial Draw Range 0 to avoid rendering garbage
+        // Initially draw nothing
         this.geometry.setDrawRange(0, 0);
 
         scene.add(this.mesh);
 
         this.trails = [];
         this.nextTrailIndex = 0;
+        this.globalHead = 0;
+
+        // Buffer for single row update
+        this.updateRowBuffer = new Float32Array(this.maxTrails * 4);
     }
 
     /**
-     * Registers a new object to have its orbit traced.
-     * Memory is allocated up-front for the history buffer.
-     *
-     * @param target - The 3D object to track.
-     * @param color - The trail color (usually matches the planet).
-     * @param maxPoints - Optional override for points in this specific trail.
+     * Registers a new object.
      */
-    register(
-        target: THREE.Object3D,
-        color: THREE.ColorRepresentation
-    ): void {
+    register(target: THREE.Object3D, color: THREE.ColorRepresentation): void {
         if (this.nextTrailIndex >= this.maxTrails) {
             console.warn("TrailManager: Max trails reached.");
             return;
@@ -136,165 +241,145 @@ export class TrailManager implements Disposable {
         const index = this.nextTrailIndex++;
         const col = new THREE.Color(color);
 
-        // Pre-allocate Vector3 objects for the history buffer.
-        // This is critical: We do NOT create new Vector3s during the render loop (Garbage Collection avoidance).
-        const history: THREE.Vector3[] = new Array(this.pointsPerTrail);
+        this.trails.push({
+            target,
+            index,
+            baseColor: col
+        });
 
-        // Fix: Force update world matrix to ensure we have the correct starting position.
-        // Without this, the first frame might read (0,0,0) resulting in a visual artifact (line from sun).
+        // Update Color Attribute
+        const colorAttr = this.geometry.attributes.aColor as THREE.BufferAttribute;
+        const startVertex = index * this.segmentsPerTrail * 2;
+        const endVertex = startVertex + (this.segmentsPerTrail * 2);
+
+        for (let i = startVertex; i < endVertex; i++) {
+            colorAttr.setXYZ(i, col.r, col.g, col.b);
+        }
+        colorAttr.needsUpdate = true;
+
+        // Mutate updateRange directly as it might be read-only in this version
+        if (colorAttr.updateRange) {
+            colorAttr.updateRange.offset = startVertex * 3;
+            colorAttr.updateRange.count = (endVertex - startVertex) * 3;
+        }
+
+        // Expand Draw Range
+        const totalActiveVertices = this.nextTrailIndex * this.segmentsPerTrail * 2;
+        this.geometry.setDrawRange(0, totalActiveVertices);
+
+        // Pre-fill history in texture to prevent (0,0,0) artifacts
         target.updateMatrixWorld(true);
         const startPos = new THREE.Vector3().setFromMatrixPosition(target.matrixWorld);
 
-        for (let i = 0; i < this.pointsPerTrail; i++) {
-            history[i] = startPos.clone();
+        // Fill the entire column for this trail (Transposed layout: Column = trailIndex)
+        // Data index = (y * width + x) * 4
+        // x = index, y = 0..pointsPerTrail
+        const w = this.maxTrails;
+
+        for (let y = 0; y < this.pointsPerTrail; y++) {
+            const pxIndex = (y * w + index) * 4;
+            this.historyData[pxIndex] = startPos.x;
+            this.historyData[pxIndex + 1] = startPos.y;
+            this.historyData[pxIndex + 2] = startPos.z;
+            this.historyData[pxIndex + 3] = 1.0;
         }
 
-        this.trails.push({
-            target,
-            baseColor: col,
-            history,
-            head: 0, // Pointer to the "newest" position in the ring buffer
-            index,
-            initialized: false // New flag to delay drawing until valid motion
-        });
-
-        // Initialize the geometry data for this trail (all points at startPos initially)
-        this.updateTrailGeometry(index, history, 0, col);
-
-        // Expand the active draw range of the geometry to include this new trail
-        const totalActiveVertices = this.nextTrailIndex * this.segmentsPerTrail * 2;
-        this.geometry.setDrawRange(0, totalActiveVertices);
+        // Trigger full texture update (slow but infrequent)
+        this.historyTexture.needsUpdate = true;
     }
 
     /**
-     * Updates all registered trails.
-     * Should be called once per frame in the animation loop.
-     *
-     * Optimization: Uses a shared temp vector to avoid GC churn.
+     * Updates all trails.
+     * @param renderer The WebGLRenderer (needed for texSubImage2D)
      */
-    update(): void {
-        // Bug 036 Fix: Use module-level _tempVec to avoid GC allocation per frame
+    update(renderer: THREE.WebGLRenderer): void {
+        // Increment global head
+        this.globalHead = (this.globalHead + 1) % this.pointsPerTrail;
+        this.material.uniforms.uHead.value = this.globalHead;
 
-        this.trails.forEach(trail => {
-            // 1. Validate Target (ID-029)
-            if (!trail.target || !trail.target.parent) return;
+        // Collect new positions for ALL active trails
+        const activeCount = this.trails.length;
 
-            // 2. Advance the Ring Buffer Head (Cyclic)
-            trail.head = (trail.head + 1) % this.pointsPerTrail;
+        for (let i = 0; i < activeCount; i++) {
+            const trail = this.trails[i];
+            if (!trail) continue; // Should not happen
 
-            // 3. Capture Current Position
-            // We overwrite the existing Vector3 at 'head' rather than creating a new one.
-            _tempVec.setFromMatrixPosition(trail.target.matrixWorld);
+            // Capture position
+            // We use matrixWorld directly to avoid object update overhead if already updated
+            this._tempVec.setFromMatrixPosition(trail.target.matrixWorld);
 
-            // Bug Fix: Check if target is at origin (0,0,0)
-            // If it is, and we aren't initialized, skip recording to prevent radial spokes
-            if (!trail.initialized) {
-                if (_tempVec.lengthSq() > 0.1) {
-                    // Object has moved from origin, fill history with current pos to start clean
-                    trail.history.forEach(v => v.copy(_tempVec));
-                    trail.initialized = true;
-                } else {
-                    return; // Still at origin, skip this frame
-                }
-            }
-
-            const historyEntry = trail.history[trail.head];
-            if (historyEntry) {
-                historyEntry.copy(_tempVec);
-            }
-
-            // 4. Update the Geometry Buffers
-            this.updateTrailGeometry(trail.index, trail.history, trail.head, trail.baseColor);
-        });
-
-        // Mark attributes as dirty so Three.js uploads them to the GPU
-        const posAttr = this.geometry.attributes.position;
-        const colorAttr = this.geometry.attributes.color;
-        if (posAttr) posAttr.needsUpdate = true;
-        if (colorAttr) colorAttr.needsUpdate = true;
-    }
-
-    /**
-     * Updates the global Float32Arrays with new position and color data.
-     * Internal implementation uses a Ring Buffer to avoid expensive array shifting.
-     *
-     * @private
-     * @param trailIndex - Index of the trail in the registry.
-     * @param history - The cyclic array of positions.
-     * @param head - The current pointer in the ring buffer.
-     * @param color - The base color of the trail.
-     */
-    private updateTrailGeometry(
-        trailIndex: number,
-        history: THREE.Vector3[],
-        head: number,
-        color: THREE.Color
-    ): void {
-        // Calculate the offset in the global vertex array for this trail.
-        // Each segment needs 2 vertices.
-        const baseVertex = trailIndex * this.segmentsPerTrail * 2;
-        const historyLen = this.pointsPerTrail;
-
-        for (let i = 0; i < this.segmentsPerTrail; i++) {
-            // Unwind the ring buffer:
-            // i=0 -> Newest segment (Head -> Head-1)
-            // i=1 -> Second newest (Head-1 -> Head-2)
-
-            // Calculate cyclic indices
-            const i1 = (head - i + historyLen) % historyLen;       // Current Point
-            const i2 = (head - (i + 1) + historyLen) % historyLen; // Previous Point
-
-            const p1 = history[i1];
-            const p2 = history[i2];
-
-            if (!p1 || !p2) continue;
-
-            // Calculate Gradient/Fade
-            // fade=1.0 (Newest) -> fade=0.0 (Oldest)
-            // We apply this to vertex colors to create a "comet tail" effect.
-            const fade1 = 1.0 - (i / this.segmentsPerTrail);
-            const fade2 = 1.0 - ((i + 1) / this.segmentsPerTrail);
-
-            const vIndex = baseVertex + (i * 2);
-
-            // -- Vertex 1 (Start of Segment) --
-            this.positions[vIndex * 3] = p1.x;
-            this.positions[vIndex * 3 + 1] = p1.y;
-            this.positions[vIndex * 3 + 2] = p1.z;
-
-            this.colors[vIndex * 3] = color.r * fade1;
-            this.colors[vIndex * 3 + 1] = color.g * fade1;
-            this.colors[vIndex * 3 + 2] = color.b * fade1;
-
-            // -- Vertex 2 (End of Segment) --
-            this.positions[(vIndex + 1) * 3] = p2.x;
-            this.positions[(vIndex + 1) * 3 + 1] = p2.y;
-            this.positions[(vIndex + 1) * 3 + 2] = p2.z;
-
-            this.colors[(vIndex + 1) * 3] = color.r * fade2;
-            this.colors[(vIndex + 1) * 3 + 1] = color.g * fade2;
-            this.colors[(vIndex + 1) * 3 + 2] = color.b * fade2;
+            // Write to update buffer at index 'trail.index'
+            const offset = trail.index * 4;
+            this.updateRowBuffer[offset] = this._tempVec.x;
+            this.updateRowBuffer[offset + 1] = this._tempVec.y;
+            this.updateRowBuffer[offset + 2] = this._tempVec.z;
+            this.updateRowBuffer[offset + 3] = 1.0;
         }
+
+        // Perform partial texture update
+        this.uploadTextureRow(renderer, this.globalHead, this.updateRowBuffer);
     }
 
     /**
-     * Resets the trail system (clears all trails).
+     * Uploads a single row to the texture using raw GL calls.
+     */
+    private uploadTextureRow(renderer: THREE.WebGLRenderer, rowIndex: number, data: Float32Array): void {
+        const gl = renderer.getContext();
+        const textureProperties = renderer.properties.get(this.historyTexture);
+
+        // Ensure texture is initialized on GPU
+        if (!textureProperties || !textureProperties.__webglTexture) {
+             // If not yet uploaded by Three.js (first frame?), force full update
+             // This happens if we haven't rendered yet.
+             // But update() is called inside animate loop.
+             // We can just rely on needsUpdate=true from init?
+             return;
+        }
+
+        const glTexture = textureProperties.__webglTexture;
+
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+
+        // Update ROW 'rowIndex'.
+        // Layout: Width = MaxTrails, Height = Points.
+        // x = 0, y = rowIndex, width = MaxTrails, height = 1.
+        // Data should be 'MaxTrails * 4' floats.
+
+        gl.texSubImage2D(
+            gl.TEXTURE_2D,
+            0, // Level
+            0, // X offset
+            rowIndex, // Y offset
+            this.maxTrails, // Width
+            1, // Height
+            gl.RGBA, // Format
+            gl.FLOAT, // Type
+            data // Data
+        );
+
+        // Unbind? Three.js state management might prefer we don't mess up binding state?
+        // renderer.resetState() or similar might be needed if we interfere.
+        // But usually safe if we unbind.
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+
+    /**
+     * Resets the trail system.
      */
     reset(): void {
-        // Clear all trails logic if needed
         this.nextTrailIndex = 0;
         this.trails = [];
-        // Geometry remains allocated but we hide it
         this.geometry.setDrawRange(0, 0);
+        // Clear texture?
+        this.historyData.fill(0);
+        this.historyTexture.needsUpdate = true;
     }
 
-    /**
-     * Disposes of the trail system and its resources.
-     */
     dispose(): void {
         this.scene.remove(this.mesh);
         this.geometry.dispose();
         this.material.dispose();
+        this.historyTexture.dispose();
         this.trails = [];
     }
 }
