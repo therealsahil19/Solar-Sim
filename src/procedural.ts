@@ -15,7 +15,7 @@
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { getOrbitalPosition, physicsToRender } from './physics';
-import type { OrbitalParameters } from './types/system';
+import type { OrbitalParameters, CelestialBody } from './types/system';
 import type { TrailManager } from './trails';
 import type { InstanceRegistry } from './instancing';
 
@@ -35,29 +35,6 @@ export interface ExtendedTextureLoader extends THREE.TextureLoader {
         material: THREE.MeshStandardMaterial;
         url: string;
     }>;
-}
-
-/**
- * Configuration for a celestial body from system.json.
- */
-export interface SystemData {
-    name: string;
-    type: string;
-    physics: OrbitalParameters;
-    visual: {
-        color: string | number;
-        size: number;
-        texture?: string;
-        ring?: {
-            inner?: number;
-            outer?: number;
-            texture?: string;
-            color?: number;
-        };
-        hasRing?: boolean;
-    };
-    description?: string;
-    moons?: SystemData[];
 }
 
 /**
@@ -295,7 +272,7 @@ export function createPlayerShip(): THREE.Group {
  * Recursively creates a celestial body system (planet + moons).
  */
 export function createSystem(
-    data: SystemData,
+    data: CelestialBody,
     textureLoader: ExtendedTextureLoader,
     useTextures: boolean,
     parentData: OrbitalParameters | null = null

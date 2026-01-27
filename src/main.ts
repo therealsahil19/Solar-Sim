@@ -16,9 +16,9 @@ import {
     clearMaterialCache,
     type ExtendedTextureLoader,
     type AnimatedBody,
-    type SystemData,
     type SunMesh
 } from './procedural';
+import type { CelestialBody } from './types/system';
 import { createBelt } from './debris';
 import { setupControls, setupInteraction, type InteractionResult } from './input';
 import { injectSkeletons } from './utils/SkeletonUtils';
@@ -219,13 +219,13 @@ export async function init(): Promise<void> {
     animate();
 
     // Load System Data
-    let planetData: SystemData[] | null = null;
+    let planetData: CelestialBody[] | null = null;
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const configUrl = urlParams.get('config') ?? 'system.json';
         const response = await fetch(configUrl);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        planetData = await response.json() as SystemData[];
+        planetData = await response.json() as CelestialBody[];
 
         if (!Array.isArray(planetData)) {
             throw new Error('Invalid configuration: planetData must be an array.');
@@ -293,7 +293,7 @@ export async function init(): Promise<void> {
         rendererDomElement: renderer.domElement,
         interactionTargets,
         instanceRegistry,
-        planetData
+        planetData: planetData ?? undefined
     };
 
     const callbacks = {
@@ -309,11 +309,7 @@ export async function init(): Promise<void> {
         onToggleOrbits: toggleOrbits
     };
 
-    // Bug #055 Note: Type casts required because SystemData (from procedural.ts) has 
-    // different structure than CelestialBody (from types/system.ts). This is a known
-    // architectural difference - SystemData uses 'size' while CelestialBody uses 'radius'.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    interactionHelpers = setupInteraction(context as any, callbacks as any);
+    interactionHelpers = setupInteraction(context, callbacks);
 
     // Apply Saved Settings
     if (interactionHelpers.settingsPanel) {
@@ -550,8 +546,6 @@ function animate(): void {
         simulationTime += dt * 0.2 * timeScale;
 
         for (let i = 0, l = animatedObjects.length; i < l; i++) {
-        const len = animatedObjects.length;
-        for (let i = 0; i < len; i++) {
             const obj = animatedObjects[i];
             if (!obj) continue;
             const physics = obj.physics;

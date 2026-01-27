@@ -18,27 +18,15 @@ export interface OrbitalParameters {
     /** Inclination in degrees relative to ecliptic */
     i: number;
     /** Orbital period in Earth years */
-    period: number;
+    period?: number; // Optional in system.json (often calculated)
     /** Longitude of ascending node in degrees */
     omega?: number;
     /** Argument of perihelion in degrees */
     w?: number;
+    /** Longitude of ascending node (capital Omega) */
+    Omega?: number;
     /** Mean anomaly at epoch in degrees */
     M0?: number;
-}
-
-/**
- * Visual appearance configuration for a celestial body.
- */
-export interface VisualConfig {
-    /** Base color as hex string (e.g., "#ff6600") or CSS color name */
-    color: string;
-    /** Path to texture image file (relative to textures folder) */
-    texture?: string;
-    /** Optional emissive color for glowing bodies (like the Sun) */
-    emissive?: string;
-    /** Emissive intensity (0-1) */
-    emissiveIntensity?: number;
 }
 
 /**
@@ -46,27 +34,48 @@ export interface VisualConfig {
  */
 export interface RingConfig {
     /** Inner radius of the ring system (relative to body radius) */
-    innerRadius: number;
+    inner?: number;
     /** Outer radius of the ring system (relative to body radius) */
-    outerRadius: number;
+    outer?: number;
     /** Ring texture path */
     texture?: string;
     /** Ring color if no texture */
-    color?: string;
+    color?: string | number;
     /** Ring opacity (0-1) */
     opacity?: number;
 }
 
 /**
- * Type of celestial body.
+ * Visual appearance configuration for a celestial body.
  */
-export type CelestialBodyType =
-    | 'star'
-    | 'planet'
-    | 'dwarf_planet'
-    | 'moon'
-    | 'asteroid'
-    | 'comet';
+export interface VisualConfig {
+    /** Base color as hex string (e.g., "#ff6600") or hex number */
+    color: string | number;
+    /** Size/Radius of the body (relative scale) */
+    size: number;
+    /** Path to texture image file (relative to textures folder) */
+    texture?: string;
+    /** Ring configuration */
+    ring?: RingConfig;
+    /** Explicit flag for rings (legacy/alternative to ring object) */
+    hasRing?: boolean;
+    /** Optional emissive color for glowing bodies (like the Sun) */
+    emissive?: string;
+    /** Emissive intensity (0-1) */
+    emissiveIntensity?: number;
+    /** Opacity for belts or transparent bodies */
+    opacity?: number;
+    /** Whether the particle cloud should be spherical (for Oort cloud) */
+    isSpherical?: boolean;
+    /** Count of particles (for belts) */
+    count?: number;
+}
+
+/**
+ * Type of celestial body.
+ * Note: system.json uses capitalized strings ("Planet", "Moon").
+ */
+export type CelestialBodyType = string;
 
 /**
  * Complete configuration for a celestial body.
@@ -75,24 +84,26 @@ export type CelestialBodyType =
 export interface CelestialBody {
     /** Unique display name */
     name: string;
-    /** Classification of the body */
+    /** Classification of the body (Planet, Moon, etc.) */
     type: CelestialBodyType;
-    /** Radius in km (for display purposes) */
-    radius: number;
+    /** Physics/Orbital parameters */
+    physics: OrbitalParameters;
     /** Visual appearance settings */
     visual: VisualConfig;
-    /** Orbital parameters (optional for the Sun) */
-    orbit?: OrbitalParameters;
-    /** Child moons/satellites */
-    moons?: CelestialBody[];
-    /** Ring system configuration */
-    rings?: RingConfig;
     /** Description text for info panel */
     description?: string;
-    /** Rotation period in Earth days */
-    rotationPeriod?: number;
-    /** Axial tilt in degrees */
-    axialTilt?: number;
+    /** Child moons/satellites */
+    moons?: CelestialBody[];
+
+    // Belt specific properties
+    distribution?: {
+        minA: number;
+        maxA: number;
+        minE: number;
+        maxE: number;
+        minI: number;
+        maxI: number;
+    };
 }
 
 /**
