@@ -21,10 +21,11 @@ test.describe('Performance Benchmarks', () => {
         await page.waitForTimeout(1000);
     });
 
-    // Note: This test is skipped by default because headless browsers have severely
-    // limited GPU performance (often 2-5 FPS). For real performance validation,
+    // Note: This test verifies that the simulation loop is running and rendering frames.
+    // Headless browsers have severely limited GPU performance (often 1-5 FPS), so
+    // we only check that the FPS is non-zero. For real performance validation,
     // run manually in headed mode: npx playwright test --headed
-    test.skip('should maintain acceptable FPS during simulation', async ({ page }) => {
+    test('should maintain acceptable FPS during simulation', async ({ page }) => {
         // Run the benchmark for 5 seconds
         const results = await page.evaluate(async () => {
             // Access the boltBenchmark function exposed on window
@@ -41,8 +42,8 @@ test.describe('Performance Benchmarks', () => {
 
         // Assertions - only run if results are available
         if (results) {
-            // Very lenient thresholds for headless - real browser will be much better
-            expect(results.avgFps).toBeGreaterThan(1); // Just verify it runs
+            // In headless mode, we just want to ensure the loop is running (FPS > 0)
+            expect(results.avgFps).toBeGreaterThan(0);
             console.log(`⚡ Average FPS: ${results.avgFps.toFixed(1)}`);
             console.log(`⚡ Jank Percent: ${results.jankPercent.toFixed(1)}%`);
             console.log(`⚡ P99 Frame Time: ${results.p99.toFixed(1)}ms`);
@@ -84,7 +85,7 @@ test.describe('Performance Benchmarks', () => {
         await expect(preconnect).toHaveCount(1);
 
         // Verify CSS preload hint exists
-        const cssPreload = await page.locator('link[rel="preload"][href="src/style.css"]');
+        const cssPreload = await page.locator('link[rel="preload"][href="./src/style.css"]');
         await expect(cssPreload).toHaveCount(1);
     });
 });
