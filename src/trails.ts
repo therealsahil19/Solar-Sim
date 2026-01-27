@@ -150,7 +150,7 @@ export class TrailManager implements Disposable {
 
         this.historyData = new Float32Array(totalPixels * 4);
         this.historyTexture = new THREE.DataTexture(
-            this.historyData,
+            this.historyData as any,
             width,
             height,
             THREE.RGBAFormat,
@@ -295,7 +295,7 @@ export class TrailManager implements Disposable {
     update(renderer: THREE.WebGLRenderer): void {
         // Increment global head
         this.globalHead = (this.globalHead + 1) % this.pointsPerTrail;
-        this.material.uniforms.uHead.value = this.globalHead;
+        this.material.uniforms.uHead!.value = this.globalHead;
 
         // Collect new positions for ALL active trails
         const activeCount = this.trails.length;
@@ -325,7 +325,7 @@ export class TrailManager implements Disposable {
      */
     private uploadTextureRow(renderer: THREE.WebGLRenderer, rowIndex: number, data: Float32Array): void {
         const gl = renderer.getContext();
-        const textureProperties = renderer.properties.get(this.historyTexture);
+        const textureProperties = renderer.properties.get(this.historyTexture) as any;
 
         // Ensure texture is initialized on GPU
         if (!textureProperties || !textureProperties.__webglTexture) {
