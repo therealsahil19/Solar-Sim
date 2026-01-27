@@ -549,7 +549,10 @@ function animate(): void {
     if (!isPaused) {
         simulationTime += dt * 0.2 * timeScale;
 
-        animatedObjects.forEach(obj => {
+        const len = animatedObjects.length;
+        for (let i = 0; i < len; i++) {
+            const obj = animatedObjects[i];
+            if (!obj) continue;
             const physics = obj.physics;
             if (physics && physics.a !== undefined) {
                 getOrbitalPosition(physics, simulationTime, _localPos);
@@ -573,7 +576,7 @@ function animate(): void {
                     obj.mesh.rotation.y += 0.5 * dt * timeScale;
                 }
             }
-        });
+        }
 
         scene.updateMatrixWorld();
         instanceRegistry?.update();
