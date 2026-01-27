@@ -17,6 +17,7 @@ Behavior:
 import os
 import urllib.request
 import ssl
+import shutil
 import sys
 import time
 import concurrent.futures
@@ -53,9 +54,10 @@ def download_texture(item):
     filepath = os.path.join(TEXTURES_DIR, filename)
 
     try:
-        # Note: In production environments, verify SSL certificates properly.
-        # This basic script relies on the system's default SSL context.
-        urllib.request.urlretrieve(url, filepath)
+        # Verify SSL certificates properly using default context
+        context = ssl.create_default_context()
+        with urllib.request.urlopen(url, context=context) as response, open(filepath, 'wb') as out_file:
+            shutil.copyfileobj(response, out_file)
         print(f"  - Downloading {filename}... ✅ Done.")
         return None
     except Exception as e:
