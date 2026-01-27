@@ -651,7 +651,7 @@ function animate(): void {
             // We approximate label size for edge fading and overlap detection.
             const approxLabelWidth = 100;
             const approxLabelHeight = 20;
-            const visibleLabels: Array<{ label: CSS2DObject; x: number; y: number; width: number; height: number }> = [];
+            const visibleLabels: Array<{ label: CSS2DObject; x: number; y: number; z: number; width: number; height: number }> = [];
 
             allLabels.forEach(label => {
                 if (label.userData.isMoon) {
@@ -705,30 +705,72 @@ function animate(): void {
                             x: left,
                             y: top,
                             width: approxLabelWidth,
-                            height: approxLabelHeight
+                            height: approxLabelHeight,
+                            z: tempVec.z
                         });
                     }
                 }
             });
 
+            // ⚡ Bolt Optimization: Spatial Grid Collision Detection
+            // Replaces O(N^2) loop with O(N) grid-based check.
             if (viewportWidth < 768) {
-                for (let i = 0; i < visibleLabels.length; i++) {
-                    for (let j = i + 1; j < visibleLabels.length; j++) {
-                        const a = visibleLabels[i];
-                        const b = visibleLabels[j];
-                        if (!a || !b) continue;
+                // 1. Sort by Z-depth (NDC z is -1 to 1, smaller is closer)
+                visibleLabels.sort((a, b) => a.z - b.z);
 
-                        const overlap = !(
-                            (a.x + a.width) < b.x ||
-                            a.x > (b.x + b.width) ||
-                            (a.y + a.height) < b.y ||
-                            a.y > (b.y + b.height)
-                        );
+                const cellWidth = 100;
+                const cellHeight = 20;
+                const gridCols = Math.ceil(viewportWidth / cellWidth);
+                const gridRows = Math.ceil(viewportHeight / cellHeight);
 
-                        if (overlap) {
-                            const labelElement = visibleLabels[j]?.label.element;
-                            if (labelElement) {
-                                labelElement.style.opacity = '0';
+                const grid = new Array(gridCols * gridRows).fill(null).map(() => [] as typeof visibleLabels);
+
+                const getGridIndex = (c: number, r: number) => {
+                    if (c < 0 || c >= gridCols || r < 0 || r >= gridRows) return -1;
+                    return r * gridCols + c;
+                };
+
+                for (const item of visibleLabels) {
+                    const startCol = Math.floor(item.x / cellWidth);
+                    const endCol = Math.floor((item.x + item.width) / cellWidth);
+                    const startRow = Math.floor(item.y / cellHeight);
+                    const endRow = Math.floor((item.y + item.height) / cellHeight);
+
+                    let isBlocked = false;
+
+                    // Check neighbors in occupied cells
+                    checkLoop:
+                    for (let r = startRow; r <= endRow; r++) {
+                        for (let c = startCol; c <= endCol; c++) {
+                            const idx = getGridIndex(c, r);
+                            if (idx !== -1) {
+                                const cellItems = grid[idx];
+                                if (cellItems) {
+                                    for (const other of cellItems) {
+                                        const overlap = !(
+                                            (item.x + item.width) < other.x ||
+                                            item.x > (other.x + other.width) ||
+                                            (item.y + item.height) < other.y ||
+                                            item.y > (other.y + other.height)
+                                        );
+                                        if (overlap) {
+                                            isBlocked = true;
+                                            break checkLoop;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (isBlocked) {
+                        if (item.label.element) item.label.element.style.opacity = '0';
+                    } else {
+                        // Mark as occupied
+                        for (let r = startRow; r <= endRow; r++) {
+                            for (let c = startCol; c <= endCol; c++) {
+                                const idx = getGridIndex(c, r);
+                                if (idx !== -1) grid[idx]?.push(item);
                             }
                         }
                     }
