@@ -39,6 +39,7 @@ declare global {
         controls: OrbitControls | null;
         isPaused: boolean;
         __SKIP_INIT__?: boolean;
+        trailManager: TrailManager | null;
     }
 }
 
@@ -196,6 +197,7 @@ export async function init(): Promise<void> {
 
     instanceRegistry = new InstanceRegistry(scene);
     trailManager = new TrailManager(scene, 5000, 100);
+    window.trailManager = trailManager; // Expose for performance testing
 
     textureLoader.instanceRegistry = instanceRegistry;
     textureLoader.trailManager = trailManager;
@@ -546,6 +548,8 @@ function animate(): void {
         simulationTime += dt * 0.2 * timeScale;
 
         for (let i = 0, l = animatedObjects.length; i < l; i++) {
+        const len = animatedObjects.length;
+        for (let i = 0; i < len; i++) {
             const obj = animatedObjects[i];
             if (!obj) continue;
             const physics = obj.physics;
@@ -777,8 +781,8 @@ function animate(): void {
     }
 
     // Trails
-    if (!isPaused && showOrbits && frameCount % 2 === 0 && trailManager) {
-        trailManager.update();
+    if (!isPaused && showOrbits && frameCount % 2 === 0 && trailManager && renderer) {
+        trailManager.update(renderer);
     }
 }
 
