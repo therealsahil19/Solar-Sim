@@ -133,20 +133,35 @@ export function createStarfield(): THREE.Points {
  * Creates an orbit line visualization.
  */
 export function createOrbitLine(physicsData: OrbitalParameters): THREE.LineLoop {
-    const points: THREE.Vector3[] = [];
     const segments = 256;
+    const vertexCount = segments + 1; // +1 to match original logic (inclusive loop)
+
+    // ⚡ Bolt Optimization: Use Float32Array to avoid thousands of Vector3 allocations per orbit
+    const vertices = new Float32Array(vertexCount * 3);
+
+    // Reuse vectors for calculation
+    const posPhys = new THREE.Vector3();
+    const posRender = new THREE.Vector3();
 
     const period = Math.pow(physicsData.a, 1.5);
     const dt = period / segments;
 
-    for (let i = 0; i <= segments; i++) {
+    for (let i = 0; i < vertexCount; i++) {
         const t = i * dt;
-        const posPhys = getOrbitalPosition(physicsData, t);
-        const posRender = physicsToRender(posPhys);
-        points.push(posRender);
+
+        // Zero-allocation path
+        getOrbitalPosition(physicsData, t, posPhys);
+        physicsToRender(posPhys, posRender);
+
+        const idx = i * 3;
+        vertices[idx] = posRender.x;
+        vertices[idx + 1] = posRender.y;
+        vertices[idx + 2] = posRender.z;
     }
 
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
     const material = new THREE.LineBasicMaterial({
         color: 0xffffff,
         opacity: 0.15,
