@@ -24,6 +24,7 @@ const baseSphereGeometry = new THREE.SphereGeometry(1, 64, 64);
 
 // Material Cache
 const materialCache: Record<string, THREE.MeshStandardMaterial> = {};
+let cachedGlowTexture: THREE.CanvasTexture | null = null;
 
 /**
  * Extended TextureLoader with additional properties for our simulation.
@@ -150,8 +151,13 @@ export function createOrbitLine(physicsData: OrbitalParameters): THREE.LineLoop 
 
 /**
  * Creates a radial gradient texture for the Sun's glow.
+ * Returns a cached instance if available to avoid expensive canvas operations.
  */
-function createGlowTexture(): THREE.CanvasTexture {
+export function createGlowTexture(): THREE.CanvasTexture {
+    if (cachedGlowTexture) {
+        return cachedGlowTexture;
+    }
+
     const canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 128;
@@ -168,7 +174,8 @@ function createGlowTexture(): THREE.CanvasTexture {
         context.fillRect(0, 0, 128, 128);
     }
 
-    return new THREE.CanvasTexture(canvas);
+    cachedGlowTexture = new THREE.CanvasTexture(canvas);
+    return cachedGlowTexture;
 }
 
 /**
@@ -231,7 +238,7 @@ export function createSun(
     sun.add(glowSprite);
 
     sun.dispose = (): void => {
-        glowTexture.dispose();
+        // Bolt Optimization: glowTexture is cached/shared, so we do not dispose it here.
         glowMaterial.dispose();
         geometry.dispose();
     };
@@ -430,11 +437,11 @@ export function createSystem(
             if (result.orbit) pivot.add(result.orbit);
 
             // ⚡ Bolt Optimization: Use loop instead of spread to avoid stack overflow with large arrays
-            for (let i = 0; i < result.interactables.length; i++) interactables.push(result.interactables[i]);
-            for (let i = 0; i < result.animated.length; i++) animated.push(result.animated[i]);
-            for (let i = 0; i < result.orbits.length; i++) orbits.push(result.orbits[i]);
-            for (let i = 0; i < result.trails.length; i++) trails.push(result.trails[i]);
-            for (let i = 0; i < result.labels.length; i++) labels.push(result.labels[i]);
+            for (let i = 0; i < result.interactables.length; i++) interactables.push(result.interactables[i]!);
+            for (let i = 0; i < result.animated.length; i++) animated.push(result.animated[i]!);
+            for (let i = 0; i < result.orbits.length; i++) orbits.push(result.orbits[i]!);
+            for (let i = 0; i < result.trails.length; i++) trails.push(result.trails[i]!);
+            for (let i = 0; i < result.labels.length; i++) labels.push(result.labels[i]!);
         });
     }
 
