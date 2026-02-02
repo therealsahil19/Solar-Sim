@@ -145,18 +145,44 @@ export class InstanceRegistry implements Disposable {
             if (!group.mesh) return;
 
             let needsUpdate = false;
+            const instanceMatrix = group.mesh.instanceMatrix;
+            const array = instanceMatrix.array;
 
             for (let i = 0; i < group.instances.length; i++) {
                 const instanceData = group.instances[i];
                 if (!instanceData) continue;
 
                 const { pivot, index } = instanceData;
-                group.mesh.setMatrixAt(index, pivot.matrixWorld);
+
+                // Bolt Optimization: Direct buffer access avoids setMatrixAt overhead (function calls + checks)
+                const te = pivot.matrixWorld.elements;
+                const offset = index * 16;
+
+                array[offset] = te[0]!;
+                array[offset + 1] = te[1]!;
+                array[offset + 2] = te[2]!;
+                array[offset + 3] = te[3]!;
+
+                array[offset + 4] = te[4]!;
+                array[offset + 5] = te[5]!;
+                array[offset + 6] = te[6]!;
+                array[offset + 7] = te[7]!;
+
+                array[offset + 8] = te[8]!;
+                array[offset + 9] = te[9]!;
+                array[offset + 10] = te[10]!;
+                array[offset + 11] = te[11]!;
+
+                array[offset + 12] = te[12]!;
+                array[offset + 13] = te[13]!;
+                array[offset + 14] = te[14]!;
+                array[offset + 15] = te[15]!;
+
                 needsUpdate = true;
             }
 
             if (needsUpdate) {
-                group.mesh.instanceMatrix.needsUpdate = true;
+                instanceMatrix.needsUpdate = true;
             }
         });
     }
