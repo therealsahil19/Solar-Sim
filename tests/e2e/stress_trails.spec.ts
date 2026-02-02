@@ -12,16 +12,11 @@ test('Trails Performance Benchmark', async ({ page }) => {
 
   // Inject trails and run benchmark
   const result = await page.evaluate(async () => {
-    if (!window.trailManager || !window.scene) return { error: 'Missing globals' };
+    if (!window.trailManager || !window.scene || !window.THREE) return { error: 'Missing globals' };
 
     const tm = window.trailManager;
     const scene = window.scene;
-
-    // Hack to get constructors without importing THREE
-    const Object3D = scene.constructor; // THREE.Scene inherits from Object3D? No, Scene extends Object3D.
-    // Actually safe way:
-    const dummyProto = Object.getPrototypeOf(scene);
-    // scene is instance of Scene. Scene extends Object3D.
+    const THREE = window.THREE;
 
     const dummies = [];
     const count = 4000;
@@ -38,20 +33,23 @@ test('Trails Performance Benchmark', async ({ page }) => {
 
     console.log(`Creating ${count} dummy objects...`);
 
-    const MockObject3D = class {
+    class MockObject3D extends THREE.Object3D {
         constructor() {
-            this.matrixWorld = { elements: [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] };
-            this.position = { x:0, y:0, z:0 };
-            this.parent = { type: 'Scene' }; // Must have parent to be valid in update()
+            super();
+            // We override matrixWorld with a simpler structure in the original mock,
+            // but here we can just use the real matrixWorld.
+            // However, to keep the "lightweight" update performance, we override updateMatrixWorld.
             this.userData = {};
         }
-        updateMatrixWorld() {
-             // Simple translation matrix update
+
+        updateMatrixWorld(force?: boolean) {
+             // Simple translation matrix update: place position into matrix elements directly
+             // This avoids matrix multiplication overhead for this benchmark.
              this.matrixWorld.elements[12] = this.position.x;
              this.matrixWorld.elements[13] = this.position.y;
              this.matrixWorld.elements[14] = this.position.z;
         }
-    };
+    }
 
     for (let i = 0; i < count; i++) {
         const obj = new MockObject3D();
@@ -62,8 +60,7 @@ test('Trails Performance Benchmark', async ({ page }) => {
         };
 
         // Register with trail manager
-        // We pass a dummy color
-        tm.register(obj as any, 0x00ff00);
+        tm.register(obj, 0x00ff00);
         dummies.push(obj);
     }
 
