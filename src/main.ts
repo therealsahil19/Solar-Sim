@@ -694,9 +694,16 @@ function animate(): void {
                         opacity = (minDist - edgeMargin) / fadeZone;
                     }
 
-                    label.element.style.opacity = String(opacity);
+                    // ⚡ Bolt Optimization: Prevent Layout Thrashing
+                    // 1. Only update DOM if value changed (cache in userData)
+                    // 2. Defer updates for collision candidates to avoid double-write
+                    const lastOpacity = label.userData._lastOpacity ?? -1;
+                    const isMobile = viewportWidth < 768;
+                    const isCandidate = isMobile && opacity > 0 && !label.userData.isMoon;
 
-                    if (opacity > 0 && !label.userData.isMoon && viewportWidth < 768) {
+                    if (isCandidate) {
+                        // Defer application until collision check
+                        label.userData._tentativeOpacity = opacity;
                         visibleLabels.push({
                             label,
                             x: left,
@@ -705,6 +712,12 @@ function animate(): void {
                             height: approxLabelHeight,
                             z: tempVec.z
                         });
+                    } else {
+                        // Apply immediately
+                        if (Math.abs(lastOpacity - opacity) > 0.001) {
+                            label.element.style.opacity = String(opacity);
+                            label.userData._lastOpacity = opacity;
+                        }
                     }
                 }
             });
@@ -760,8 +773,10 @@ function animate(): void {
                         }
                     }
 
+                    let targetOpacity = item.label.userData._tentativeOpacity;
+
                     if (isBlocked) {
-                        if (item.label.element) item.label.element.style.opacity = '0';
+                        targetOpacity = 0;
                     } else {
                         // Mark as occupied
                         for (let r = startRow; r <= endRow; r++) {
@@ -770,6 +785,13 @@ function animate(): void {
                                 if (idx !== -1) grid[idx]?.push(item);
                             }
                         }
+                    }
+
+                    // Apply deferred update
+                    const last = item.label.userData._lastOpacity ?? -1;
+                    if (Math.abs(last - targetOpacity) > 0.001) {
+                        item.label.element.style.opacity = String(targetOpacity);
+                        item.label.userData._lastOpacity = targetOpacity;
                     }
                 }
             }
