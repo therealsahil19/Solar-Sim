@@ -429,11 +429,12 @@ export function createSystem(
             pivot.add(result.pivot);
             if (result.orbit) pivot.add(result.orbit);
 
-            interactables.push(...result.interactables);
-            animated.push(...result.animated);
-            orbits.push(...result.orbits);
-            trails.push(...result.trails);
-            labels.push(...result.labels);
+            // ⚡ Bolt Optimization: Use loop instead of spread to avoid stack overflow with large arrays
+            for (let i = 0; i < result.interactables.length; i++) interactables.push(result.interactables[i]);
+            for (let i = 0; i < result.animated.length; i++) animated.push(result.animated[i]);
+            for (let i = 0; i < result.orbits.length; i++) orbits.push(result.orbits[i]);
+            for (let i = 0; i < result.trails.length; i++) trails.push(result.trails[i]);
+            for (let i = 0; i < result.labels.length; i++) labels.push(result.labels[i]);
         });
     }
 
