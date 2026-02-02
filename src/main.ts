@@ -40,6 +40,7 @@ declare global {
         isPaused: boolean;
         __SKIP_INIT__?: boolean;
         trailManager: TrailManager | null;
+        THREE: typeof THREE;
     }
 }
 
@@ -98,6 +99,7 @@ window.scene = null;
 window.playerShip = null;
 window.controls = null;
 window.isPaused = isPaused;
+window.THREE = THREE;
 
 // ============================================================================
 // Initialization
