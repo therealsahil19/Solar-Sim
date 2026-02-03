@@ -16,36 +16,39 @@ First off, thank you for considering contributing. It's people like you that mak
 
 ## Getting Started
 
-Since this project uses vanilla ES Modules and Three.js via CDN, you don't need `npm install` or a build step!
+The project uses **Vite** for building and serving the application.
 
 ### Prerequisites
-- **Python 3** (or any static file server like `http-server`)
-- A modern web browser (Chrome, Firefox, Safari)
+- **Node.js** (v18+)
+- **npm**
 
 ### Setup
 1. **Fork and Clone** the repository.
-2. **Download Textures** (Required for first run):
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+3. **Download Textures** (Required for first run):
    ```bash
    python3 download_textures.py
    ```
    This script fetches high-res planet textures into the `textures/` directory.
 
-3. **Run the Server**:
-   You must serve the files over HTTP to support ES6 imports.
+3. **Start Development Server**:
    ```bash
-   python3 -m http.server
+   npm run dev
    ```
 
 4. **Open in Browser**:
-   Navigate to `http://localhost:8000`.
+   Navigate to `http://localhost:5173`.
 
 ---
 
 ## Project Structure
 
-We follow a modular architecture without bundlers.
+We follow a modular architecture using TypeScript and Vite.
 
-- **`index.html`**: The entry point. Loads styles, Three.js (via Import Map), and `src/main.ts`.
+- **`index.html`**: The entry point. Loads styles and `src/main.ts`.
 - **`src/main.ts`**: The "Conductor". Initializes the scene, render loop, and coordinates modules.
 - **`src/procedural.ts`**: The "Factory". Pure functions that generate 3D objects (planets, stars).
 - **`src/input.ts`**: The "Controller". Handles user input, raycasting, and UI updates.
@@ -145,8 +148,8 @@ Understanding how `system.json` turns into a 3D orbit:
 ### 2. Three.js Patterns
 - **Memory Management**: Always dispose of Geometries and Materials if you remove them.
 - **Performance ("Bolt")**:
-    - Use `instancing.js` for repeated objects (moons, asteroids).
-    - Use `trails.js` for orbit lines.
+    - Use `instancing.ts` for repeated objects (moons, asteroids).
+    - Use `trails.ts` for orbit lines.
     - Throttle expensive operations in the render loop (use `frameCount`).
 
 ### 3. CSS & Design
@@ -182,25 +185,26 @@ function getDistance(objA: THREE.Object3D, objB: THREE.Object3D): number { ... }
 
 ## Testing Standards
 
-We use **Playwright** for End-to-End (E2E) testing. All new UI features must include corresponding tests in the `tests/e2e/` directory.
+We use **Playwright** for End-to-End (E2E) testing and **Vitest** for Unit testing.
 
 ### 1. Structure
 Tests are organized by component or user flow:
-- `navigation-sidebar.spec.js`: Tests for the planet tree and search.
-- `settings-panel.spec.js`: Tests for toggles, themes, and persistence.
-- `keyboard-shortcuts.spec.js`: Verifies all global hotkeys.
+- `navigation-sidebar.spec.ts`: Tests for the planet tree and search.
+- `settings-panel.spec.ts`: Tests for toggles, themes, and persistence.
+- `keyboard-shortcuts.spec.ts`: Verifies all global hotkeys.
 
 ### 2. Best Practices
 - **Isolation**: Each `test()` block should ideally be independent.
 - **Wait for Loading**: Always wait for the `#loading-screen` to be hidden before interacting with the simulation.
-  ```javascript
+  ```typescript
   await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 60000 });
   ```
 - **A11y Checks**: When possible, use ARIA roles for selectors (`page.getByRole('button', { name: 'Close' })`).
 
 ### 3. Running Tests
-- `npm run test` (if configured) or `npx playwright test`.
-- Use `--headed` to see the browser in action.
+- **E2E**: `npm run test` (runs all Playwright tests).
+- **Unit**: `npm run test:unit` (runs Vitest).
+- **Debug**: `npm run test:ui` (opens Playwright UI).
 - Use the **Playwright Report** (`npx playwright show-report`) to analyze failures.
 
 ---
