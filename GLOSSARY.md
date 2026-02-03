@@ -40,7 +40,7 @@ This document defines the domain-specific terminology, architectural patterns, a
 ### Instancing (GPU Instancing)
 **Definition:** A rendering technique where the GPU draws the same geometry multiple times with different transforms (position, rotation, scale) in a single draw call.
 **Benefit:** Reduces draw calls from O(N) to O(1).
-**Usage:** Used for the Asteroid Belt (`debris.js`) and Moons (`instancing.js`).
+**Usage:** Used for the Asteroid Belt (`debris.ts`) and Moons (`instancing.ts`).
 
 ### Raycasting
 **Definition:** Casting a line (ray) from the camera through the mouse position to detect what objects are underneath.
@@ -64,7 +64,7 @@ This document defines the domain-specific terminology, architectural patterns, a
 *   **Argument of Periapsis (omega):** Orientation of the orbit's "closest point".
 *   **Longitude of Ascending Node (Omega):** Horizontal orientation of the orbit.
 *   **Mean Anomaly at Epoch (M0):** The starting position in the orbit at time 0.
-**Usage:** `src/physics.js` calculates high-precision positions using the Newton-Raphson method to solve Kepler's Equation ($M = E - e \sin E$).
+**Usage:** `src/physics.ts` calculates high-precision positions using the Newton-Raphson method to solve Kepler's Equation ($M = E - e \sin E$).
 
 ### Multi-Zone Scaling
 **Definition:** A rendering technique to visualize vast astronomical distances on a screen by compressing outer regions.
@@ -80,11 +80,11 @@ This document defines the domain-specific terminology, architectural patterns, a
 
 ### Factory Pattern
 **Definition:** Pure functions that accept dependencies and return new objects.
-**Usage:** `src/procedural.js` does not hold state; it just manufactures Meshes.
+**Usage:** `src/procedural.ts` does not hold state; it just manufactures Meshes.
 
 ### Dependency Injection (DI)
 **Definition:** Passing dependencies (like `scene`, `camera`, `controls`) into a module/function rather than having that module import a global singleton.
-**Usage:** `src/input.js` receives the scene context during initialization.
+**Usage:** `src/input.ts` receives the scene context during initialization.
 
 ### Throttling
 **Definition:** Limiting how often a function executes.

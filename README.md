@@ -82,6 +82,7 @@ The project is organized into a modular architecture:
 ├── system.json           # Configuration data for planets and moons
 ├── textures/             # Directory for texture assets
 ├── download_textures.py  # Helper script to fetch assets
+├── vite.config.ts        # Vite build configuration
 ├── src/
 │   ├── main.ts           # The "Conductor" - initializes scene and loop
 │   ├── procedural.ts     # "Factory" - creates 3D objects (planets, stars)
@@ -97,7 +98,7 @@ The project is organized into a modular architecture:
 │   │   ├── InfoPanel.ts         # Object details overlay panel
 │   │   ├── Modal.ts             # Reusable accessible <dialog> wrapper
 │   │   ├── NavigationSidebar.ts # Hierarchical planet navigation tree
-│   │   └── SettingsPanel.ts    # Slide-out simulation preferences panel
+│   │   └── SettingsPanel.ts     # Slide-out simulation preferences panel
 │   ├── managers/
 │   │   ├── SettingsManager.ts   # "State" - persists user preferences
 │   │   ├── ThemeManager.ts      # "State" - handles visual themes
@@ -141,21 +142,21 @@ The simulation is built on a decoupled, event-driven architecture designed for h
     -   **Trail Manager**: Manages a single `THREE.LineSegments` mesh for all orbit trails.
     -   **Performance**: Avoids creating thousands of individual `THREE.Line` objects.
 
-6.  **`src/components/CommandPalette.js`**:
+6.  **`src/components/CommandPalette.ts`**:
     -   **Component**: A reusable UI component that provides a searchable command menu.
     -   **Accessibility**: Implements WAI-ARIA Combobox pattern for full keyboard and screen reader support.
 
-7.  **`src/components/InfoPanel.js`**:
+7.  **`src/components/InfoPanel.ts`**:
     -   **Data Binding**: Displays details of a selected celestial object using its `userData`.
     -   **State Management**: Manages visibility/hiding via CSS classes.
     -   **Accessibility**: Uses ARIA attributes to announce updates to screen readers.
 
-8.  **`src/components/Modal.js`**:
+8.  **`src/components/Modal.ts`**:
     -   **Wrapper Pattern**: A thin wrapper around the native `<dialog>` element for consistency.
     -   **Accessibility**: Leverages built-in `<dialog>` focus trapping and Escape key handling.
     -   **Lifecycle**: Provides `open()`, `close()`, and `dispose()` methods for clean resource management.
 
-9.  **`src/components/NavigationSidebar.js`**:
+9.  **`src/components/NavigationSidebar.ts`**:
     -   **DOM Generation**: Recursively builds a tree view from hierarchical system data.
     -   **Client-side Search**: Implements a "Show Matches & Parents" filter strategy.
     -   **Decoupled Design**: Communicates with the 3D scene purely via callbacks, maintaining separation of concerns.
@@ -229,49 +230,55 @@ The simulation is data-driven. `system.json` defines the hierarchy of celestial 
 ## Running the Project
 
 ### 1. Prerequisites
--   **Python 3** (or any static file server)
+-   **Node.js** (v18 or higher)
+-   **npm** (comes with Node.js)
 
 ### 2. Setup
-Download the required textures (optional, if `textures/` is empty):
+Install dependencies:
+```bash
+npm install
+```
+
+Download textures (if `textures/` is empty):
 ```bash
 python3 download_textures.py
 ```
-*Note: This script fetches assets from solarsystemscope.com.*
 
-### 3. Start Server
-Because the project uses ES Modules (`import`), it must be served over HTTP (not `file://`).
+### 3. Start Development Server
 ```bash
-python3 -m http.server
+npm run dev
 ```
 
 ### 4. View
-Open your browser to: `http://localhost:8000`
+Open your browser to: `http://localhost:5173`
+
+### 5. Build for Production
+To build the project for deployment:
+```bash
+npm run build
+```
+The output will be in the `dist/` directory.
 
 ## Testing
 
-The project uses [Playwright](https://playwright.dev/) for End-to-End (E2E) testing to ensure UI stability and performance.
+The project uses **Playwright** for E2E testing and **Vitest** for unit testing.
 
-### 1. Install Browsers
+### 1. End-to-End Tests (Playwright)
 ```bash
+# Install browsers first
 npx playwright install
+
+# Run all E2E tests
+npm run test
+
+# Run tests with UI for debugging
+npm run test:ui
 ```
 
-### 2. Run All Tests
+### 2. Unit Tests (Vitest)
 ```bash
-npx playwright test
-```
-
-### 3. Run Specific Test
-```bash
-npx playwright test tests/e2e/settings-panel.spec.js
-```
-
-### 4. Debugging Tests
-To run tests with a UI or in headed mode:
-```bash
-npx playwright test --ui
-# OR
-npx playwright test --headed
+# Run unit tests
+npm run test:unit
 ```
 
 ## Environment Variables
@@ -325,8 +332,8 @@ The project undergoes regular visual and logical audits to ensure high standards
 ## Troubleshooting
 
 ### Textures not loading?
-- Ensure you are running the project through an HTTP server (e.g., `python3 -m http.server`).
-- Check the console for 404 errors; you may need to run `python3 download_textures.py`.
+- Ensure you are running the project via `npm run dev` or a proper web server.
+- Check the console for 404 errors; you may need to run `python3 download_textures.py` to fetch assets.
 
 ### Performance Lag?
 - **Bolt Optimization**: Toggle Textures (T key) or Labels (L key) to reduce GPU load.
