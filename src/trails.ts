@@ -336,9 +336,8 @@ export class TrailManager implements Disposable {
              return;
         }
 
-        const glTexture = textureProperties.__webglTexture;
-
-        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        // Use Three.js state manager to avoid state thrashing
+        renderer.state.bindTexture(gl.TEXTURE_2D, this.historyTexture);
 
         // Update ROW 'rowIndex'.
         // Layout: Width = MaxTrails, Height = Points.
@@ -356,11 +355,6 @@ export class TrailManager implements Disposable {
             gl.FLOAT, // Type
             data // Data
         );
-
-        // Unbind? Three.js state management might prefer we don't mess up binding state?
-        // renderer.resetState() or similar might be needed if we interfere.
-        // But usually safe if we unbind.
-        gl.bindTexture(gl.TEXTURE_2D, null);
     }
 
     /**
