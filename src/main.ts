@@ -100,6 +100,20 @@ window.controls = null;
 window.isPaused = isPaused;
 window.THREE = THREE;
 
+interface LabelCollisionData {
+    label: CSS2DObject;
+    x: number;
+    y: number;
+    z: number;
+    width: number;
+    height: number;
+}
+
+// Optimization: Reuse grid for label collision
+let labelGrid: LabelCollisionData[][] = [];
+let labelGridCols = 0;
+let labelGridRows = 0;
+
 // ============================================================================
 // Initialization
 // ============================================================================
@@ -729,14 +743,24 @@ function animate(): void {
 
                 const cellWidth = 100;
                 const cellHeight = 20;
-                const gridCols = Math.ceil(viewportWidth / cellWidth);
-                const gridRows = Math.ceil(viewportHeight / cellHeight);
+                const neededCols = Math.ceil(viewportWidth / cellWidth);
+                const neededRows = Math.ceil(viewportHeight / cellHeight);
 
-                const grid = new Array(gridCols * gridRows).fill(null).map(() => [] as typeof visibleLabels);
+                if (neededCols !== labelGridCols || neededRows !== labelGridRows) {
+                    labelGridCols = neededCols;
+                    labelGridRows = neededRows;
+                    labelGrid = new Array(labelGridCols * labelGridRows).fill(null).map(() => []);
+                } else {
+                    // Clear existing grid
+                    for (let i = 0; i < labelGrid.length; i++) {
+                        const cell = labelGrid[i];
+                        if (cell) cell.length = 0;
+                    }
+                }
 
                 const getGridIndex = (c: number, r: number) => {
-                    if (c < 0 || c >= gridCols || r < 0 || r >= gridRows) return -1;
-                    return r * gridCols + c;
+                    if (c < 0 || c >= labelGridCols || r < 0 || r >= labelGridRows) return -1;
+                    return r * labelGridCols + c;
                 };
 
                 for (const item of visibleLabels) {
@@ -753,7 +777,7 @@ function animate(): void {
                         for (let c = startCol; c <= endCol; c++) {
                             const idx = getGridIndex(c, r);
                             if (idx !== -1) {
-                                const cellItems = grid[idx];
+                                const cellItems = labelGrid[idx];
                                 if (cellItems) {
                                     for (const other of cellItems) {
                                         const overlap = !(
@@ -781,7 +805,7 @@ function animate(): void {
                         for (let r = startRow; r <= endRow; r++) {
                             for (let c = startCol; c <= endCol; c++) {
                                 const idx = getGridIndex(c, r);
-                                if (idx !== -1) grid[idx]?.push(item);
+                                if (idx !== -1) labelGrid[idx]?.push(item);
                             }
                         }
                     }
