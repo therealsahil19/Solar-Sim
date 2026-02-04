@@ -663,7 +663,11 @@ function animate(): void {
             const approxLabelHeight = 20;
             const visibleLabels: Array<{ label: CSS2DObject; x: number; y: number; z: number; width: number; height: number }> = [];
 
-            allLabels.forEach(label => {
+            const len = allLabels.length;
+            for (let i = 0; i < len; i++) {
+                const label = allLabels[i];
+                if (!label) continue;
+
                 if (label.userData.isMoon) {
                     const parentName = label.userData.parentPlanet;
                     const isParentFocused = focusTarget?.userData.name === parentName;
@@ -733,7 +737,7 @@ function animate(): void {
                         }
                     }
                 }
-            });
+            }
 
             // ⚡ Bolt Optimization: Spatial Grid Collision Detection
             // Replaces O(N^2) loop with O(N) grid-based check.
