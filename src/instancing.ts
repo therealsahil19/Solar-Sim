@@ -109,7 +109,6 @@ export class InstanceRegistry implements Disposable {
         this.groups.forEach((group, key) => {
             if (group.mesh) {
                 this.scene.remove(group.mesh);
-                // Bug 046 Fix: InstancedMesh has no dispose() - manually clean up resources
                 group.mesh.geometry?.dispose();
                 const material = group.mesh.material;
                 if (Array.isArray(material)) {

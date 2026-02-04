@@ -66,7 +66,6 @@ export class Modal implements Disposable {
     private bindEvents(): void {
         if (!this.element) return;
 
-        // Bug 038 Fix: Store named references to handlers for proper cleanup
         this._handleBackdropClick = (event: MouseEvent): void => {
             if (event.target === this.element) {
                 this.close();
@@ -124,7 +123,6 @@ export class Modal implements Disposable {
 
     /**
      * Destroys the instance and properly removes event listeners.
-     * Bug 038 Fix: Now actually cleans up listeners.
      */
     dispose(): void {
         if (this.element && this._handleBackdropClick) {

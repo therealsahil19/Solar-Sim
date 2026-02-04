@@ -650,7 +650,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     font-size: var(--text-xl);
     font-weight: 700;
     letter-spacing: -0.02em;
-    /* Visual Bug Fix: Ensure perfect vertical centering */
     line-height: 1;
     display: flex;
     align-items: center;
@@ -1070,7 +1069,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 }
 
 /* --- Bottom Dock --- */
-/* VIS-05 Fix: Added max-width to prevent excessive spreading on wide screens */
 #bottom-dock {
     grid-area: footer;
     display: flex;
@@ -1083,12 +1081,10 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     margin: 0 auto;
 }
 
-/* VIS-03 Fix: Added explicit align-items: center for vertical button alignment */
 .dock-group {
     padding: var(--space-xs) var(--space-xl);
     display: flex;
     align-items: center;
-    /* Visual Bug Fix: Use explicit gap for consistent spacing */
     gap: var(--space-md);
     height: var(--layout-dock-height);
     border-radius: var(--radius-full);
@@ -1100,7 +1096,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     transition: transform var(--duration-normal) var(--ease-out-expo);
 }
 
-/* VIS-03 Fix: Ensure pause button SVG is vertically centered */
 #btn-pause svg {
     vertical-align: middle;
 }
@@ -1254,11 +1249,9 @@ dialog::backdrop {
     user-select: none;
     transition: opacity 0.2s, transform 0.2s;
     mix-blend-mode: normal;
-    /* Fix for visibility over bright objects like Sun */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
-/* VIS-01 Fix: Edge-aware label positioning with viewport clamping */
 .planet-label {
     max-width: 15vw;
     overflow: hidden;
@@ -1269,7 +1262,6 @@ dialog::backdrop {
 }
 
 /* --- Footer --- */
-/* VIS-02 Fix: Improved contrast for footer text */
 #footer-credits {
     position: absolute;
     bottom: var(--space-sm);
@@ -1330,13 +1322,11 @@ dialog::backdrop {
         width: 100%;
         justify-content: space-around;
         height: 48px;
-        /* VIS-04 Fix: Added more bottom padding to prevent slider touching edge */
         padding: 2px var(--space-sm) var(--space-sm);
         margin-bottom: 4px;
         backdrop-filter: blur(12px);
     }
 
-    /* VIS-08 Fix: Reduce planet label size on mobile for better density */
     .planet-label {
         font-size: 9px;
         padding: 2px 8px;
@@ -1353,7 +1343,6 @@ dialog::backdrop {
         height: 16px;
     }
 
-    /* Fix Icon Alignment (Issue 4) */
     .texture-toggle svg {
         margin-left: -1px;
         /* Subtle adjustment for 'Texture' icon centering */
@@ -1550,11 +1539,9 @@ dialog::backdrop {
 }
 
 /* ==========================================================================
-   RESPONSIVE: Mobile Styles (Visual Bug Fixes)
+   RESPONSIVE: Mobile Styles
    ========================================================================== */
 
-/* VIS-01 Fix: Speed control label overlap on mobile */
-/* VIS-02 Fix: Cramped dock buttons on mobile */
 @media (max-width: 480px) {
 
     /* Bottom Dock: Reduce gap and padding for narrow screens */
