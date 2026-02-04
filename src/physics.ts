@@ -217,7 +217,8 @@ export function physicsToRender(
 
     // ⚡ Bolt: Preserve direction, apply new magnitude (zero-allocation path)
     const result = out ?? new THREE.Vector3();
-    return result.copy(vector).normalize().multiplyScalar(r_vis);
+    // Optimization: Reuse 'r' to normalize manually, avoiding extra Math.sqrt() in normalize()
+    return result.copy(vector).multiplyScalar(r_vis / r);
 }
 
 /**
