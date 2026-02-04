@@ -92,7 +92,6 @@ const belts: Array<THREE.Object3D & { update?: (time: number) => void }> = [];
 let instanceRegistry: InstanceRegistry | null = null;
 let trailManager: TrailManager | null = null;
 
-// Bug 048 Fix: Track animation frame ID
 let animationFrameId: number | null = null;
 
 window.scene = null;
@@ -345,7 +344,6 @@ export async function init(): Promise<void> {
         setTimeout(() => {
             if (initFailed || !textureLoader.lazyLoadQueue) return;
             console.log(`Bolt ⚡: Lazy loading ${textureLoader.lazyLoadQueue.length} textures...`);
-            // Bug #054 Fix: Reuse existing textureLoader instead of creating new instances
             textureLoader.lazyLoadQueue.forEach(item => {
                 const tex = textureLoader.load(item.url);
                 item.material.map = tex;
@@ -356,7 +354,6 @@ export async function init(): Promise<void> {
         }, 2000);
     }
 
-    // Bug #053 Fix: Register resize listener inside init() for proper lifecycle management
     window.addEventListener('resize', onWindowResize);
 
     lastFrameTime = performance.now();
@@ -817,7 +814,6 @@ function onWindowResize(): void {
         labelRenderer.setSize(window.innerWidth, window.innerHeight);
     }
 }
-// Bug #053 Fix: Moved to init() - resize listener registered there for proper lifecycle
 
 /**
  * Disposes of all resources.

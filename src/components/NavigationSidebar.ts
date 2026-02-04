@@ -89,7 +89,6 @@ export class NavigationSidebar implements Disposable {
             return;
         }
 
-        // Bug 041 Fix: Validate additional critical DOM elements
         if (!this.dom.list) {
             console.warn('NavigationSidebar: #nav-list not found in DOM.');
         }

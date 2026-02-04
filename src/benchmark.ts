@@ -42,7 +42,6 @@ export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
     let frameId: number | null = null;
     let resolvePromise: ((result: BenchmarkResult | null) => void) | null = null;
 
-    // Bug 047 Fix: Added Promise-based API for programmatic result capture
     const resultPromise = new Promise<BenchmarkResult | null>((resolve) => {
         resolvePromise = resolve;
     });

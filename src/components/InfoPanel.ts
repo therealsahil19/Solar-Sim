@@ -107,7 +107,6 @@ export class InfoPanel implements Disposable {
     update(mesh: THREE.Object3D): void {
         if (!mesh) return;
 
-        // Bug 039 Fix: Add null check for userData to prevent TypeError
         const d: SolarSimUserData = mesh.userData ?? {};
 
         this.currentMesh = mesh;
