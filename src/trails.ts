@@ -337,7 +337,7 @@ export class TrailManager implements Disposable {
         }
 
         // Use Three.js state manager to avoid state thrashing
-        renderer.state.bindTexture(gl.TEXTURE_2D, this.historyTexture);
+        renderer.state.bindTexture(gl.TEXTURE_2D, textureProperties.__webglTexture);
 
         // Update ROW 'rowIndex'.
         // Layout: Width = MaxTrails, Height = Points.
