@@ -18,6 +18,8 @@ interface InstanceData {
     pivot: THREE.Object3D;
     /** Index in the instanced mesh */
     index: number;
+    /** Whether the instance is dynamic (moves every frame) */
+    dynamic: boolean;
 }
 
 /**
@@ -32,6 +34,8 @@ interface InstanceGroup {
     instances: InstanceData[];
     /** The instanced mesh (null until build() is called) */
     mesh: THREE.InstancedMesh | null;
+    /** Flag to force full update (e.g. after rebuild) */
+    firstUpdatePending: boolean;
 }
 
 /**
@@ -69,7 +73,8 @@ export class InstanceRegistry implements Disposable {
         pivot: THREE.Object3D,
         geometry: THREE.BufferGeometry,
         material: THREE.Material,
-        userData: SolarSimUserData
+        userData: SolarSimUserData,
+        dynamic = true
     ): void {
         const key = `${geometry.uuid}_${material.uuid}`;
 
@@ -78,7 +83,8 @@ export class InstanceRegistry implements Disposable {
                 geometry,
                 material,
                 instances: [],
-                mesh: null
+                mesh: null,
+                firstUpdatePending: false
             });
         }
 
@@ -94,7 +100,7 @@ export class InstanceRegistry implements Disposable {
             instanceKey: key
         });
 
-        group.instances.push({ pivot, index });
+        group.instances.push({ pivot, index, dynamic });
         this.dirty = true;
     }
 
@@ -130,6 +136,7 @@ export class InstanceRegistry implements Disposable {
 
             this.scene.add(instancedMesh);
             group.mesh = instancedMesh;
+            group.firstUpdatePending = true;
         });
 
         this.dirty = false;
@@ -146,10 +153,13 @@ export class InstanceRegistry implements Disposable {
             let needsUpdate = false;
             const instanceMatrix = group.mesh.instanceMatrix;
             const array = instanceMatrix.array;
+            const forceUpdate = group.firstUpdatePending;
 
             for (let i = 0; i < group.instances.length; i++) {
                 const instanceData = group.instances[i];
                 if (!instanceData) continue;
+
+                if (!instanceData.dynamic && !forceUpdate) continue;
 
                 const { pivot, index } = instanceData;
 
@@ -183,6 +193,7 @@ export class InstanceRegistry implements Disposable {
             if (needsUpdate) {
                 instanceMatrix.needsUpdate = true;
             }
+            group.firstUpdatePending = false;
         });
     }
 
