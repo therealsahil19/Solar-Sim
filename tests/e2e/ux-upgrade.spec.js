@@ -68,10 +68,8 @@ test.describe('Palette UX Upgrade', () => {
         // Expect the app overlay to appear with error message
         const overlay = page.locator('#app-overlay');
 
-        // Debug: Print what we see
         const h1 = overlay.locator('h1');
         await expect(h1).toBeVisible({ timeout: 15000 });
-        console.log('Overlay H1 Text:', await h1.textContent());
 
         // Wait for it to contain the error header - relaxed to 'Simulation' to avoid truncation issues
         await expect(h1).toContainText('Simulation', { timeout: 5000 });
