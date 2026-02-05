@@ -73,7 +73,7 @@ export function getOrbitalPosition(
     // 2. Solve Kepler's Equation for Eccentric Anomaly (E)
     // M = E - e * sin(E). Using Newton-Raphson for fast, accurate convergence.
     let E = M; // Initial guess
-    for (let j = 0; j < 15; j++) {
+    for (let j = 0; j < 5; j++) {
         const dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
         E = E - dE;
         if (Math.abs(dE) < 1e-12) break; // Converged to high precision
