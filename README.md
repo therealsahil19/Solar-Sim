@@ -103,6 +103,9 @@ The project is organized into a modular architecture:
 │   │   ├── SettingsManager.ts   # "State" - persists user preferences
 │   │   ├── ThemeManager.ts      # "State" - handles visual themes
 │   │   └── ToastManager.ts      # "State" - manages stackable notifications
+├── tests/
+│   ├── e2e/              # Playwright E2E tests
+│   └── unit/             # Vitest unit tests
 └── README.md             # This documentation
 ```
 
@@ -179,7 +182,7 @@ The simulation is built on a decoupled, event-driven architecture designed for h
 
 ## Configuration (`system.json`)
 
-The simulation is data-driven. `system.json` defines the hierarchy of celestial bodies.
+The simulation is data-driven. `system.json` defines the hierarchy of celestial bodies. The root structure is an **Array** of celestial body objects.
 
 ### Configuration Properties
 
@@ -273,6 +276,9 @@ npm run test
 
 # Run tests with UI for debugging
 npm run test:ui
+
+# Run tests in headed mode
+npm run test:headed
 ```
 
 ### 2. Unit Tests (Vitest)
@@ -283,7 +289,7 @@ npm run test:unit
 
 ## Environment Variables
 
-While the project currently relies on static assets and a simple HTTP server, you can configure the following environment variables if deploying to a formal environment (e.g., Vercel, Netlify):
+While the project currently relies on static assets and a simple HTTP server (Port 5173 for local dev), you can configure the following environment variables if deploying to a formal environment (e.g., Vercel, Netlify):
 
 | Variable | Description | Default |
 | :--- | :--- | :--- |

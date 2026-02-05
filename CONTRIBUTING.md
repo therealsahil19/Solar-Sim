@@ -189,9 +189,9 @@ We use **Playwright** for End-to-End (E2E) testing and **Vitest** for Unit testi
 
 ### 1. Structure
 Tests are organized by component or user flow:
-- `navigation-sidebar.spec.ts`: Tests for the planet tree and search.
-- `settings-panel.spec.ts`: Tests for toggles, themes, and persistence.
-- `keyboard-shortcuts.spec.ts`: Verifies all global hotkeys.
+- `navigation-sidebar.spec.js`: Tests for the planet tree and search.
+- `settings-panel.spec.js`: Tests for toggles, themes, and persistence.
+- `keyboard-shortcuts.spec.js`: Verifies all global hotkeys.
 
 ### 2. Best Practices
 - **Isolation**: Each `test()` block should ideally be independent.
@@ -203,6 +203,7 @@ Tests are organized by component or user flow:
 
 ### 3. Running Tests
 - **E2E**: `npm run test` (runs all Playwright tests).
+- **Headed**: `npm run test:headed` (runs tests in a visible browser).
 - **Unit**: `npm run test:unit` (runs Vitest).
 - **Debug**: `npm run test:ui` (opens Playwright UI).
 - Use the **Playwright Report** (`npx playwright show-report`) to analyze failures.
