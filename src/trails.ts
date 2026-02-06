@@ -258,7 +258,10 @@ export class TrailManager implements Disposable {
         colorAttr.needsUpdate = true;
 
         // Mutate updateRange directly as it might be read-only in this version
-        if (colorAttr.updateRange) {
+        // Use addUpdateRange if available (Three.js r159+) to avoid deprecation warnings
+        if (colorAttr.addUpdateRange) {
+            colorAttr.addUpdateRange(startVertex * 3, (endVertex - startVertex) * 3);
+        } else if (colorAttr.updateRange) {
             colorAttr.updateRange.offset = startVertex * 3;
             colorAttr.updateRange.count = (endVertex - startVertex) * 3;
         }
@@ -325,7 +328,7 @@ export class TrailManager implements Disposable {
      */
     private uploadTextureRow(renderer: THREE.WebGLRenderer, rowIndex: number, data: Float32Array): void {
         const gl = renderer.getContext();
-        const textureProperties = renderer.properties.get(this.historyTexture) as any;
+        const textureProperties = renderer.properties.get(this.historyTexture) as { __webglTexture?: WebGLTexture };
 
         // Ensure texture is initialized on GPU
         if (!textureProperties || !textureProperties.__webglTexture) {
@@ -337,6 +340,7 @@ export class TrailManager implements Disposable {
         }
 
         // Use Three.js state manager to avoid state thrashing
+        // Note: Must pass raw WebGLTexture, not the Three.js Texture object
         renderer.state.bindTexture(gl.TEXTURE_2D, textureProperties.__webglTexture);
 
         // Update ROW 'rowIndex'.
