@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { physicsToRender } from '../../src/physics';
+import { physicsToRender, getOrbitalPosition } from '../../src/physics';
 import * as THREE from 'three';
 
 describe('Performance Benchmark: physicsToRender', () => {
@@ -48,5 +48,44 @@ describe('Performance Benchmark: physicsToRender', () => {
         expect(out.x).not.toBeNaN();
         expect(out.y).not.toBeNaN();
         expect(out.z).not.toBeNaN();
+    });
+});
+
+describe('Performance Benchmark: getOrbitalPosition', () => {
+    it('should calculate orbital positions efficiently', () => {
+        const out = new THREE.Vector3();
+        const iterations = 500_000;
+
+        // Test cases with varying eccentricity
+        const cases = [
+            { a: 1, e: 0.01, i: 0, M0: 0, name: 'Low e (0.01)' },
+            { a: 1, e: 0.5, i: 0, M0: 0, name: 'Medium e (0.5)' },
+            { a: 1, e: 0.9, i: 0, M0: 0, name: 'High e (0.9)' }
+        ];
+
+        console.log('\n⚡ Benchmark Results for getOrbitalPosition:');
+
+        for (const testCase of cases) {
+            const orbit = { a: testCase.a, e: testCase.e, i: testCase.i, M0: testCase.M0 };
+
+            // Warmup
+            for (let i = 0; i < 1000; i++) {
+                getOrbitalPosition(orbit, i, out);
+            }
+
+            const start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                getOrbitalPosition(orbit, i, out);
+            }
+            const end = performance.now();
+
+            const duration = end - start;
+            const avgTime = duration / iterations;
+
+            console.log(`   [${testCase.name}]: Total: ${duration.toFixed(2)}ms | Avg: ${(avgTime * 1000).toFixed(4)}μs/op | Ops/Sec: ${(1000/avgTime).toFixed(0)}`);
+
+            // Sanity
+            expect(out.x).not.toBeNaN();
+        }
     });
 });
