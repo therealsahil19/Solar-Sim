@@ -614,14 +614,17 @@ function animate(): void {
         let closestObj: THREE.Object3D | null = null;
         const shipPos = playerShip.position;
 
-        planets.forEach(p => {
+        const len = planets.length;
+        for (let i = 0; i < len; i++) {
+            const p = planets[i];
+            if (!p) continue;
             tempVec.setFromMatrixPosition(p.matrixWorld);
             const dist = shipPos.distanceToSquared(tempVec);
             if (dist < closestDist) {
                 closestDist = dist;
                 closestObj = p;
             }
-        });
+        }
         closestObjectCache = closestObj;
     }
     if (closestObjectCache && playerShip) {
