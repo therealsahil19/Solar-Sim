@@ -367,8 +367,10 @@ export class TrailManager implements Disposable {
     reset(): void {
         this.nextTrailIndex = 0;
         this.trails = [];
+        this.globalHead = 0;
+        this.material.uniforms.uHead!.value = 0;
         this.geometry.setDrawRange(0, 0);
-        // Clear texture?
+
         this.historyData.fill(0);
         this.historyTexture.needsUpdate = true;
     }
