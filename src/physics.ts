@@ -48,7 +48,8 @@ export function getOrbitalPosition(
         i,
         omega = 0,
         w: argPerihelion = 0,
-        M0 = 0
+        M0 = 0,
+        Omega: LAN = 0
     } = orbit;
 
     // Use omega if provided, otherwise fallback to w (argument of perihelion)
@@ -98,8 +99,8 @@ export function getOrbitalPosition(
     // P = r * [cos(nu), sin(nu), 0]
     // Then rotate P by orbital elements.
 
-    // Longitude of Ascending Node (Omega) - use default 0 if not in orbit params
-    const Omega = 0; // Simplified - could be added to OrbitalParameters interface
+    // Longitude of Ascending Node (Omega) - use value from orbit params
+    const Omega = LAN;
 
     const cosOm = Math.cos(Omega * DEG_TO_RAD);
     const sinOm = Math.sin(Omega * DEG_TO_RAD);
