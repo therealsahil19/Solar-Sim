@@ -904,12 +904,21 @@ if (!window.__SKIP_INIT__) {
             overlay.innerHTML = `
                 <div class="glass-panel" style="color:var(--text-primary); text-align:center; padding: 2rem; border: 1px solid var(--color-danger); margin: auto;">
                     <h1 style="color:var(--color-danger); margin-bottom: 1rem;">Simulation Error</h1>
-                    <p style="margin-bottom: 2rem;">${err.message || 'An unexpected error occurred during initialization.'}</p>
-                    <button onclick="window.location.reload()" class="btn-primary" style="cursor: pointer;">
+                    <p id="error-msg-text" style="margin-bottom: 2rem;"></p>
+                    <button id="btn-reload-init" class="btn-primary" style="cursor: pointer;">
                         🔄 Reload Simulation
                     </button>
                 </div>
             `;
+
+            const msgEl = document.getElementById('error-msg-text');
+            if (msgEl) msgEl.textContent = err.message || 'An unexpected error occurred during initialization.';
+
+            const reloadBtn = document.getElementById('btn-reload-init');
+            if (reloadBtn) {
+                reloadBtn.addEventListener('click', () => window.location.reload());
+            }
+
             // Ensure overlay is visible
             overlay.style.display = 'grid';
         }
