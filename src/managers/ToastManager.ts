@@ -51,8 +51,13 @@ export class ToastManager {
 
         toast.innerHTML = `
             <span class="toast-icon">${icon}</span>
-            <span class="toast-message">${message}</span>
+            <span class="toast-message"></span>
         `;
+
+        const messageSpan = toast.querySelector('.toast-message');
+        if (messageSpan) {
+            messageSpan.textContent = message;
+        }
 
         // Prepend to stack (so newest is top/bottom depending on CSS)
         // Let's append so they stack downwards or upwards. 
