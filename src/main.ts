@@ -133,6 +133,24 @@ const labelPool: LabelCollisionData[] = [];
  */
 
 // Simulation constants
+const SIMULATION_SPEED_BASE = 0.2;
+const BODY_ROTATION_SPEED = 0.5;
+const STARFIELD_ROTATION_SPEED = 0.02;
+
+const LABEL_EDGE_MARGIN = 40;
+const LABEL_FADE_ZONE = 60;
+const APPROX_LABEL_WIDTH = 100;
+const APPROX_LABEL_HEIGHT = 20;
+const OPACITY_UPDATE_THRESHOLD = 0.001;
+
+const MOBILE_BREAKPOINT = 768;
+
+const LOGIC_UPDATE_INTERVAL = 10;
+
+const MAX_TRAILS = 5000;
+const TRAIL_POINTS = 100;
+
+const LAZY_LOAD_DELAY = 2000;
 
 
 /**
@@ -215,7 +233,7 @@ export async function init(): Promise<void> {
     textureLoader.lazyLoadQueue = [];
 
     instanceRegistry = new InstanceRegistry(scene);
-    trailManager = new TrailManager(scene, 5000, 100);
+    trailManager = new TrailManager(scene, MAX_TRAILS, TRAIL_POINTS);
     window.trailManager = trailManager; // Expose for performance testing
 
     textureLoader.instanceRegistry = instanceRegistry;
@@ -369,7 +387,7 @@ export async function init(): Promise<void> {
                 item.material.needsUpdate = true;
             });
             textureLoader.lazyLoadQueue = [];
-        }, 2000);
+        }, LAZY_LOAD_DELAY);
     }
 
     window.addEventListener('resize', onWindowResize);
@@ -562,7 +580,7 @@ function animate(): void {
     lastFrameTime = now;
 
     if (!isPaused) {
-        simulationTime += dt * 0.2 * timeScale;
+        simulationTime += dt * SIMULATION_SPEED_BASE * timeScale;
 
         const len = animatedObjects.length;
         for (let i = 0; i < len; i++) {
@@ -588,7 +606,7 @@ function animate(): void {
                 }
 
                 if (obj.mesh) {
-                    obj.mesh.rotation.y += 0.5 * dt * timeScale;
+                    obj.mesh.rotation.y += BODY_ROTATION_SPEED * dt * timeScale;
                 }
             }
         }
@@ -596,7 +614,7 @@ function animate(): void {
         scene.updateMatrixWorld();
         instanceRegistry?.update();
         belts.forEach(belt => belt.update?.(simulationTime));
-        if (starfield) starfield.rotation.y += 0.02 * dt;
+        if (starfield) starfield.rotation.y += STARFIELD_ROTATION_SPEED * dt;
     }
 
     // Camera Logic
@@ -613,7 +631,7 @@ function animate(): void {
     }
 
     // Player Ship AI
-    if (playerShip && frameCount % 10 === 0) {
+    if (playerShip && frameCount % LOGIC_UPDATE_INTERVAL === 0) {
         let closestDist = Infinity;
         let closestObj: THREE.Object3D | null = null;
         const shipPos = playerShip.position;
@@ -639,7 +657,7 @@ function animate(): void {
     frameCount++;
 
     // UI Updates
-    if (selectedObject && frameCount % 10 === 0) {
+    if (selectedObject && frameCount % LOGIC_UPDATE_INTERVAL === 0) {
         const distEl = document.getElementById('info-dist-sun');
         if (distEl) {
             const userData = selectedObject.userData as Record<string, unknown>;
@@ -660,14 +678,14 @@ function animate(): void {
         if ((showLabels || labelsNeedUpdate) && labelRenderer) {
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
-            const edgeMargin = 40;
-            const fadeZone = 60;
+            const edgeMargin = LABEL_EDGE_MARGIN;
+            const fadeZone = LABEL_FADE_ZONE;
 
             // ⚡ Bolt Optimization: Use mathematical projection instead of getBoundingClientRect
             // to avoid Layout Thrashing (Read-Write-Read-Write cycle).
             // We approximate label size for edge fading and overlap detection.
-            const approxLabelWidth = 100;
-            const approxLabelHeight = 20;
+            const approxLabelWidth = APPROX_LABEL_WIDTH;
+            const approxLabelHeight = APPROX_LABEL_HEIGHT;
             visibleLabelsList.length = 0;
             let labelPoolIndex = 0;
 
@@ -723,7 +741,7 @@ function animate(): void {
                     // 1. Only update DOM if value changed (cache in userData)
                     // 2. Defer updates for collision candidates to avoid double-write
                     const lastOpacity = label.userData._lastOpacity ?? -1;
-                    const isMobile = viewportWidth < 768;
+                    const isMobile = viewportWidth < MOBILE_BREAKPOINT;
                     const isCandidate = isMobile && opacity > 0 && !label.userData.isMoon;
 
                     if (isCandidate) {
@@ -754,7 +772,7 @@ function animate(): void {
                         labelPoolIndex++;
                     } else {
                         // Apply immediately
-                        if (Math.abs(lastOpacity - opacity) > 0.001) {
+                        if (Math.abs(lastOpacity - opacity) > OPACITY_UPDATE_THRESHOLD) {
                             label.element.style.opacity = String(opacity);
                             label.userData._lastOpacity = opacity;
                         }
@@ -764,12 +782,12 @@ function animate(): void {
 
             // ⚡ Bolt Optimization: Spatial Grid Collision Detection
             // Replaces O(N^2) loop with O(N) grid-based check.
-            if (viewportWidth < 768) {
+            if (viewportWidth < MOBILE_BREAKPOINT) {
                 // 1. Sort by Z-depth (NDC z is -1 to 1, smaller is closer)
                 visibleLabelsList.sort((a, b) => a.z - b.z);
 
-                const cellWidth = 100;
-                const cellHeight = 20;
+                const cellWidth = APPROX_LABEL_WIDTH;
+                const cellHeight = APPROX_LABEL_HEIGHT;
                 const neededCols = Math.ceil(viewportWidth / cellWidth);
                 const neededRows = Math.ceil(viewportHeight / cellHeight);
 
@@ -839,7 +857,7 @@ function animate(): void {
 
                     // Apply deferred update
                     const last = item.label.userData._lastOpacity ?? -1;
-                    if (Math.abs(last - targetOpacity) > 0.001) {
+                    if (Math.abs(last - targetOpacity) > OPACITY_UPDATE_THRESHOLD) {
                         item.label.element.style.opacity = String(targetOpacity);
                         item.label.userData._lastOpacity = targetOpacity;
                     }
