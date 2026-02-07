@@ -114,6 +114,10 @@ let labelGrid: LabelCollisionData[][] = [];
 let labelGridCols = 0;
 let labelGridRows = 0;
 
+// Optimization: Reuse objects for visible labels to prevent GC
+const visibleLabelsList: LabelCollisionData[] = [];
+const labelPool: LabelCollisionData[] = [];
+
 // ============================================================================
 // Initialization
 // ============================================================================
@@ -664,7 +668,8 @@ function animate(): void {
             // We approximate label size for edge fading and overlap detection.
             const approxLabelWidth = 100;
             const approxLabelHeight = 20;
-            const visibleLabels: Array<{ label: CSS2DObject; x: number; y: number; z: number; width: number; height: number }> = [];
+            visibleLabelsList.length = 0;
+            let labelPoolIndex = 0;
 
             const len = allLabels.length;
             for (let i = 0; i < len; i++) {
@@ -724,14 +729,29 @@ function animate(): void {
                     if (isCandidate) {
                         // Defer application until collision check
                         label.userData._tentativeOpacity = opacity;
-                        visibleLabels.push({
-                            label,
-                            x: left,
-                            y: top,
-                            width: approxLabelWidth,
-                            height: approxLabelHeight,
-                            z: tempVec.z
-                        });
+
+                        let item = labelPool[labelPoolIndex];
+                        if (!item) {
+                            item = {
+                                label,
+                                x: left,
+                                y: top,
+                                width: approxLabelWidth,
+                                height: approxLabelHeight,
+                                z: tempVec.z
+                            };
+                            labelPool[labelPoolIndex] = item;
+                        } else {
+                            item.label = label;
+                            item.x = left;
+                            item.y = top;
+                            item.width = approxLabelWidth;
+                            item.height = approxLabelHeight;
+                            item.z = tempVec.z;
+                        }
+
+                        visibleLabelsList.push(item);
+                        labelPoolIndex++;
                     } else {
                         // Apply immediately
                         if (Math.abs(lastOpacity - opacity) > 0.001) {
@@ -746,7 +766,7 @@ function animate(): void {
             // Replaces O(N^2) loop with O(N) grid-based check.
             if (viewportWidth < 768) {
                 // 1. Sort by Z-depth (NDC z is -1 to 1, smaller is closer)
-                visibleLabels.sort((a, b) => a.z - b.z);
+                visibleLabelsList.sort((a, b) => a.z - b.z);
 
                 const cellWidth = 100;
                 const cellHeight = 20;
@@ -770,7 +790,7 @@ function animate(): void {
                     return r * labelGridCols + c;
                 };
 
-                for (const item of visibleLabels) {
+                for (const item of visibleLabelsList) {
                     const startCol = Math.floor(item.x / cellWidth);
                     const endCol = Math.floor((item.x + item.width) / cellWidth);
                     const startRow = Math.floor(item.y / cellHeight);
