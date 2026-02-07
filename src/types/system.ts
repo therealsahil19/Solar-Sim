@@ -19,9 +19,9 @@ export interface OrbitalParameters {
     i: number;
     /** Orbital period in Earth years */
     period?: number; // Optional in system.json (often calculated)
-    /** Longitude of ascending node in degrees */
-    omega?: number;
     /** Argument of perihelion in degrees */
+    omega?: number;
+    /** Argument of perihelion in degrees (legacy alias) */
     w?: number;
     /** Longitude of ascending node (capital Omega) */
     Omega?: number;
