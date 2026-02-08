@@ -182,8 +182,12 @@ export function createGlowTexture(): THREE.CanvasTexture {
 /**
  * Extended Sun mesh with dispose method.
  */
-export interface SunMesh extends THREE.Mesh {
-    dispose: () => void;
+export class SunMesh extends THREE.Mesh {
+    dispose: () => void = () => {};
+
+    constructor(geometry?: THREE.BufferGeometry, material?: THREE.Material | THREE.Material[]) {
+        super(geometry, material);
+    }
 }
 
 /**
@@ -203,11 +207,10 @@ export function createSun(
 
     const solidMaterial = new THREE.MeshBasicMaterial({ color: 0xffffaa });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sun = new THREE.Mesh(
+    const sun = new SunMesh(
         geometry,
         useTextures ? texturedMaterial : solidMaterial
-    ) as any as SunMesh;
+    );
 
     sun.castShadow = false;
     sun.receiveShadow = false;
