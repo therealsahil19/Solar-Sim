@@ -170,6 +170,7 @@ export async function init(): Promise<void> {
     // Setup Three.js Components
     scene = new THREE.Scene();
     window.scene = scene;
+    scene.autoUpdate = false;
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
     camera.position.set(0, 60, 100);
@@ -611,10 +612,10 @@ function animate(): void {
             }
         }
 
-        scene.updateMatrixWorld();
-        instanceRegistry?.update();
         belts.forEach(belt => belt.update?.(simulationTime));
         if (starfield) starfield.rotation.y += STARFIELD_ROTATION_SPEED * dt;
+        scene.updateMatrixWorld();
+        instanceRegistry?.update();
     }
 
     // Camera Logic
