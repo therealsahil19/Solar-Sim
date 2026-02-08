@@ -327,15 +327,16 @@ export class TrailManager implements Disposable {
      * Uploads a single row to the texture using raw GL calls.
      */
     private uploadTextureRow(renderer: THREE.WebGLRenderer, rowIndex: number, data: Float32Array): void {
+        // Always update the CPU-side backing buffer to ensure data integrity
+        // in case of context loss or initial upload delay.
+        const offset = rowIndex * this.maxTrails * 4;
+        this.historyData.set(data, offset);
+
         const gl = renderer.getContext();
         const textureProperties = renderer.properties.get(this.historyTexture) as { __webglTexture?: WebGLTexture };
 
         // Ensure texture is initialized on GPU
         if (!textureProperties || !textureProperties.__webglTexture) {
-             // If not yet uploaded by Three.js (first frame?), force full update
-             // This happens if we haven't rendered yet.
-             // But update() is called inside animate loop.
-             // We can just rely on needsUpdate=true from init?
              return;
         }
 
