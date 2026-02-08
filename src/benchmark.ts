@@ -95,7 +95,7 @@ export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
 
             // Jank detection (frames >16.67ms for 60fps target)
             const jankFrames = frameTimes.filter(t => t > 16.67).length;
-            const jankPercent = (jankFrames / frameTimes.length) * 100;
+            const jankPercent = frameTimes.length > 0 ? (jankFrames / frameTimes.length) * 100 : 0;
             console.log(`   Jank Frames (>16.67ms): ${jankFrames} (${jankPercent.toFixed(1)}%)`);
 
             const result: BenchmarkResult = {
