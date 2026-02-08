@@ -54,6 +54,13 @@ export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
         if (now - startTime < durationMs) {
             frameId = requestAnimationFrame(measure);
         } else {
+            // Prevent division by zero if no frames captured
+            if (frameTimes.length === 0) {
+                console.warn('%c⚡ Bolt Benchmark: No frames captured.', 'color: #ffc107;');
+                if (resolvePromise) resolvePromise(null);
+                return;
+            }
+
             // Calculate stats
             const sorted = [...frameTimes].sort((a, b) => a - b);
             const avg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
