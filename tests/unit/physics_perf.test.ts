@@ -60,13 +60,20 @@ describe('Performance Benchmark: getOrbitalPosition', () => {
         const cases = [
             { a: 1, e: 0.01, i: 0, M0: 0, name: 'Low e (0.01)' },
             { a: 1, e: 0.5, i: 0, M0: 0, name: 'Medium e (0.5)' },
-            { a: 1, e: 0.9, i: 0, M0: 0, name: 'High e (0.9)' }
+            { a: 1, e: 0.9, i: 0, M0: 0, name: 'High e (0.9)' },
+            { a: 1, e: 0.01, i: 0, M0: 0, period: 1.0, name: 'With Pre-calc Period' }
         ];
 
         console.log('\n⚡ Benchmark Results for getOrbitalPosition:');
 
         for (const testCase of cases) {
-            const orbit = { a: testCase.a, e: testCase.e, i: testCase.i, M0: testCase.M0 };
+            const orbit = {
+                a: testCase.a,
+                e: testCase.e,
+                i: testCase.i,
+                M0: testCase.M0,
+                period: (testCase as any).period
+            };
 
             // Warmup
             for (let i = 0; i < 1000; i++) {

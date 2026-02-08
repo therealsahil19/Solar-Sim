@@ -284,6 +284,11 @@ export function createSystem(
     useTextures: boolean,
     parentData: OrbitalParameters | null = null
 ): SystemResult {
+    // ⚡ Bolt Optimization: Pre-calculate period if missing to avoid repeated Math.pow() in loop
+    if (data.physics && data.physics.period === undefined) {
+        data.physics.period = Math.pow(data.physics.a, 1.5);
+    }
+
     // Pivot & Body Container
     const pivot = new THREE.Group();
     (pivot.userData as Record<string, unknown>).physics = data.physics;

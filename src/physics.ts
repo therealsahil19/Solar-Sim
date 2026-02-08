@@ -57,7 +57,8 @@ export function getOrbitalPosition(
 
     // 1. Calculate Mean Anomaly (M)
     // Kepler's 3rd Law: T^2 = a^3 -> T = a^1.5 (for mass of Sun = 1)
-    const period = Math.pow(a, 1.5);
+    // ⚡ Bolt Optimization: Use pre-calculated period if available
+    const period = orbit.period ?? Math.pow(a, 1.5);
 
     // wrapTime: ensures simulation time stays within one orbital period (0 to T).
     // This prevents precision loss in subsequent calculations that occur when
