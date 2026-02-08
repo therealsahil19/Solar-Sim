@@ -45,6 +45,33 @@ declare global {
     }
 }
 
+function updateLogic(frameCount: number): void {
+    if (playerShip && frameCount % LOGIC_UPDATE_INTERVAL === 0) {
+        let closestDist = Infinity;
+        let closestObj: THREE.Object3D | null = null;
+        const shipPos = playerShip.position;
+
+        const len = planets.length;
+        for (let i = 0; i < len; i++) {
+            const p = planets[i];
+            if (!p) continue;
+            // ⚡ Bolt Optimization: Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
+            const elements = p.matrixWorld.elements;
+            tempVec.set(elements[12]!, elements[13]!, elements[14]!);
+            const dist = shipPos.distanceToSquared(tempVec);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestObj = p;
+            }
+        }
+        closestObjectCache = closestObj;
+    }
+    if (closestObjectCache && playerShip) {
+        tempVec.setFromMatrixPosition(closestObjectCache.matrixWorld);
+        playerShip.lookAt(tempVec);
+    }
+}
+
 // ============================================================================
 // State & Globals
 // ============================================================================
@@ -171,6 +198,7 @@ export async function init(): Promise<void> {
     // Setup Three.js Components
     scene = new THREE.Scene();
     window.scene = scene;
+    // @ts-ignore
     scene.autoUpdate = false;
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
@@ -556,6 +584,282 @@ const _renderPos = new THREE.Vector3();
 // Animation Loop
 // ============================================================================
 
+function updatePhysics(dt: number): void {
+    simulationTime += dt * SIMULATION_SPEED_BASE * timeScale;
+
+    const len = animatedObjects.length;
+    for (let i = 0; i < len; i++) {
+        const obj = animatedObjects[i];
+        if (!obj) continue;
+        const physics = obj.physics;
+        if (physics && physics.a !== undefined) {
+            getOrbitalPosition(physics, simulationTime, _localPos);
+            _worldPos.copy(_localPos);
+
+            if (obj.parent) {
+                getOrbitalPosition(obj.parent, simulationTime, _parentPosPhys);
+                _worldPos.add(_parentPosPhys);
+            }
+
+            physicsToRender(_worldPos, _renderPos);
+
+            if (obj.parent) {
+                physicsToRender(_parentPosPhys, _parentPosRender);
+                obj.pivot.position.copy(_renderPos).sub(_parentPosRender);
+            } else {
+                obj.pivot.position.copy(_renderPos);
+            }
+
+            if (obj.mesh) {
+                obj.mesh.rotation.y += BODY_ROTATION_SPEED * dt * timeScale;
+            }
+        }
+    }
+
+    belts.forEach(belt => belt.update?.(simulationTime));
+    if (starfield) starfield.rotation.y += STARFIELD_ROTATION_SPEED * dt;
+    scene.updateMatrixWorld();
+    instanceRegistry?.update();
+}
+
+function updateCamera(): void {
+    if (isShipView && playerShip && controls) {
+        controls.target.copy(playerShip.position);
+        camera.position.set(
+            playerShip.position.x + 5,
+            playerShip.position.y + 3,
+            playerShip.position.z + 5
+        );
+    } else if (focusTarget && controls) {
+        tempVec.setFromMatrixPosition(focusTarget.matrixWorld);
+        controls.target.copy(tempVec);
+    }
+}
+
+function updateUI(frameCount: number): void {
+    if (selectedObject && frameCount % LOGIC_UPDATE_INTERVAL === 0) {
+        const distEl = document.getElementById('info-dist-sun');
+        if (distEl) {
+            const userData = selectedObject.userData as Record<string, unknown>;
+            const physics = userData.physics as Record<string, unknown> | undefined;
+            if (physics?.a) {
+                distEl.textContent = `Orbit: ${physics.a} AU`;
+            } else {
+                tempVec.setFromMatrixPosition(selectedObject.matrixWorld);
+                distEl.textContent = `Render Dist: ${tempVec.distanceTo(sunPos).toFixed(1)}`;
+            }
+        }
+    }
+}
+
+function renderLabels(): void {
+    if ((showLabels || labelsNeedUpdate) && labelRenderer) {
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const edgeMargin = LABEL_EDGE_MARGIN;
+        const fadeZone = LABEL_FADE_ZONE;
+
+        // ⚡ Bolt Optimization: Use mathematical projection instead of getBoundingClientRect
+        // to avoid Layout Thrashing (Read-Write-Read-Write cycle).
+        // We approximate label size for edge fading and overlap detection.
+        const approxLabelWidth = APPROX_LABEL_WIDTH;
+        const approxLabelHeight = APPROX_LABEL_HEIGHT;
+        visibleLabelsList.length = 0;
+        let labelPoolIndex = 0;
+
+        const len = allLabels.length;
+        for (let i = 0; i < len; i++) {
+            const label = allLabels[i];
+            if (!label) continue;
+
+            if (label.userData.isMoon) {
+                const parentName = label.userData.parentPlanet;
+                const isParentFocused = focusTarget?.userData.name === parentName;
+                const isParentSelected = selectedObject?.userData.name === parentName;
+                label.visible = showLabels && (isParentFocused || isParentSelected);
+            } else {
+                label.visible = showLabels;
+            }
+
+            if (label.visible && label.element) {
+                // Project 3D position to 2D screen coordinates
+                // We assume the label is attached to a parent object or has its own position
+                // CSS2DObject.position is in World Space.
+                tempVec.copy(label.position);
+                tempVec.project(camera); // Now in NDC (-1 to +1)
+
+                const x = (tempVec.x * .5 + .5) * viewportWidth;
+                const y = (-(tempVec.y * .5) + .5) * viewportHeight;
+
+                // Approximate bounding box centered on the point
+                const left = x - (approxLabelWidth / 2);
+                const right = x + (approxLabelWidth / 2);
+                const top = y - (approxLabelHeight / 2);
+                const bottom = y + (approxLabelHeight / 2);
+
+                let opacity = 1;
+
+                // Edge Fading Logic using projected coordinates
+                const distLeft = left;
+                const distRight = viewportWidth - right;
+                const distTop = top;
+                const distBottom = viewportHeight - bottom;
+                const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+
+                // Check if behind camera (NDC z > 1)
+                if (tempVec.z > 1) {
+                    opacity = 0;
+                } else if (minDist < edgeMargin) {
+                    opacity = 0;
+                } else if (minDist < edgeMargin + fadeZone) {
+                    opacity = (minDist - edgeMargin) / fadeZone;
+                }
+
+                // ⚡ Bolt Optimization: Prevent Layout Thrashing
+                // 1. Only update DOM if value changed (cache in userData)
+                // 2. Defer updates for collision candidates to avoid double-write
+                const lastOpacity = label.userData._lastOpacity ?? -1;
+                const isMobile = viewportWidth < MOBILE_BREAKPOINT;
+                const isCandidate = isMobile && opacity > 0 && !label.userData.isMoon;
+
+                if (isCandidate) {
+                    // Defer application until collision check
+                    label.userData._tentativeOpacity = opacity;
+
+                    let item = labelPool[labelPoolIndex];
+                    if (!item) {
+                        item = {
+                            label,
+                            x: left,
+                            y: top,
+                            width: approxLabelWidth,
+                            height: approxLabelHeight,
+                            z: tempVec.z
+                        };
+                        labelPool[labelPoolIndex] = item;
+                    } else {
+                        item.label = label;
+                        item.x = left;
+                        item.y = top;
+                        item.width = approxLabelWidth;
+                        item.height = approxLabelHeight;
+                        item.z = tempVec.z;
+                    }
+
+                    visibleLabelsList.push(item);
+                    labelPoolIndex++;
+                } else {
+                    // Apply immediately
+                    if (Math.abs(lastOpacity - opacity) > OPACITY_UPDATE_THRESHOLD) {
+                        label.element.style.opacity = String(opacity);
+                        label.userData._lastOpacity = opacity;
+                    }
+                }
+            }
+        }
+
+        // ⚡ Bolt Optimization: Spatial Grid Collision Detection
+        // Replaces O(N^2) loop with O(N) grid-based check.
+        if (viewportWidth < MOBILE_BREAKPOINT) {
+            // 1. Sort by Z-depth (NDC z is -1 to 1, smaller is closer)
+            visibleLabelsList.sort((a, b) => a.z - b.z);
+
+            const cellWidth = APPROX_LABEL_WIDTH;
+            const cellHeight = APPROX_LABEL_HEIGHT;
+            const neededCols = Math.ceil(viewportWidth / cellWidth);
+            const neededRows = Math.ceil(viewportHeight / cellHeight);
+
+            if (neededCols !== labelGridCols || neededRows !== labelGridRows) {
+                labelGridCols = neededCols;
+                labelGridRows = neededRows;
+                labelGrid = new Array(labelGridCols * labelGridRows).fill(null).map(() => []);
+            } else {
+                // Clear existing grid
+                for (let i = 0; i < labelGrid.length; i++) {
+                    const cell = labelGrid[i];
+                    if (cell) cell.length = 0;
+                }
+            }
+
+            const getGridIndex = (c: number, r: number) => {
+                if (c < 0 || c >= labelGridCols || r < 0 || r >= labelGridRows) return -1;
+                return r * labelGridCols + c;
+            };
+
+            for (const item of visibleLabelsList) {
+                const startCol = Math.floor(item.x / cellWidth);
+                const endCol = Math.floor((item.x + item.width) / cellWidth);
+                const startRow = Math.floor(item.y / cellHeight);
+                const endRow = Math.floor((item.y + item.height) / cellHeight);
+
+                let isBlocked = false;
+
+                // Check neighbors in occupied cells
+                checkLoop:
+                for (let r = startRow; r <= endRow; r++) {
+                    for (let c = startCol; c <= endCol; c++) {
+                        const idx = getGridIndex(c, r);
+                        if (idx !== -1) {
+                            const cellItems = labelGrid[idx];
+                            if (cellItems) {
+                                for (const other of cellItems) {
+                                    const overlap = !(
+                                        (item.x + item.width) < other.x ||
+                                        item.x > (other.x + other.width) ||
+                                        (item.y + item.height) < other.y ||
+                                        item.y > (other.y + other.height)
+                                    );
+                                    if (overlap) {
+                                        isBlocked = true;
+                                        break checkLoop;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let targetOpacity = item.label.userData._tentativeOpacity;
+
+                if (isBlocked) {
+                    targetOpacity = 0;
+                } else {
+                    // Mark as occupied
+                    for (let r = startRow; r <= endRow; r++) {
+                        for (let c = startCol; c <= endCol; c++) {
+                            const idx = getGridIndex(c, r);
+                            if (idx !== -1) labelGrid[idx]?.push(item);
+                        }
+                    }
+                }
+
+                // Apply deferred update
+                const last = item.label.userData._lastOpacity ?? -1;
+                if (Math.abs(last - targetOpacity) > OPACITY_UPDATE_THRESHOLD) {
+                    item.label.element.style.opacity = String(targetOpacity);
+                    item.label.userData._lastOpacity = targetOpacity;
+                }
+            }
+        }
+
+        labelRenderer.render(scene, camera);
+        if (!showLabels) labelsNeedUpdate = false;
+    }
+}
+
+function renderScene(frameCount: number): void {
+    controls?.update();
+    if (renderer) {
+        renderer.render(scene, camera);
+        renderLabels();
+    }
+
+    // Trails
+    if (!isPaused && showOrbits && frameCount % 2 === 0 && trailManager && renderer) {
+        trailManager.update(renderer);
+    }
+}
+
 /**
  * The main animation loop (RequestAnimationFrame).
  * Processed in distinct phases:
@@ -582,301 +886,16 @@ function animate(): void {
     lastFrameTime = now;
 
     if (!isPaused) {
-        simulationTime += dt * SIMULATION_SPEED_BASE * timeScale;
-
-        const len = animatedObjects.length;
-        for (let i = 0; i < len; i++) {
-            const obj = animatedObjects[i];
-            if (!obj) continue;
-            const physics = obj.physics;
-            if (physics && physics.a !== undefined) {
-                getOrbitalPosition(physics, simulationTime, _localPos);
-                _worldPos.copy(_localPos);
-
-                if (obj.parent) {
-                    getOrbitalPosition(obj.parent, simulationTime, _parentPosPhys);
-                    _worldPos.add(_parentPosPhys);
-                }
-
-                physicsToRender(_worldPos, _renderPos);
-
-                if (obj.parent) {
-                    physicsToRender(_parentPosPhys, _parentPosRender);
-                    obj.pivot.position.copy(_renderPos).sub(_parentPosRender);
-                } else {
-                    obj.pivot.position.copy(_renderPos);
-                }
-
-                if (obj.mesh) {
-                    obj.mesh.rotation.y += BODY_ROTATION_SPEED * dt * timeScale;
-                }
-            }
-        }
-
-        belts.forEach(belt => belt.update?.(simulationTime));
-        if (starfield) starfield.rotation.y += STARFIELD_ROTATION_SPEED * dt;
-        scene.updateMatrixWorld();
-        instanceRegistry?.update();
+        updatePhysics(dt);
     }
 
-    // Camera Logic
-    if (isShipView && playerShip && controls) {
-        controls.target.copy(playerShip.position);
-        camera.position.set(
-            playerShip.position.x + 5,
-            playerShip.position.y + 3,
-            playerShip.position.z + 5
-        );
-    } else if (focusTarget && controls) {
-        tempVec.setFromMatrixPosition(focusTarget.matrixWorld);
-        controls.target.copy(tempVec);
-    }
-
-    // Player Ship AI
-    if (playerShip && frameCount % LOGIC_UPDATE_INTERVAL === 0) {
-        let closestDist = Infinity;
-        let closestObj: THREE.Object3D | null = null;
-        const shipPos = playerShip.position;
-
-        const len = planets.length;
-        for (let i = 0; i < len; i++) {
-            const p = planets[i];
-            if (!p) continue;
-            // ⚡ Bolt Optimization: Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
-            const elements = p.matrixWorld.elements;
-            tempVec.set(elements[12]!, elements[13]!, elements[14]!);
-            const dist = shipPos.distanceToSquared(tempVec);
-            if (dist < closestDist) {
-                closestDist = dist;
-                closestObj = p;
-            }
-        }
-        closestObjectCache = closestObj;
-    }
-    if (closestObjectCache && playerShip) {
-        tempVec.setFromMatrixPosition(closestObjectCache.matrixWorld);
-        playerShip.lookAt(tempVec);
-    }
+    updateCamera();
+    updateLogic(frameCount);
 
     frameCount++;
 
-    // UI Updates
-    if (selectedObject && frameCount % LOGIC_UPDATE_INTERVAL === 0) {
-        const distEl = document.getElementById('info-dist-sun');
-        if (distEl) {
-            const userData = selectedObject.userData as Record<string, unknown>;
-            const physics = userData.physics as Record<string, unknown> | undefined;
-            if (physics?.a) {
-                distEl.textContent = `Orbit: ${physics.a} AU`;
-            } else {
-                tempVec.setFromMatrixPosition(selectedObject.matrixWorld);
-                distEl.textContent = `Render Dist: ${tempVec.distanceTo(sunPos).toFixed(1)}`;
-            }
-        }
-    }
-
-    // Render
-    controls?.update();
-    if (renderer) {
-        renderer.render(scene, camera);
-        if ((showLabels || labelsNeedUpdate) && labelRenderer) {
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-            const edgeMargin = LABEL_EDGE_MARGIN;
-            const fadeZone = LABEL_FADE_ZONE;
-
-            // ⚡ Bolt Optimization: Use mathematical projection instead of getBoundingClientRect
-            // to avoid Layout Thrashing (Read-Write-Read-Write cycle).
-            // We approximate label size for edge fading and overlap detection.
-            const approxLabelWidth = APPROX_LABEL_WIDTH;
-            const approxLabelHeight = APPROX_LABEL_HEIGHT;
-            visibleLabelsList.length = 0;
-            let labelPoolIndex = 0;
-
-            const len = allLabels.length;
-            for (let i = 0; i < len; i++) {
-                const label = allLabels[i];
-                if (!label) continue;
-
-                if (label.userData.isMoon) {
-                    const parentName = label.userData.parentPlanet;
-                    const isParentFocused = focusTarget?.userData.name === parentName;
-                    const isParentSelected = selectedObject?.userData.name === parentName;
-                    label.visible = showLabels && (isParentFocused || isParentSelected);
-                } else {
-                    label.visible = showLabels;
-                }
-
-                if (label.visible && label.element) {
-                    // Project 3D position to 2D screen coordinates
-                    // We assume the label is attached to a parent object or has its own position
-                    // CSS2DObject.position is in World Space.
-                    tempVec.copy(label.position);
-                    tempVec.project(camera); // Now in NDC (-1 to +1)
-
-                    const x = (tempVec.x * .5 + .5) * viewportWidth;
-                    const y = (-(tempVec.y * .5) + .5) * viewportHeight;
-
-                    // Approximate bounding box centered on the point
-                    const left = x - (approxLabelWidth / 2);
-                    const right = x + (approxLabelWidth / 2);
-                    const top = y - (approxLabelHeight / 2);
-                    const bottom = y + (approxLabelHeight / 2);
-
-                    let opacity = 1;
-
-                    // Edge Fading Logic using projected coordinates
-                    const distLeft = left;
-                    const distRight = viewportWidth - right;
-                    const distTop = top;
-                    const distBottom = viewportHeight - bottom;
-                    const minDist = Math.min(distLeft, distRight, distTop, distBottom);
-
-                    // Check if behind camera (NDC z > 1)
-                    if (tempVec.z > 1) {
-                        opacity = 0;
-                    } else if (minDist < edgeMargin) {
-                        opacity = 0;
-                    } else if (minDist < edgeMargin + fadeZone) {
-                        opacity = (minDist - edgeMargin) / fadeZone;
-                    }
-
-                    // ⚡ Bolt Optimization: Prevent Layout Thrashing
-                    // 1. Only update DOM if value changed (cache in userData)
-                    // 2. Defer updates for collision candidates to avoid double-write
-                    const lastOpacity = label.userData._lastOpacity ?? -1;
-                    const isMobile = viewportWidth < MOBILE_BREAKPOINT;
-                    const isCandidate = isMobile && opacity > 0 && !label.userData.isMoon;
-
-                    if (isCandidate) {
-                        // Defer application until collision check
-                        label.userData._tentativeOpacity = opacity;
-
-                        let item = labelPool[labelPoolIndex];
-                        if (!item) {
-                            item = {
-                                label,
-                                x: left,
-                                y: top,
-                                width: approxLabelWidth,
-                                height: approxLabelHeight,
-                                z: tempVec.z
-                            };
-                            labelPool[labelPoolIndex] = item;
-                        } else {
-                            item.label = label;
-                            item.x = left;
-                            item.y = top;
-                            item.width = approxLabelWidth;
-                            item.height = approxLabelHeight;
-                            item.z = tempVec.z;
-                        }
-
-                        visibleLabelsList.push(item);
-                        labelPoolIndex++;
-                    } else {
-                        // Apply immediately
-                        if (Math.abs(lastOpacity - opacity) > OPACITY_UPDATE_THRESHOLD) {
-                            label.element.style.opacity = String(opacity);
-                            label.userData._lastOpacity = opacity;
-                        }
-                    }
-                }
-            }
-
-            // ⚡ Bolt Optimization: Spatial Grid Collision Detection
-            // Replaces O(N^2) loop with O(N) grid-based check.
-            if (viewportWidth < MOBILE_BREAKPOINT) {
-                // 1. Sort by Z-depth (NDC z is -1 to 1, smaller is closer)
-                visibleLabelsList.sort((a, b) => a.z - b.z);
-
-                const cellWidth = APPROX_LABEL_WIDTH;
-                const cellHeight = APPROX_LABEL_HEIGHT;
-                const neededCols = Math.ceil(viewportWidth / cellWidth);
-                const neededRows = Math.ceil(viewportHeight / cellHeight);
-
-                if (neededCols !== labelGridCols || neededRows !== labelGridRows) {
-                    labelGridCols = neededCols;
-                    labelGridRows = neededRows;
-                    labelGrid = new Array(labelGridCols * labelGridRows).fill(null).map(() => []);
-                } else {
-                    // Clear existing grid
-                    for (let i = 0; i < labelGrid.length; i++) {
-                        const cell = labelGrid[i];
-                        if (cell) cell.length = 0;
-                    }
-                }
-
-                const getGridIndex = (c: number, r: number) => {
-                    if (c < 0 || c >= labelGridCols || r < 0 || r >= labelGridRows) return -1;
-                    return r * labelGridCols + c;
-                };
-
-                for (const item of visibleLabelsList) {
-                    const startCol = Math.floor(item.x / cellWidth);
-                    const endCol = Math.floor((item.x + item.width) / cellWidth);
-                    const startRow = Math.floor(item.y / cellHeight);
-                    const endRow = Math.floor((item.y + item.height) / cellHeight);
-
-                    let isBlocked = false;
-
-                    // Check neighbors in occupied cells
-                    checkLoop:
-                    for (let r = startRow; r <= endRow; r++) {
-                        for (let c = startCol; c <= endCol; c++) {
-                            const idx = getGridIndex(c, r);
-                            if (idx !== -1) {
-                                const cellItems = labelGrid[idx];
-                                if (cellItems) {
-                                    for (const other of cellItems) {
-                                        const overlap = !(
-                                            (item.x + item.width) < other.x ||
-                                            item.x > (other.x + other.width) ||
-                                            (item.y + item.height) < other.y ||
-                                            item.y > (other.y + other.height)
-                                        );
-                                        if (overlap) {
-                                            isBlocked = true;
-                                            break checkLoop;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    let targetOpacity = item.label.userData._tentativeOpacity;
-
-                    if (isBlocked) {
-                        targetOpacity = 0;
-                    } else {
-                        // Mark as occupied
-                        for (let r = startRow; r <= endRow; r++) {
-                            for (let c = startCol; c <= endCol; c++) {
-                                const idx = getGridIndex(c, r);
-                                if (idx !== -1) labelGrid[idx]?.push(item);
-                            }
-                        }
-                    }
-
-                    // Apply deferred update
-                    const last = item.label.userData._lastOpacity ?? -1;
-                    if (Math.abs(last - targetOpacity) > OPACITY_UPDATE_THRESHOLD) {
-                        item.label.element.style.opacity = String(targetOpacity);
-                        item.label.userData._lastOpacity = targetOpacity;
-                    }
-                }
-            }
-
-            labelRenderer.render(scene, camera);
-            if (!showLabels) labelsNeedUpdate = false;
-        }
-    }
-
-    // Trails
-    if (!isPaused && showOrbits && frameCount % 2 === 0 && trailManager && renderer) {
-        trailManager.update(renderer);
-    }
+    updateUI(frameCount);
+    renderScene(frameCount);
 }
 
 function onWindowResize(): void {
