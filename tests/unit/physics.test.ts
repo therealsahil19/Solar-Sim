@@ -187,7 +187,7 @@ describe('Physics Module', () => {
     });
 
     describe('renderToPhysicsEstimate', () => {
-        it('should inverse linear scaling in inner zone', () => {
+        it('should inverse linear scaling in Zone 1 (Linear)', () => {
             const visualDistance = 400; // 10 AU * 40
             const physical = renderToPhysicsEstimate(visualDistance);
 
@@ -195,14 +195,42 @@ describe('Physics Module', () => {
         });
 
         it('should handle edge cases at zone boundaries', () => {
-            const limit1Visual = 30 * AU_SCALE; // Exactly at boundary
-            const physical = renderToPhysicsEstimate(limit1Visual);
+            const limit1Visual = 30 * AU_SCALE; // Exactly at boundary (LIMIT_1)
+            const physical1 = renderToPhysicsEstimate(limit1Visual);
+            expect(physical1).toBeCloseTo(30, 1);
 
-            expect(physical).toBeCloseTo(30, 1);
+            // Test boundary LIMIT_2 (50 AU)
+            const pos2 = new THREE.Vector3(50, 0, 0);
+            const limit2Visual = physicsToRender(pos2).length();
+            const physical2 = renderToPhysicsEstimate(limit2Visual);
+            expect(physical2).toBeCloseTo(50, 1);
         });
 
-        it('should be approximately inverse of physicsToRender', () => {
-            const testDistances = [5, 15, 25]; // Inner zone only for simplicity
+        it('should inverse logarithmic scaling in Zone 2 (Mild Log)', () => {
+            // Pick a value in Zone 2: 40 AU (between 30 and 50)
+            const physicalPos = new THREE.Vector3(40, 0, 0);
+            const visualDistance = physicsToRender(physicalPos).length();
+            const estimated = renderToPhysicsEstimate(visualDistance);
+
+            expect(estimated).toBeCloseTo(40, 1);
+        });
+
+        it('should inverse aggressive logarithmic scaling in Zone 3 (Aggressive Log)', () => {
+            // Pick values in Zone 3: > 50 AU
+            const testDistances = [100, 1000, 10000];
+
+            testDistances.forEach(d => {
+                const physicalPos = new THREE.Vector3(d, 0, 0);
+                const visualDistance = physicsToRender(physicalPos).length();
+                const estimated = renderToPhysicsEstimate(visualDistance);
+
+                expect(estimated).toBeCloseTo(d, 0); // Logarithmic functions can have slightly more floating point drift at huge scales
+            });
+        });
+
+        it('should be approximately inverse of physicsToRender across all zones', () => {
+            // Covering all zones: 15 (Z1), 40 (Z2), 100 (Z3), 1000 (Z3)
+            const testDistances = [15, 40, 100, 1000];
 
             testDistances.forEach(d => {
                 const pos = new THREE.Vector3(d, 0, 0);
