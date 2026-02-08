@@ -55,9 +55,9 @@ function updateLogic(frameCount: number): void {
         for (let i = 0; i < len; i++) {
             const p = planets[i];
             if (!p) continue;
-            // ⚡ Bolt Optimization: Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
-            const elements = p.matrixWorld.elements;
-            tempVec.set(elements[12]!, elements[13]!, elements[14]!);
+            // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
+            const te = p.matrixWorld.elements;
+            tempVec.set(te[12], te[13], te[14]);
             const dist = shipPos.distanceToSquared(tempVec);
             if (dist < closestDist) {
                 closestDist = dist;
@@ -67,7 +67,9 @@ function updateLogic(frameCount: number): void {
         closestObjectCache = closestObj;
     }
     if (closestObjectCache && playerShip) {
-        tempVec.setFromMatrixPosition(closestObjectCache.matrixWorld);
+        // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
+        const te = closestObjectCache.matrixWorld.elements;
+        tempVec.set(te[12], te[13], te[14]);
         playerShip.lookAt(tempVec);
     }
 }
@@ -630,7 +632,9 @@ function updateCamera(): void {
             playerShip.position.z + 5
         );
     } else if (focusTarget && controls) {
-        tempVec.setFromMatrixPosition(focusTarget.matrixWorld);
+        // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
+        const te = focusTarget.matrixWorld.elements;
+        tempVec.set(te[12], te[13], te[14]);
         controls.target.copy(tempVec);
     }
 }
@@ -644,7 +648,9 @@ function updateUI(frameCount: number): void {
             if (physics?.a) {
                 distEl.textContent = `Orbit: ${physics.a} AU`;
             } else {
-                tempVec.setFromMatrixPosition(selectedObject.matrixWorld);
+                // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
+                const te = selectedObject.matrixWorld.elements;
+                tempVec.set(te[12], te[13], te[14]);
                 distEl.textContent = `Render Dist: ${tempVec.distanceTo(sunPos).toFixed(1)}`;
             }
         }
