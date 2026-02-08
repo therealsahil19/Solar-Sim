@@ -217,27 +217,55 @@ describe('Physics Module', () => {
 
         it('should inverse aggressive logarithmic scaling in Zone 3 (Aggressive Log)', () => {
             // Pick values in Zone 3: > 50 AU
-            const testDistances = [100, 1000, 10000];
+            const testDistances = [100, 1000, 10000, 100000];
 
             testDistances.forEach(d => {
                 const physicalPos = new THREE.Vector3(d, 0, 0);
                 const visualDistance = physicsToRender(physicalPos).length();
                 const estimated = renderToPhysicsEstimate(visualDistance);
 
-                expect(estimated).toBeCloseTo(d, 0); // Logarithmic functions can have slightly more floating point drift at huge scales
+                // Even at 100,000 AU, precision should be better than 0.001 AU
+                expect(estimated).toBeCloseTo(d, 3);
             });
         });
 
-        it('should be approximately inverse of physicsToRender across all zones', () => {
-            // Covering all zones: 15 (Z1), 40 (Z2), 100 (Z3), 1000 (Z3)
-            const testDistances = [15, 40, 100, 1000];
+        it('should be exactly inverse of physicsToRender across all zones (Round-trip)', () => {
+            // Covering all zones: 0.1, 15 (Z1), 30 (Boundary), 40 (Z2), 50 (Boundary), 100, 1000, 100000 (Z3)
+            const testDistances = [0.1, 15, 30, 40, 50, 100, 1000, 100000];
 
             testDistances.forEach(d => {
                 const pos = new THREE.Vector3(d, 0, 0);
                 const rendered = physicsToRender(pos);
                 const estimated = renderToPhysicsEstimate(rendered.length());
 
-                expect(estimated).toBeCloseTo(d, 1);
+                expect(estimated).toBeCloseTo(d, 5);
+            });
+        });
+
+        it('should maintain monotonicity (higher visual distance => higher physical distance)', () => {
+            const visualDistances = [0, 100, 1200, 1300, 1382, 1383, 2000, 5000];
+
+            for (let i = 1; i < visualDistances.length; i++) {
+                const prev = renderToPhysicsEstimate(visualDistances[i - 1]!);
+                const curr = renderToPhysicsEstimate(visualDistances[i]!);
+                expect(curr).toBeGreaterThan(prev);
+            }
+        });
+
+        it('should handle values slightly above and below zone boundaries correctly', () => {
+            // Boundaries are around 1200 (VISUAL_LIMIT_1) and ~1382.67 (VISUAL_LIMIT_2)
+            const boundaries = [1200, 1382.67389]; // Approximate VISUAL_LIMIT_2
+
+            boundaries.forEach(b => {
+                const justBelow = renderToPhysicsEstimate(b - 0.0001);
+                const exactly = renderToPhysicsEstimate(b);
+                const justAbove = renderToPhysicsEstimate(b + 0.0001);
+
+                expect(justBelow).toBeLessThan(exactly);
+                expect(justAbove).toBeGreaterThan(exactly);
+
+                // Should be very close to each other (continuity)
+                expect(justAbove - justBelow).toBeLessThan(0.01);
             });
         });
     });
