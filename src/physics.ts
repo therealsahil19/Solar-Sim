@@ -46,7 +46,7 @@ export function getOrbitalPosition(
         a,
         e,
         i,
-        omega = 0,
+        omega,
         w: argPerihelion = 0,
         M0 = 0,
         Omega: LAN = 0
