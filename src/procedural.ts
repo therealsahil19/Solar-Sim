@@ -127,7 +127,8 @@ export function createOrbitLine(physicsData: OrbitalParameters): THREE.LineLoop 
     const posPhys = new THREE.Vector3();
     const posRender = new THREE.Vector3();
 
-    const period = Math.pow(physicsData.a, 1.5);
+    // Optimization: Use pre-calculated period if available
+    const period = physicsData.period ?? Math.pow(physicsData.a, 1.5);
     const dt = period / segments;
 
     for (let i = 0; i < vertexCount; i++) {
