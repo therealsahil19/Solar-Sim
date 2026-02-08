@@ -17,8 +17,11 @@ export interface OrbitalParameters {
     e: number;
     /** Inclination in degrees relative to ecliptic */
     i: number;
-    /** Orbital period in Earth years */
-    period?: number; // Optional in system.json (often calculated)
+    /**
+     * Orbital period in Earth years.
+     * Should be pre-calculated to avoid expensive Math.pow(a, 1.5) calls in the render loop.
+     */
+    period?: number;
     /** Argument of perihelion in degrees */
     omega?: number;
     /** Argument of perihelion in degrees (legacy alias) */
