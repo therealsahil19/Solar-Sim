@@ -18,10 +18,10 @@ vi.mock('three', async () => {
         setSize() {}
 
         render(scene: THREE.Scene, camera: THREE.Camera) {
-            if (scene.autoUpdate) {
+            if (scene.matrixWorldAutoUpdate) {
                 scene.updateMatrixWorld();
             }
-            if (!camera.parent) {
+            if (!camera.parent && (camera as any).matrixWorldAutoUpdate !== false) {
                 camera.updateMatrixWorld();
             }
         }
@@ -39,7 +39,7 @@ vi.mock('three', async () => {
     class MockScene extends actual.Scene {
         constructor() {
             super();
-            this.autoUpdate = true;
+            this.matrixWorldAutoUpdate = true;
         }
     }
 
@@ -128,11 +128,11 @@ describe('Redundant Scene Update Optimization', () => {
         mainModule?.dispose();
     });
 
-    it('should have scene.autoUpdate disabled', async () => {
+    it('should have scene.matrixWorldAutoUpdate disabled', async () => {
         await mainModule.init();
         const scene = mainModule.scene;
         // Should be false after fix
-        expect(scene.autoUpdate).toBe(false);
+        expect(scene.matrixWorldAutoUpdate).toBe(false);
     });
 
     it('should call updateMatrixWorld only once per frame', async () => {
