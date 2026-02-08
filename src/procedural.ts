@@ -25,6 +25,8 @@ const baseSphereGeometry = new THREE.SphereGeometry(1, 64, 64);
 
 // Material Cache
 const materialCache: Record<string, THREE.MeshStandardMaterial> = {};
+// ⚡ Bolt Optimization: Cache materials by texture URL to enable instancing
+const textureMaterialCache: Record<string, THREE.MeshStandardMaterial> = {};
 let cachedGlowTexture: THREE.CanvasTexture | null = null;
 
 /**
@@ -68,6 +70,9 @@ export interface AnimatedBody {
 export function clearMaterialCache(): void {
     Object.values(materialCache).forEach(mat => mat.dispose());
     for (const key in materialCache) delete materialCache[key];
+
+    Object.values(textureMaterialCache).forEach(mat => mat.dispose());
+    for (const key in textureMaterialCache) delete textureMaterialCache[key];
 }
 
 /**
@@ -312,21 +317,40 @@ export function createSystem(
 
     const isLazy = data.physics.a > 20;
     if (data.visual.texture) {
-        if (isLazy && textureLoader.lazyLoadQueue) {
-            texturedMaterial = new THREE.MeshStandardMaterial({
-                color: data.visual.color,
-                map: null
-            });
-            textureLoader.lazyLoadQueue.push({
-                material: texturedMaterial,
-                url: data.visual.texture
-            });
+        const url = data.visual.texture;
+
+        // Check cache first
+        if (textureMaterialCache[url]) {
+            texturedMaterial = textureMaterialCache[url];
+
+            // If we have a cached material but it's a lazy placeholder (map is null),
+            // and this request is NOT lazy, we should "upgrade" it to load the texture now.
+            if (!isLazy && !texturedMaterial.map) {
+                const texture = textureLoader.load(url);
+                texturedMaterial.map = texture;
+                texturedMaterial.color.setHex(0xffffff);
+                texturedMaterial.needsUpdate = true;
+            }
         } else {
-            const texture = textureLoader.load(data.visual.texture);
-            texturedMaterial = new THREE.MeshStandardMaterial({
-                map: texture,
-                color: 0xffffff
-            });
+            // Create new material
+            if (isLazy && textureLoader.lazyLoadQueue) {
+                texturedMaterial = new THREE.MeshStandardMaterial({
+                    color: data.visual.color,
+                    map: null
+                });
+                textureLoader.lazyLoadQueue.push({
+                    material: texturedMaterial,
+                    url: url
+                });
+            } else {
+                const texture = textureLoader.load(url);
+                texturedMaterial = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    color: 0xffffff
+                });
+            }
+            // Store in cache
+            textureMaterialCache[url] = texturedMaterial;
         }
     }
 
