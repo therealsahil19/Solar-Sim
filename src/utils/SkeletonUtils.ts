@@ -10,18 +10,22 @@
  * @param count Number of skeleton items to create.
  * @param styles Optional inline styles for the skeleton items (e.g., width, height).
  * @param className Optional extra class names for the skeleton items.
+ * @param clear Whether to clear the container before injecting. Defaults to true.
  */
 export function injectSkeletons(
     container: HTMLElement,
     count: number = 3,
     styles: Partial<CSSStyleDeclaration> = {},
-    className: string = ''
+    className: string = '',
+    clear: boolean = true
 ): void {
     if (!container) return;
 
     // Clear container logic if needed, but often we just append.
     // Usually skeletons replace content, so we should probably clear first.
-    container.innerHTML = '';
+    if (clear) {
+        container.textContent = '';
+    }
 
     for (let i = 0; i < count; i++) {
         const div = document.createElement('div');
