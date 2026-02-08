@@ -118,14 +118,14 @@ export class InfoPanel implements Disposable {
 
         // Format numeric values
         if (this.dom.radius) {
-            const size = (d as Record<string, unknown>).size as number | undefined;
+            const size = d.size;
             this.dom.radius.textContent = size
                 ? `Radius: ${size.toFixed(2)} x Earth`
                 : 'Radius: -';
         }
 
         if (this.dom.distance) {
-            const distance = (d as Record<string, unknown>).distance as number | undefined;
+            const distance = d.distance;
             this.dom.distance.textContent = distance
                 ? `Orbit Radius: ${distance} units`
                 : 'Orbit Radius: 0';
