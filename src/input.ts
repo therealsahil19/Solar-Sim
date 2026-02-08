@@ -327,6 +327,14 @@ export function setupInteraction(
      */
     const onKeyDown = (e: KeyboardEvent): void => {
         const key = e.key.toLowerCase();
+
+        // Global shortcuts that bypass input focus
+        if ((e.metaKey || e.ctrlKey) && key === 'k') { // Cmd+K or Ctrl+K
+            e.preventDefault(); // Prevent browser shortcuts
+            commandPalette?.toggle();
+            return;
+        }
+
         // Prevent shortcuts from firing when typing in an input field
         if (document.activeElement?.tagName === 'INPUT') return;
 
@@ -343,9 +351,6 @@ export function setupInteraction(
         } else if (key === 't') {
             const btn = document.getElementById('btn-texture');
             callbacks.onToggleTexture(btn);
-        } else if ((e.metaKey || e.ctrlKey) && key === 'k') { // Cmd+K or Ctrl+K
-            e.preventDefault(); // Prevent browser shortcuts
-            commandPalette?.toggle();
         } else if (key === ',') {
             e.preventDefault();
             settingsPanel.open();
