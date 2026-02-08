@@ -110,12 +110,73 @@ export function setupInteraction(
     context: InteractionContext,
     callbacks: InteractionCallbacks
 ): InteractionResult {
-    const { camera, rendererDomElement, interactionTargets } = context;
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
+    // 1. Initialize Base Components (Theme, InfoPanel)
+    const { themeManager, infoPanel } = initBaseComponents(callbacks);
 
-    // --- Component Initialization ---
+    // 2. Initialize Selection Logic
+    const { updateSelectionUI, selectByName } = createSelectionHelpers(
+        context,
+        callbacks,
+        infoPanel
+    );
 
+    // 3. Initialize Modal (Welcome)
+    const { welcomeModal, openModal, closeModal } = createWelcomeModal();
+
+    // 4. Initialize Interactive Components (Sidebar, Settings, CommandPalette)
+    const { sidebar, settingsPanel, commandPalette } = initInteractiveComponents(
+        context,
+        callbacks,
+        themeManager,
+        selectByName,
+        openModal
+    );
+
+    // 5. Setup Raycasting (Mouse Interaction)
+    const raycastingCleanup = setupRaycasting(
+        context,
+        callbacks,
+        updateSelectionUI
+    );
+
+    // 6. Setup Keyboard Shortcuts
+    const keyboardCleanup = setupKeyboardShortcuts(
+        callbacks,
+        commandPalette,
+        sidebar,
+        welcomeModal,
+        settingsPanel,
+        infoPanel,
+        openModal
+    );
+
+    // 7. Setup UI Button Bindings
+    const uiCleanup = setupUIBindings(callbacks, openModal);
+
+    return {
+        updateSelectionUI,
+        openModal,
+        closeModal,
+        settingsPanel,
+        dispose: (): void => {
+            raycastingCleanup();
+            keyboardCleanup();
+            uiCleanup();
+
+            commandPalette?.dispose();
+            welcomeModal.dispose();
+            settingsPanel.dispose();
+            sidebar?.dispose();
+            infoPanel.dispose();
+        }
+    };
+}
+
+// ------------------------------------------------------------------
+// Helper Functions
+// ------------------------------------------------------------------
+
+function initBaseComponents(callbacks: InteractionCallbacks) {
     // Theme Manager
     const themeManager = new ThemeManager();
 
@@ -126,6 +187,89 @@ export function setupInteraction(
         }
     });
 
+    return { themeManager, infoPanel };
+}
+
+function createSelectionHelpers(
+    context: InteractionContext,
+    callbacks: InteractionCallbacks,
+    infoPanel: InfoPanel
+) {
+    const { interactionTargets } = context;
+
+    /**
+     * Updates the Side Panel and Toast with details about the selected object.
+     */
+    function updateSelectionUI(mesh: THREE.Object3D): void {
+        if (!mesh) return;
+
+        const d = mesh.userData as SolarSimUserData & Record<string, unknown>;
+        let toastText = `Selected: ${d.name ?? 'Unknown'}`;
+
+        if (d.type) {
+            const typeLabel = String(d.type).charAt(0).toUpperCase() + String(d.type).slice(1);
+            const size = d.size as number | undefined;
+            if (size !== undefined && d.type !== 'Star') {
+                const isMoon = d.type === 'moon';
+                const sizeType = isMoon ? 'Moon' : 'Earth';
+                const displaySize = isMoon ? (size / 0.27) : size;
+                toastText += ` (${typeLabel}) – ${displaySize.toFixed(2)} × ${sizeType} size`;
+            } else {
+                toastText += ` (${typeLabel})`;
+            }
+        }
+
+        ToastManager.getInstance().show(toastText, { type: 'info', duration: 4000 });
+        infoPanel.update(mesh);
+    }
+
+    function findMeshByName(name: string): THREE.Object3D | null {
+        const found = interactionTargets.find(obj => obj.userData.name === name);
+        if (found) return found;
+
+        if (context.instanceRegistry) {
+            return context.instanceRegistry.findInstanceByName(name);
+        }
+        return null;
+    }
+
+    function selectByName(name: string): void {
+        const mesh = findMeshByName(name);
+        if (mesh) {
+            callbacks.onSetFocus(mesh);
+            callbacks.onObjectSelected(mesh);
+            updateSelectionUI(mesh);
+        } else {
+            console.warn(`Mesh not found for: ${name}`);
+        }
+    }
+
+    return { updateSelectionUI, selectByName };
+}
+
+function createWelcomeModal() {
+    const welcomeModal = new Modal('welcome-modal', {
+        onClose: () => { /* Optional actions */ }
+    });
+
+    function openModal(): void {
+        welcomeModal.open();
+    }
+
+    function closeModal(): void {
+        welcomeModal.close();
+    }
+
+    return { welcomeModal, openModal, closeModal };
+}
+
+function initInteractiveComponents(
+    context: InteractionContext,
+    callbacks: InteractionCallbacks,
+    themeManager: ThemeManager,
+    selectByName: (name: string) => void,
+    openModal: () => void
+) {
     // Navigation Sidebar
     let sidebar: NavigationSidebar | null = null;
     if (context.planetData) {
@@ -165,56 +309,37 @@ export function setupInteraction(
         }
     });
 
-    /**
-     * Updates the Side Panel and Toast with details about the selected object.
-     */
-    function updateSelectionUI(mesh: THREE.Object3D): void {
-        if (!mesh) return;
-
-        const d = mesh.userData as SolarSimUserData & Record<string, unknown>;
-        let toastText = `Selected: ${d.name ?? 'Unknown'}`;
-
-        if (d.type) {
-            const typeLabel = String(d.type).charAt(0).toUpperCase() + String(d.type).slice(1);
-            const size = d.size as number | undefined;
-            if (size !== undefined && d.type !== 'Star') {
-                const isMoon = d.type === 'moon';
-                const sizeType = isMoon ? 'Moon' : 'Earth';
-                const displaySize = isMoon ? (size / 0.27) : size;
-                toastText += ` (${typeLabel}) – ${displaySize.toFixed(2)} × ${sizeType} size`;
-            } else {
-                toastText += ` (${typeLabel})`;
+    // Command Palette
+    let commandPalette: CommandPalette | null = null;
+    if (context.planetData) {
+        const paletteCallbacks: CommandPaletteCallbacks = {
+            onSelectByName: selectByName,
+            onToggleOrbits: callbacks.onToggleOrbits,
+            onToggleLabels: callbacks.onToggleLabels,
+            onToggleTexture: callbacks.onToggleTexture,
+            onToggleCamera: callbacks.onToggleCamera,
+            onResetCamera: callbacks.onResetCamera,
+            onTogglePause: callbacks.onTogglePause,
+            openModal: openModal,
+            onToggleTheme: () => {
+                const next = themeManager.cycleTheme();
+                ToastManager.getInstance().show(`Theme: ${next.toUpperCase()}`, { type: 'info' });
             }
-        }
-
-        ToastManager.getInstance().show(toastText, { type: 'info', duration: 4000 });
-        infoPanel.update(mesh);
+        };
+        commandPalette = new CommandPalette(context.planetData, paletteCallbacks);
     }
 
-    // --- Navigation Helpers ---
+    return { sidebar, settingsPanel, commandPalette };
+}
 
-    function findMeshByName(name: string): THREE.Object3D | null {
-        const found = interactionTargets.find(obj => obj.userData.name === name);
-        if (found) return found;
-
-        if (context.instanceRegistry) {
-            return context.instanceRegistry.findInstanceByName(name);
-        }
-        return null;
-    }
-
-    function selectByName(name: string): void {
-        const mesh = findMeshByName(name);
-        if (mesh) {
-            callbacks.onSetFocus(mesh);
-            callbacks.onObjectSelected(mesh);
-            updateSelectionUI(mesh);
-        } else {
-            console.warn(`Mesh not found for: ${name}`);
-        }
-    }
-
-    // --- Interaction Logic (Raycasting) ---
+function setupRaycasting(
+    context: InteractionContext,
+    callbacks: InteractionCallbacks,
+    updateSelectionUI: (mesh: THREE.Object3D) => void
+) {
+    const { camera, rendererDomElement, interactionTargets } = context;
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
 
     let lastClickTime = 0;
     let lastClickedMeshId: string | null = null;
@@ -294,44 +419,22 @@ export function setupInteraction(
     };
     rendererDomElement.addEventListener('pointerup', onPointerUp);
 
-    // --- Modal Logic ---
-    const welcomeModal = new Modal('welcome-modal', {
-        onClose: () => { /* Optional actions */ }
-    });
+    return () => {
+        rendererDomElement.removeEventListener('pointerdown', onPointerDown);
+        rendererDomElement.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('resize', onWindowResize);
+    };
+}
 
-    const btnHelp = document.getElementById('btn-help');
-
-    function openModal(): void {
-        welcomeModal.open();
-    }
-
-    function closeModal(): void {
-        welcomeModal.close();
-    }
-
-    if (btnHelp) btnHelp.addEventListener('click', openModal);
-
-    // --- Command Palette ---
-    let commandPalette: CommandPalette | null = null;
-    if (context.planetData) {
-        const paletteCallbacks: CommandPaletteCallbacks = {
-            onSelectByName: selectByName,
-            onToggleOrbits: callbacks.onToggleOrbits,
-            onToggleLabels: callbacks.onToggleLabels,
-            onToggleTexture: callbacks.onToggleTexture,
-            onToggleCamera: callbacks.onToggleCamera,
-            onResetCamera: callbacks.onResetCamera,
-            onTogglePause: callbacks.onTogglePause,
-            openModal: openModal,
-            onToggleTheme: () => {
-                const next = themeManager.cycleTheme();
-                ToastManager.getInstance().show(`Theme: ${next.toUpperCase()}`, { type: 'info' });
-            }
-        };
-        commandPalette = new CommandPalette(context.planetData, paletteCallbacks);
-    }
-
-    // --- Global Shortcuts ---
+function setupKeyboardShortcuts(
+    callbacks: InteractionCallbacks,
+    commandPalette: CommandPalette | null,
+    sidebar: NavigationSidebar | null,
+    welcomeModal: Modal,
+    settingsPanel: SettingsPanel,
+    infoPanel: InfoPanel,
+    openModal: () => void
+) {
     /**
      * Keyboard Shortcut System
      *
@@ -396,7 +499,15 @@ export function setupInteraction(
     };
     window.addEventListener('keydown', onKeyDown);
 
-    // --- UI Button Binding ---
+    return () => {
+        window.removeEventListener('keydown', onKeyDown);
+    };
+}
+
+function setupUIBindings(
+    callbacks: InteractionCallbacks,
+    openModal: () => void
+) {
     const onToggleTextureHandler = (): void => {
         callbacks.onToggleTexture(document.getElementById('btn-texture'));
     };
@@ -437,33 +548,17 @@ export function setupInteraction(
     const sliderSpeed = document.getElementById('slider-speed');
     if (sliderSpeed) sliderSpeed.addEventListener('input', onSpeedHandler);
 
-    const btnHelpHandler = openModal;
+    const btnHelp = document.getElementById('btn-help');
+    if (btnHelp) btnHelp.addEventListener('click', openModal);
 
-    return {
-        updateSelectionUI,
-        openModal,
-        closeModal,
-        settingsPanel,
-        dispose: (): void => {
-            rendererDomElement.removeEventListener('pointerdown', onPointerDown);
-            rendererDomElement.removeEventListener('pointerup', onPointerUp);
-            window.removeEventListener('keydown', onKeyDown);
-            window.removeEventListener('resize', onWindowResize);
-
-            if (btnCamera) btnCamera.removeEventListener('click', callbacks.onToggleCamera);
-            if (btnTexture) btnTexture.removeEventListener('click', onToggleTextureHandler);
-            if (btnReset) btnReset.removeEventListener('click', callbacks.onResetCamera);
-            if (btnPause) btnPause.removeEventListener('click', onPauseHandler);
-            if (btnLabels) btnLabels.removeEventListener('click', callbacks.onToggleLabels);
-            if (btnOrbits) btnOrbits.removeEventListener('click', callbacks.onToggleOrbits);
-            if (sliderSpeed) sliderSpeed.removeEventListener('input', onSpeedHandler);
-            if (btnHelp) btnHelp.removeEventListener('click', btnHelpHandler);
-
-            commandPalette?.dispose();
-            welcomeModal.dispose();
-            settingsPanel.dispose();
-            sidebar?.dispose();
-            infoPanel.dispose();
-        }
+    return () => {
+        if (btnCamera) btnCamera.removeEventListener('click', callbacks.onToggleCamera);
+        if (btnTexture) btnTexture.removeEventListener('click', onToggleTextureHandler);
+        if (btnReset) btnReset.removeEventListener('click', callbacks.onResetCamera);
+        if (btnPause) btnPause.removeEventListener('click', onPauseHandler);
+        if (btnLabels) btnLabels.removeEventListener('click', callbacks.onToggleLabels);
+        if (btnOrbits) btnOrbits.removeEventListener('click', callbacks.onToggleOrbits);
+        if (sliderSpeed) sliderSpeed.removeEventListener('input', onSpeedHandler);
+        if (btnHelp) btnHelp.removeEventListener('click', openModal);
     };
 }
