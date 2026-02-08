@@ -19,6 +19,7 @@ import {
     type SunMesh
 } from './procedural';
 import type { CelestialBody } from './types/system';
+import type { SolarSimUserData } from './types';
 import { createBelt } from './debris';
 import { setupControls, setupInteraction, type InteractionResult } from './input';
 import { injectSkeletons } from './utils/SkeletonUtils';
@@ -457,21 +458,21 @@ function toggleTextures(btnElement: HTMLElement | null): void {
         btnElement.setAttribute('aria-pressed', String(useTextures));
     }
     interactionTargets.forEach(mesh => {
-        const userData = mesh.userData as Record<string, unknown>;
+        const userData = mesh.userData as SolarSimUserData;
         if (useTextures && userData.texturedMaterial) {
-            (mesh as THREE.Mesh).material = userData.texturedMaterial as THREE.Material;
+            (mesh as THREE.Mesh).material = userData.texturedMaterial;
         } else if (!useTextures && userData.solidMaterial) {
-            (mesh as THREE.Mesh).material = userData.solidMaterial as THREE.Material;
+            (mesh as THREE.Mesh).material = userData.solidMaterial;
         }
     });
     if (instanceRegistry) {
         instanceRegistry.groups.forEach(group => {
             if (group.mesh && group.instances.length > 0) {
-                const sampleUserData = group.instances[0]?.pivot.userData as Record<string, unknown>;
+                const sampleUserData = group.instances[0]?.pivot.userData as SolarSimUserData;
                 if (useTextures && sampleUserData?.texturedMaterial) {
-                    group.mesh.material = sampleUserData.texturedMaterial as THREE.Material;
+                    group.mesh.material = sampleUserData.texturedMaterial;
                 } else if (!useTextures && sampleUserData?.solidMaterial) {
-                    group.mesh.material = sampleUserData.solidMaterial as THREE.Material;
+                    group.mesh.material = sampleUserData.solidMaterial;
                 }
             }
         });

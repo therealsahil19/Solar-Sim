@@ -39,6 +39,14 @@ export interface SolarSimUserData {
     description?: string;
     /** Distance to sun in AU (computed) */
     distanceToSun?: number;
+    /** Visual size (scale) of the object */
+    size?: number;
+    /** Distance from the sun (for sorting/LOD) */
+    distance?: number;
+    /** Material for solid color mode */
+    solidMaterial?: THREE.Material;
+    /** Material for textured mode */
+    texturedMaterial?: THREE.Material;
 }
 
 /**

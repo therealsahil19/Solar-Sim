@@ -16,6 +16,7 @@ import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { getOrbitalPosition, physicsToRender } from './physics';
 import type { OrbitalParameters, CelestialBody } from './types/system';
+import type { SolarSimUserData } from './types';
 import type { TrailManager } from './trails';
 import type { InstanceRegistry } from './instancing';
 
@@ -212,17 +213,16 @@ export function createSun(
     sun.receiveShadow = false;
     sun.position.set(0, 0, 0);
 
-    sun.userData = {
+    const userData: SolarSimUserData = {
         name: "Sun",
         type: "Star",
-        description: "The star at the center of the Solar System."
+        description: "The star at the center of the Solar System.",
+        size: 2.5,
+        distance: 0,
+        solidMaterial: solidMaterial,
+        texturedMaterial: texturedMaterial
     };
-
-    // Additional legacy properties
-    (sun.userData as Record<string, unknown>).size = 2.5;
-    (sun.userData as Record<string, unknown>).distance = 0;
-    (sun.userData as Record<string, unknown>).solidMaterial = solidMaterial;
-    (sun.userData as Record<string, unknown>).texturedMaterial = texturedMaterial;
+    sun.userData = userData;
 
     // Add Glow Sprite
     const glowTexture = createGlowTexture();
@@ -327,8 +327,7 @@ export function createSystem(
         }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userData: any = {
+    const userData: SolarSimUserData & { physics: OrbitalParameters } = {
         name: data.name,
         type: data.type,
         description: data.description ?? "",
