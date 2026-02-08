@@ -62,6 +62,27 @@ export interface InteractionResult {
 }
 
 /**
+ * Updates the normalized device coordinates (NDC) of a target vector.
+ * NDC range is [-1, 1] for both x and y.
+ *
+ * @param target - The vector to update.
+ * @param clientX - The client X coordinate (e.g., event.clientX).
+ * @param clientY - The client Y coordinate (e.g., event.clientY).
+ * @param width - The width of the drawing area.
+ * @param height - The height of the drawing area.
+ */
+export function updateNormalizedCoordinates(
+    target: THREE.Vector2,
+    clientX: number,
+    clientY: number,
+    width: number,
+    height: number
+): void {
+    target.x = (clientX / width) * 2 - 1;
+    target.y = -(clientY / height) * 2 + 1;
+}
+
+/**
  * Sets up the OrbitControls for the camera.
  */
 export function setupControls(
@@ -231,8 +252,7 @@ export function setupInteraction(
             return;
         }
 
-        mouse.x = (event.clientX / width) * 2 - 1;
-        mouse.y = -(event.clientY / height) * 2 + 1;
+        updateNormalizedCoordinates(mouse, event.clientX, event.clientY, width, height);
 
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(interactionTargets, false);
