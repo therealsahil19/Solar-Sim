@@ -48,9 +48,6 @@ export class CommandPalette implements Disposable {
     private list!: HTMLUListElement;
     private liveRegion!: HTMLDivElement;
 
-    // Event handler reference
-    private _globalKeyDownHandler: ((e: KeyboardEvent) => void) | null = null;
-
     /**
      * Creates a new CommandPalette instance.
      * @param planetData - The hierarchical system data.
@@ -210,24 +207,12 @@ export class CommandPalette implements Disposable {
         this.overlay.addEventListener('click', (e) => {
             if (e.target === this.overlay) this.close();
         });
-
-        // Global Toggle
-        this._globalKeyDownHandler = (e: KeyboardEvent): void => {
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-                e.preventDefault();
-                this.toggle();
-            }
-        };
-        window.addEventListener('keydown', this._globalKeyDownHandler);
     }
 
     /**
      * Destroys the command palette and removes global event listeners.
      */
     dispose(): void {
-        if (this._globalKeyDownHandler) {
-            window.removeEventListener('keydown', this._globalKeyDownHandler);
-        }
         if (this.overlay?.parentNode) {
             this.overlay.parentNode.removeChild(this.overlay);
         }
