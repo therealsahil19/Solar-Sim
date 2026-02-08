@@ -187,23 +187,39 @@ describe('Physics Module', () => {
     });
 
     describe('renderToPhysicsEstimate', () => {
+        it('should return 0 AU for 0 visual distance', () => {
+            expect(renderToPhysicsEstimate(0)).toBe(0);
+        });
+
         it('should inverse linear scaling in Zone 1 (Linear)', () => {
             const visualDistance = 400; // 10 AU * 40
             const physical = renderToPhysicsEstimate(visualDistance);
 
-            expect(physical).toBeCloseTo(10, 1);
+            expect(physical).toBeCloseTo(10, 5);
         });
 
         it('should handle edge cases at zone boundaries', () => {
             const limit1Visual = 30 * AU_SCALE; // Exactly at boundary (LIMIT_1)
             const physical1 = renderToPhysicsEstimate(limit1Visual);
-            expect(physical1).toBeCloseTo(30, 1);
+            expect(physical1).toBeCloseTo(30, 5);
 
             // Test boundary LIMIT_2 (50 AU)
             const pos2 = new THREE.Vector3(50, 0, 0);
             const limit2Visual = physicsToRender(pos2).length();
             const physical2 = renderToPhysicsEstimate(limit2Visual);
-            expect(physical2).toBeCloseTo(50, 1);
+            expect(physical2).toBeCloseTo(50, 5);
+        });
+
+        it('should be continuous at exactly calculated visual boundaries', () => {
+            // Re-calculate the internal VISUAL_LIMIT_1 and VISUAL_LIMIT_2
+            const vLimit1 = SCALE_CONFIG.LIMIT_LINEAR * SCALE_CONFIG.AU_SCALE;
+            const vOffsetK = Math.log(1 + (SCALE_CONFIG.LIMIT_KUIPER - SCALE_CONFIG.LIMIT_LINEAR)) *
+                             SCALE_CONFIG.AU_SCALE * SCALE_CONFIG.LOG_FACTOR_KUIPER;
+            const vLimit2 = vLimit1 + vOffsetK;
+
+            // Check precisely at boundaries
+            expect(renderToPhysicsEstimate(vLimit1)).toBeCloseTo(SCALE_CONFIG.LIMIT_LINEAR, 10);
+            expect(renderToPhysicsEstimate(vLimit2)).toBeCloseTo(SCALE_CONFIG.LIMIT_KUIPER, 10);
         });
 
         it('should inverse logarithmic scaling in Zone 2 (Mild Log)', () => {
@@ -212,20 +228,21 @@ describe('Physics Module', () => {
             const visualDistance = physicsToRender(physicalPos).length();
             const estimated = renderToPhysicsEstimate(visualDistance);
 
-            expect(estimated).toBeCloseTo(40, 1);
+            expect(estimated).toBeCloseTo(40, 5);
         });
 
         it('should inverse aggressive logarithmic scaling in Zone 3 (Aggressive Log)', () => {
             // Pick values in Zone 3: > 50 AU
-            const testDistances = [100, 1000, 10000, 100000];
+            // Testing up to 1,000,000 AU (far beyond Oort Cloud)
+            const testDistances = [100, 1000, 10000, 100000, 1000000];
 
             testDistances.forEach(d => {
                 const physicalPos = new THREE.Vector3(d, 0, 0);
                 const visualDistance = physicsToRender(physicalPos).length();
                 const estimated = renderToPhysicsEstimate(visualDistance);
 
-                // Even at 100,000 AU, precision should be better than 0.001 AU
-                expect(estimated).toBeCloseTo(d, 3);
+                // High precision inverse check
+                expect(estimated).toBeCloseTo(d, 5);
             });
         });
 
@@ -243,12 +260,12 @@ describe('Physics Module', () => {
         });
 
         it('should maintain monotonicity (higher visual distance => higher physical distance)', () => {
-            const visualDistances = [0, 100, 1200, 1300, 1382, 1383, 2000, 5000];
-
-            for (let i = 1; i < visualDistances.length; i++) {
-                const prev = renderToPhysicsEstimate(visualDistances[i - 1]!);
-                const curr = renderToPhysicsEstimate(visualDistances[i]!);
-                expect(curr).toBeGreaterThan(prev);
+            // Test a dense range of values across all zones
+            let lastPhysical = -Infinity;
+            for (let v = 0; v <= 5000; v += 10) {
+                const physical = renderToPhysicsEstimate(v);
+                expect(physical).toBeGreaterThan(lastPhysical);
+                lastPhysical = physical;
             }
         });
 
