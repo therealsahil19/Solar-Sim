@@ -110,6 +110,46 @@ describe('Physics Module', () => {
                 expect(d).toBeCloseTo(2.0, 2);
             });
         });
+
+        it('should use omega if provided (precedence check)', () => {
+            const orbit = {
+                a: 1.0,
+                e: 0.0,
+                i: 0,
+                omega: 45,
+                w: 90, // Should be ignored
+                M0: 0,
+                period: 1.0
+            };
+
+            const pos = getOrbitalPosition(orbit, 0);
+
+            const expectedX = Math.cos(45 * Math.PI / 180);
+            const expectedZ = Math.sin(45 * Math.PI / 180);
+
+            expect(pos.x).toBeCloseTo(expectedX, 5);
+            expect(pos.z).toBeCloseTo(expectedZ, 5);
+            expect(pos.y).toBeCloseTo(0, 5);
+        });
+
+        it('should fallback to w if omega is not provided', () => {
+            const orbit = {
+                a: 1.0,
+                e: 0.0,
+                i: 0,
+                w: 90, // Should be used
+                M0: 0,
+                period: 1.0
+            };
+
+            const pos = getOrbitalPosition(orbit, 0);
+
+            const expectedX = Math.cos(90 * Math.PI / 180);
+            const expectedZ = Math.sin(90 * Math.PI / 180);
+
+            expect(pos.x).toBeCloseTo(expectedX, 5);
+            expect(pos.z).toBeCloseTo(expectedZ, 5);
+        });
     });
 
     describe('physicsToRender', () => {
