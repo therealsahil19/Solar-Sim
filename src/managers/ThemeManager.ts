@@ -43,11 +43,7 @@ export class ThemeManager {
         if (!this.themes.includes(themeName)) return;
 
         document.documentElement.setAttribute('data-theme', themeName);
-        try {
-            localStorage.setItem('theme', themeName);
-        } catch (e) {
-            console.warn('ThemeManager: Unable to persist theme preference.', e);
-        }
+        this.setStoredTheme(themeName);
 
         this.currentThemeIndex = this.themes.indexOf(themeName);
     }
@@ -74,17 +70,35 @@ export class ThemeManager {
      * Initializes theme state from localStorage or defaults to 'default'.
      */
     private loadPreference(): void {
-        let stored: string | null = null;
-        try {
-            stored = localStorage.getItem('theme');
-        } catch (e) {
-            console.warn('ThemeManager: Unable to read theme preference.', e);
-        }
+        const stored = this.getStoredTheme();
 
         if (stored && this.isValidTheme(stored)) {
             this.setTheme(stored);
         } else {
             this.setTheme('default');
+        }
+    }
+
+    /**
+     * Safely retrieves the theme preference from localStorage.
+     */
+    private getStoredTheme(): string | null {
+        try {
+            return localStorage.getItem('theme');
+        } catch (e) {
+            console.warn('ThemeManager: Unable to read theme preference.', e);
+            return null;
+        }
+    }
+
+    /**
+     * Safely persists the theme preference to localStorage.
+     */
+    private setStoredTheme(themeName: string): void {
+        try {
+            localStorage.setItem('theme', themeName);
+        } catch (e) {
+            console.warn('ThemeManager: Unable to persist theme preference.', e);
         }
     }
 

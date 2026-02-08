@@ -109,4 +109,26 @@ describe('ThemeManager', () => {
         // Should have logged a warning
         expect(consoleSpy).toHaveBeenCalled();
     });
+
+    it('should handle localStorage errors during initialization', () => {
+        // Mock getItem to throw an error
+        const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new Error('Access denied');
+        });
+
+        // Spy on console.warn to verify error logging
+        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        themeManager = new ThemeManager();
+
+        // Should fallback to default
+        expect(document.documentElement.getAttribute('data-theme')).toBe('default');
+        expect(themeManager.getTheme()).toBe('default');
+
+        // Should have tried to read
+        expect(getItemSpy).toHaveBeenCalledWith('theme');
+
+        // Should have logged a warning
+        expect(consoleSpy).toHaveBeenCalled();
+    });
 });
