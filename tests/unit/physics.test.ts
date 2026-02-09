@@ -325,6 +325,54 @@ describe('Physics Module', () => {
                 expect(justAbove - justBelow).toBeLessThan(0.01);
             });
         });
+
+        it('should correctly inverse intermediate points in Zone 2 (Mild Log)', () => {
+            // Test 35 AU and 45 AU (both in Zone 2: 30-50 AU)
+            [35, 45].forEach(d => {
+                const pos = new THREE.Vector3(d, 0, 0);
+                const visual = physicsToRender(pos).length();
+                const estimated = renderToPhysicsEstimate(visual);
+                expect(estimated).toBeCloseTo(d, 5);
+            });
+        });
+
+        it('should handle extreme and special values gracefully', () => {
+            // Infinity
+            expect(renderToPhysicsEstimate(Infinity)).toBe(Infinity);
+            // NaN
+            expect(renderToPhysicsEstimate(NaN)).toBeNaN();
+            // Negative values (should behave linearly as per Zone 1 logic)
+            expect(renderToPhysicsEstimate(-AU_SCALE)).toBeCloseTo(-1, 5);
+        });
+
+        it('should maintain accurate round-trip mapping for random points across all zones', () => {
+            // Test 100 random points from 0.001 to 1,000,000 AU
+            for (let i = 0; i < 100; i++) {
+                // Generate random distance using log scale for better distribution across zones
+                const logMin = Math.log10(0.001);
+                const logMax = Math.log10(1000000);
+                const randomLogDist = logMin + Math.random() * (logMax - logMin);
+                const d = Math.pow(10, randomLogDist);
+
+                // Create a random unit vector and scale it
+                const pos = new THREE.Vector3(
+                    Math.random() - 0.5,
+                    Math.random() - 0.5,
+                    Math.random() - 0.5
+                ).normalize().multiplyScalar(d);
+
+                const visualDistance = physicsToRender(pos).length();
+                const estimated = renderToPhysicsEstimate(visualDistance);
+
+                // Check accuracy. Use relative error for very large distances
+                if (d > 1) {
+                    const relativeError = Math.abs(estimated - d) / d;
+                    expect(relativeError).toBeLessThan(1e-10);
+                } else {
+                    expect(estimated).toBeCloseTo(d, 10);
+                }
+            }
+        });
     });
 
     describe('SCALE_CONFIG', () => {
