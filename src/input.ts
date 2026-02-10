@@ -389,7 +389,7 @@ function setupRaycasting(
         const intersects = raycaster.intersectObjects(interactionTargets, false);
         if (intersects.length > 0) {
             const hit = intersects[0];
-            processHit(hit);
+            if (hit) processHit(hit);
         }
     };
 

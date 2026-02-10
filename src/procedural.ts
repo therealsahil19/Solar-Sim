@@ -512,7 +512,7 @@ export function createSystem(
     }
 
     // Visual Mesh / Group
-    const { visualGroup, mesh, solidMaterial, texturedMaterial } = createBodyMesh(
+    const { visualGroup, mesh } = createBodyMesh(
         data,
         textureLoader,
         useTextures,

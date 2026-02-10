@@ -202,7 +202,7 @@ class DebrisSystem extends THREE.InstancedMesh implements DebrisMesh {
         }
     }
 
-    dispose(): void {
+    override dispose(): void {
         this.geometry.dispose();
         if (this.material instanceof THREE.Material) {
             this.material.dispose();

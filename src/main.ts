@@ -717,8 +717,8 @@ export function dispose(): void {
     // Clear references
     renderer = null;
     labelRenderer = null;
-    scene = null;
-    camera = null;
+    scene = null!;
+    camera = null!;
     trailManager?.dispose();
     trailManager = null;
     instanceRegistry?.dispose();
