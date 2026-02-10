@@ -29,6 +29,7 @@ describe('Performance Benchmark: TrailManager.update', () => {
             getContext: () => gl,
             properties: properties,
             state: state,
+            copyTextureToTexture: vi.fn(),
         } as unknown as THREE.WebGLRenderer;
 
         // Register max trails

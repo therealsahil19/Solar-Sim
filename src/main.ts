@@ -29,6 +29,7 @@ import { getOrbitalPosition, physicsToRender } from './physics';
 import { ToastManager } from './managers/ToastManager';
 import { getPositionFromMatrix } from './utils/ThreeUtils';
 import { LabelManager } from './managers/LabelManager';
+import { SceneManager } from './managers/SceneManager';
 import './benchmark'; // Auto-load performance benchmark
 
 // ============================================================================
@@ -97,6 +98,7 @@ const belts: Array<THREE.Object3D & { update?: (time: number) => void }> = [];
 let instanceRegistry: InstanceRegistry | null = null;
 let trailManager: TrailManager | null = null;
 let labelManager: LabelManager | null = null;
+let sceneManager: SceneManager | null = null;
 
 let animationFrameId: number | null = null;
 
@@ -151,40 +153,23 @@ export async function init(): Promise<void> {
     clearMaterialCache();
 
     // Setup Three.js Components
-    scene = new THREE.Scene();
-    window.scene = scene;
-    scene.matrixWorldAutoUpdate = false;
+    if (!sceneManager) {
+        sceneManager = new SceneManager();
+    }
 
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
-    camera.position.set(0, 60, 100);
+    // Bind to local variables for compatibility
+    scene = sceneManager.scene;
+    camera = sceneManager.camera;
+    renderer = sceneManager.renderer;
+    labelRenderer = sceneManager.labelRenderer; // Ensure labelRenderer is typed in SceneManager
+
+    window.scene = scene;
 
     // Cancel any existing animation loop
     if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
     }
-
-    // Reuse existing WebGLRenderer if it exists
-    if (!renderer) {
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFShadowMap;
-        renderer.domElement.setAttribute('role', 'application');
-        renderer.domElement.setAttribute('aria-label', '3D Solar System Simulation');
-        document.body.appendChild(renderer.domElement);
-    }
-    renderer.setSize(window.innerWidth, window.innerHeight);
-
-    // Reuse existing CSS2DRenderer if it exists
-    if (!labelRenderer) {
-        labelRenderer = new CSS2DRenderer();
-        labelRenderer.domElement.style.position = 'absolute';
-        labelRenderer.domElement.style.top = '0px';
-        labelRenderer.domElement.style.pointerEvents = 'none';
-        document.body.appendChild(labelRenderer.domElement);
-        document.body.appendChild(labelRenderer.domElement);
-    }
-    labelRenderer.setSize(window.innerWidth, window.innerHeight);
 
     labelManager = new LabelManager(labelRenderer, camera);
 
@@ -711,12 +696,7 @@ export async function init(): Promise<void> {
 } // end of init()
 
 function onWindowResize(): void {
-    if (camera && renderer && labelRenderer) {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        labelRenderer.setSize(window.innerWidth, window.innerHeight);
-    }
+    sceneManager?.onResize();
 }
 
 /**
@@ -728,15 +708,17 @@ export function dispose(): void {
         animationFrameId = null;
     }
     window.removeEventListener('resize', onWindowResize);
-    if (renderer) {
-        renderer.dispose();
-        renderer.domElement.remove();
-        renderer = null;
+
+    if (sceneManager) {
+        sceneManager.dispose();
+        sceneManager = null;
     }
-    if (labelRenderer) {
-        labelRenderer.domElement.remove();
-        labelRenderer = null;
-    }
+
+    // Clear references
+    renderer = null;
+    labelRenderer = null;
+    scene = null;
+    camera = null;
     trailManager?.dispose();
     trailManager = null;
     instanceRegistry?.dispose();

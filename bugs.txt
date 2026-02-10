@@ -1,0 +1,159 @@
+Description
+`createSystem` uses manual loops to push elements from one array to another, which is verbose and likely less efficient than `concat` or spread syntax for typical dataset sizes.
+
+Location
+src/procedural.ts:472
+
+Rationale
+While intended to avoid stack overflow, modern JS engines handle large arrays well with `concat`. Simplifies code.
+
+Code context
+            const result = createSystem(moonData, textureLoader, useTextures, data.physics);
+            pivot.add(result.pivot);
+            if (result.orbit) pivot.add(result.orbit);
+
+            // ⚡ Bolt Optimization: Use loop instead of spread to avoid stack overflow with large arrays
+            for (let i = 0; i < result.interactables.length; i++) interactables.push(result.interactables[i]!);
+            for (let i = 0; i < result.animated.length; i++) animated.push(result.animated[i]!);
+            for (let i = 0; i < result.orbits.length; i++) orbits.push(result.orbits[i]!);
+            for (let i = 0; i < result.trails.length; i++) trails.push(result.trails[i]!);
+            for (let i = 0; i < result.labels.length; i++) labels.push(result.labels[i]!);
+
+Description
+The `renderLabels` function iterates over all labels every frame to update visibility and project positions, even for distant or occluded objects.
+
+Location
+src/main.ts:676
+
+Rationale
+Processing all labels (hundreds) every frame is inefficient. Can be optimized with spatial indexing or frustum culling before projection.
+
+Code context
+        const approxLabelWidth = APPROX_LABEL_WIDTH;
+        const approxLabelHeight = APPROX_LABEL_HEIGHT;
+        visibleLabelsList.length = 0;
+        let labelPoolIndex = 0;
+
+        const len = allLabels.length;
+        for (let i = 0; i < len; i++) {
+            const label = allLabels[i];
+            if (!label) continue;
+
+            if (label.userData.isMoon) {
+
+Description
+The createSystem function is complex (~150 lines) and recursively creates celestial bodies, orbits, rings, labels, and moons.
+
+Location
+src/procedural.ts:248
+
+Rationale
+Breaking this down into smaller factory functions (createBody, createOrbit, createRing) would improve readability and reuse.
+
+Code context
+export function createSystem(
+    data: CelestialBody,
+    textureLoader: ExtendedTextureLoader,
+    useTextures: boolean,
+    parentData: OrbitalParameters | null = null
+): SystemResult {
+
+Description
+The src/main.ts file is nearly 1000 lines long and handles multiple responsibilities (initialization, animation loop, input handling, UI updates).
+
+Location
+src/main.ts:1
+
+Rationale
+Splitting this file into smaller modules (e.g., SceneManager, RenderLoop, UIManager) would significantly improve maintainability and testability.
+
+Code context
+/**
+ * @file main.ts
+ * @description The "Conductor" module for the Solar System simulation.
+ * It orchestrates the initialization of the 3D scene, manages the render loop,
+ * handles global state (scene, camera, renderer), and coordinates interaction between modules.
+ */
+
+import * as THREE from 'three';
+Description
+The code bypasses Three.js abstraction by directly calling gl.texSubImage2D and accessing internal properties (renderer.properties, __webglTexture).
+
+Location
+src/trails.ts:389
+
+Rationale
+Relying on internal properties is fragile and may break with Three.js updates. Consider using DataTexture.needsUpdate = true or renderer.copyTextureToTexture.
+
+Code context
+        // Update ROW 'rowIndex'.
+        // Layout: Width = MaxTrails, Height = Points.
+        // x = 0, y = rowIndex, width = MaxTrails, height = 1.
+        // Data should be 'MaxTrails * 4' floats.
+
+        gl.texSubImage2D(
+            gl.TEXTURE_2D,
+Description
+The `CommandPalette` implements complex search and navigation logic but lacks tests. Tests should cover opening, closing, filtering items, and keyboard navigation.
+
+Location
+src/components/CommandPalette.ts:38
+
+Rationale
+Involves more complex DOM interactions and keyboard events, but still testable within a unit test environment.
+
+Code context
+/**
+ * A "Cmd+K" command palette for power users.
+ */
+export class CommandPalette implements Disposable {
+    private callbacks: CommandPaletteCallbacks;
+    private _isOpen: boolean = false;
+    private selectedIndex: number = 0;
+    private filteredItems: PaletteItem[] = [];
+    private previousActiveElement: Element | null = null;
+    private items: PaletteItem[];
+
+Description
+The `NavigationSidebar` renders the planetary tree and handles search filtering. Tests should verify tree construction and search functionality.
+
+Location
+src/components/NavigationSidebar.ts:56
+
+Rationale
+Recursive tree logic and search filtering are good candidates for unit tests, though DOM structure verification adds some complexity.
+
+Code context
+/**
+ * Manages the planetary navigation sidebar component.
+ */
+export class NavigationSidebar implements Disposable {
+    private data: CelestialBody[];
+    private callbacks: NavigationSidebarCallbacks;
+    private _isOpen: boolean = false;
+    private dom: NavigationSidebarDOM;
+
+    // Event handler references
+Description
+`createDebrisSystem` and `createBelt` generate procedural objects but are untested. Tests should verify the correct configuration of `InstancedMesh` attributes.
+
+Location
+src/debris.ts:135
+
+Rationale
+Can verify the properties of the returned Three.js objects (geometry, material, attributes) without needing a full render loop.
+
+Code context
+/**
+ * Factory function to create a GPU-accelerated debris field.
+ */
+function createDebrisSystem(config: DebrisConfig): DebrisMesh {
+    const {
+        count = 1000,
+        distribution,
+        material: matConfig
+    } = config;
+
+    // Geometry
+
+

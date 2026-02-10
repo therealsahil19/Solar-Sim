@@ -79,6 +79,12 @@ export class LabelManager {
         this.visibleLabelsList.length = 0;
         let labelPoolIndex = 0;
 
+        // Create Frustum for culling
+        const frustum = new THREE.Frustum();
+        const projScreenMatrix = new THREE.Matrix4();
+        projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+        frustum.setFromProjectionMatrix(projScreenMatrix);
+
         const len = this.labels.length;
         for (let i = 0; i < len; i++) {
             const label = this.labels[i];
@@ -94,8 +100,18 @@ export class LabelManager {
             }
 
             if (label.visible && label.element) {
+                // Fix: Use World Position, not local position
+                label.getWorldPosition(this.tempVec);
+
+                // Frustum Culling
+                if (!frustum.containsPoint(this.tempVec)) {
+                    // Optional: We could set label.visible = false here, 
+                    // but CSS2DRenderer might override or it might flicker.
+                    // Simply skipping the expensive layout logic is enough optimization.
+                    continue;
+                }
+
                 // Project 3D position to 2D screen coordinates
-                this.tempVec.copy(label.position);
                 this.tempVec.project(this.camera); // Now in NDC (-1 to +1)
 
                 const x = (this.tempVec.x * .5 + .5) * viewportWidth;

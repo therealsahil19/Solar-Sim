@@ -53,6 +53,7 @@ export class TrailManager implements Disposable {
     // GPU Data
     private historyTexture: THREE.DataTexture;
     private historyData: Float32Array; // The CPU-side backing buffer for the texture
+    private rowTexture: THREE.DataTexture; // Helper texture for single-row updates
 
     private trails: Trail[];
     private nextTrailIndex: number;
@@ -95,6 +96,21 @@ export class TrailManager implements Disposable {
         this.historyTexture.magFilter = THREE.NearestFilter;
         this.historyTexture.generateMipmaps = false;
         this.historyTexture.needsUpdate = true;
+
+        // Buffer for single row update
+        this.updateRowBuffer = new Float32Array(this.maxTrails * 4);
+
+        // Helper texture for updates
+        this.rowTexture = new THREE.DataTexture(
+            this.updateRowBuffer as any,
+            this.maxTrails,
+            1,
+            THREE.RGBAFormat,
+            THREE.FloatType
+        );
+        this.rowTexture.minFilter = THREE.NearestFilter;
+        this.rowTexture.magFilter = THREE.NearestFilter;
+        this.rowTexture.generateMipmaps = false;
 
         // 2. Setup Geometry
         const totalSegments = this.maxTrails * this.segmentsPerTrail;
@@ -159,9 +175,6 @@ export class TrailManager implements Disposable {
         this.trails = [];
         this.nextTrailIndex = 0;
         this.globalHead = 0;
-
-        // Buffer for single row update
-        this.updateRowBuffer = new Float32Array(this.maxTrails * 4);
     }
 
     /**
@@ -208,7 +221,7 @@ export class TrailManager implements Disposable {
         // Pre-fill history in texture to prevent (0,0,0) artifacts
         target.updateMatrixWorld(true);
         // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
-        const te = target.matrixWorld.elements;
+        const te = target.matrixWorld.elements as any;
         const sx = te[12], sy = te[13], sz = te[14];
 
         // Fill the entire column for this trail (Transposed layout: Column = trailIndex)
@@ -231,7 +244,7 @@ export class TrailManager implements Disposable {
 
     /**
      * Updates all trails.
-     * @param renderer The WebGLRenderer (needed for texSubImage2D)
+     * @param renderer The WebGLRenderer
      */
     update(renderer: THREE.WebGLRenderer): void {
         // Increment global head
@@ -259,47 +272,13 @@ export class TrailManager implements Disposable {
             this.updateRowBuffer[offset + 3] = 1.0;
         }
 
-        // Perform partial texture update
-        this.uploadTextureRow(renderer, this.globalHead, this.updateRowBuffer);
-    }
+        // Sync to main CPU buffer (restore original behavior for data integrity)
+        const historyOffset = this.globalHead * this.maxTrails * 4;
+        this.historyData.set(this.updateRowBuffer, historyOffset);
 
-    /**
-     * Uploads a single row to the texture using raw GL calls.
-     */
-    private uploadTextureRow(renderer: THREE.WebGLRenderer, rowIndex: number, data: Float32Array): void {
-        // Always update the CPU-side backing buffer to ensure data integrity
-        // in case of context loss or initial upload delay.
-        const offset = rowIndex * this.maxTrails * 4;
-        this.historyData.set(data, offset);
-
-        const gl = renderer.getContext();
-        const textureProperties = renderer.properties.get(this.historyTexture) as { __webglTexture?: WebGLTexture };
-
-        // Ensure texture is initialized on GPU
-        if (!textureProperties || !textureProperties.__webglTexture) {
-            return;
-        }
-
-        // Use Three.js state manager to avoid state thrashing
-        // Note: Must pass raw WebGLTexture, not the Three.js Texture object
-        renderer.state.bindTexture(gl.TEXTURE_2D, textureProperties.__webglTexture);
-
-        // Update ROW 'rowIndex'.
-        // Layout: Width = MaxTrails, Height = Points.
-        // x = 0, y = rowIndex, width = MaxTrails, height = 1.
-        // Data should be 'MaxTrails * 4' floats.
-
-        gl.texSubImage2D(
-            gl.TEXTURE_2D,
-            0, // Level
-            0, // X offset
-            rowIndex, // Y offset
-            this.maxTrails, // Width
-            1, // Height
-            gl.RGBA, // Format
-            gl.FLOAT, // Type
-            data // Data
-        );
+        // Upload texture row using copyTextureToTexture mechanism
+        this.rowTexture.needsUpdate = true;
+        renderer.copyTextureToTexture(new THREE.Vector2(0, this.globalHead), this.rowTexture, this.historyTexture);
     }
 
     /**
@@ -321,6 +300,7 @@ export class TrailManager implements Disposable {
         this.geometry.dispose();
         this.material.dispose();
         this.historyTexture.dispose();
+        this.rowTexture.dispose();
         this.trails = [];
     }
 }

@@ -29,6 +29,7 @@ describe('TrailManager Initialization', () => {
             getContext: () => gl,
             properties: properties,
             state: { bindTexture: vi.fn() },
+            copyTextureToTexture: vi.fn(),
         } as unknown as THREE.WebGLRenderer;
 
         // 1. Register a trail at position (0,0,0)

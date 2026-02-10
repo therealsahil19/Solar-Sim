@@ -334,34 +334,14 @@ export function createPlayerShip(): THREE.Group {
 }
 
 /**
- * Recursively creates a celestial body system (planet + moons).
+ * Creates the visual mesh/group for a celestial body.
  */
-export function createSystem(
+function createBodyMesh(
     data: CelestialBody,
     textureLoader: ExtendedTextureLoader,
     useTextures: boolean,
-    parentData: OrbitalParameters | null = null
-): SystemResult {
-    // ⚡ Bolt Optimization: Pre-calculate period if missing to avoid repeated Math.pow() in loop
-    if (data.physics && data.physics.period === undefined) {
-        data.physics.period = Math.pow(data.physics.a, 1.5);
-    }
-
-    // Pivot & Body Container
-    const pivot = new THREE.Group();
-    (pivot.userData as Record<string, unknown>).physics = data.physics;
-    (pivot.userData as Record<string, unknown>).type = data.type;
-
-    // Orbit Line
-    let orbitLine: THREE.LineLoop | null = null;
-    if (data.physics && data.physics.a > 0) {
-        if (data.type === 'Planet' || data.type === 'Dwarf Planet') {
-            orbitLine = createOrbitLine(data.physics);
-        }
-    }
-
-    // Visual Mesh
-    const geometry = baseSphereGeometry;
+    geometry: THREE.BufferGeometry
+): { visualGroup: THREE.Group; mesh: THREE.Mesh | null; solidMaterial: THREE.MeshStandardMaterial; texturedMaterial: THREE.MeshStandardMaterial } {
     const solidMaterial = getSolidMaterial(data.visual.color);
     let texturedMaterial: THREE.MeshStandardMaterial = solidMaterial;
 
@@ -419,7 +399,6 @@ export function createSystem(
     // Visual Group
     const visualGroup = new THREE.Group();
     visualGroup.scale.set(data.visual.size, data.visual.size, data.visual.size);
-    pivot.add(visualGroup);
 
     // Create Mesh or Register Instance
     let mesh: THREE.Mesh | null = null;
@@ -434,53 +413,67 @@ export function createSystem(
         visualGroup.add(mesh);
     }
 
-    // Rings
+    return { visualGroup, mesh, solidMaterial, texturedMaterial };
+}
+
+/**
+ * Creates a ring for a celestial body if defined.
+ */
+function createBodyRing(
+    data: CelestialBody,
+    textureLoader: ExtendedTextureLoader,
+    useTextures: boolean
+): THREE.Mesh | null {
     const ringData = data.visual.ring ?? (data.visual.hasRing ? { inner: 1.4, outer: 2.2 } : null);
-    if (ringData) {
-        const inner = ringData.inner ?? 1.4;
-        const outer = ringData.outer ?? 2.2;
-        const ringGeo = new THREE.RingGeometry(inner, outer, 128);
+    if (!ringData) return null;
 
-        const pos = ringGeo.attributes.position as THREE.BufferAttribute;
-        const uv = ringGeo.attributes.uv as THREE.BufferAttribute;
-        const v3 = new THREE.Vector3();
-        if (pos && uv) {
-            for (let i = 0; i < pos.count; i++) {
-                v3.fromBufferAttribute(pos, i);
-                uv.setXY(i, (v3.x / (outer * 2)) + 0.5, (v3.y / (outer * 2)) + 0.5);
-            }
+    const inner = ringData.inner ?? 1.4;
+    const outer = ringData.outer ?? 2.2;
+    const ringGeo = new THREE.RingGeometry(inner, outer, 128);
+
+    const pos = ringGeo.attributes.position as THREE.BufferAttribute;
+    const uv = ringGeo.attributes.uv as THREE.BufferAttribute;
+    const v3 = new THREE.Vector3();
+    if (pos && uv) {
+        for (let i = 0; i < pos.count; i++) {
+            v3.fromBufferAttribute(pos, i);
+            uv.setXY(i, (v3.x / (outer * 2)) + 0.5, (v3.y / (outer * 2)) + 0.5);
         }
-
-        let ringMat: THREE.MeshStandardMaterial;
-        if (ringData.texture && useTextures) {
-            const ringTexture = textureLoader.load(ringData.texture);
-            ringMat = new THREE.MeshStandardMaterial({
-                map: ringTexture,
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 0.9,
-                roughness: 0.5,
-                metalness: 0.1
-            });
-        } else {
-            ringMat = new THREE.MeshStandardMaterial({
-                color: ringData.color ?? 0xcfb096,
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 0.6,
-                roughness: 0.8,
-                metalness: 0.2
-            });
-        }
-
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        ring.castShadow = true;
-        ring.receiveShadow = true;
-        ring.rotation.x = Math.PI / 2;
-        visualGroup.add(ring);
     }
 
-    // Label
+    let ringMat: THREE.MeshStandardMaterial;
+    if (ringData.texture && useTextures) {
+        const ringTexture = textureLoader.load(ringData.texture);
+        ringMat = new THREE.MeshStandardMaterial({
+            map: ringTexture,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.9,
+            roughness: 0.5,
+            metalness: 0.1
+        });
+    } else {
+        ringMat = new THREE.MeshStandardMaterial({
+            color: ringData.color ?? 0xcfb096,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.6,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+    }
+
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.castShadow = true;
+    ring.receiveShadow = true;
+    ring.rotation.x = Math.PI / 2;
+    return ring;
+}
+
+/**
+ * Creates a label for the celestial body.
+ */
+function createBodyLabel(data: CelestialBody, parentData: OrbitalParameters | null): CSS2DObject {
     const labelDiv = document.createElement('div');
     labelDiv.className = 'planet-label';
     labelDiv.textContent = data.name;
@@ -488,6 +481,53 @@ export function createSystem(
     label.position.set(0, data.visual.size + 1.0, 0);
     label.userData.isMoon = (data.type === 'Moon');
     label.userData.parentPlanet = parentData ? null : null;
+    return label;
+}
+
+/**
+ * Recursively creates a celestial body system (planet + moons).
+ */
+export function createSystem(
+    data: CelestialBody,
+    textureLoader: ExtendedTextureLoader,
+    useTextures: boolean,
+    parentData: OrbitalParameters | null = null
+): SystemResult {
+    // ⚡ Bolt Optimization: Pre-calculate period if missing to avoid repeated Math.pow() in loop
+    if (data.physics && data.physics.period === undefined) {
+        data.physics.period = Math.pow(data.physics.a, 1.5);
+    }
+
+    // Pivot & Body Container
+    const pivot = new THREE.Group();
+    (pivot.userData as Record<string, unknown>).physics = data.physics;
+    (pivot.userData as Record<string, unknown>).type = data.type;
+
+    // Orbit Line
+    let orbitLine: THREE.LineLoop | null = null;
+    if (data.physics && data.physics.a > 0) {
+        if (data.type === 'Planet' || data.type === 'Dwarf Planet') {
+            orbitLine = createOrbitLine(data.physics);
+        }
+    }
+
+    // Visual Mesh / Group
+    const { visualGroup, mesh, solidMaterial, texturedMaterial } = createBodyMesh(
+        data,
+        textureLoader,
+        useTextures,
+        baseSphereGeometry
+    );
+    pivot.add(visualGroup);
+
+    // Rings
+    const ring = createBodyRing(data, textureLoader, useTextures);
+    if (ring) {
+        visualGroup.add(ring);
+    }
+
+    // Label
+    const label = createBodyLabel(data, parentData);
     pivot.add(label);
 
     // Trails
@@ -517,12 +557,12 @@ export function createSystem(
             pivot.add(result.pivot);
             if (result.orbit) pivot.add(result.orbit);
 
-            // ⚡ Bolt Optimization: Use loop instead of spread to avoid stack overflow with large arrays
-            for (let i = 0; i < result.interactables.length; i++) interactables.push(result.interactables[i]!);
-            for (let i = 0; i < result.animated.length; i++) animated.push(result.animated[i]!);
-            for (let i = 0; i < result.orbits.length; i++) orbits.push(result.orbits[i]!);
-            for (let i = 0; i < result.trails.length; i++) trails.push(result.trails[i]!);
-            for (let i = 0; i < result.labels.length; i++) labels.push(result.labels[i]!);
+            // optimization: use spread syntax which is efficient in modern engines
+            interactables.push(...result.interactables);
+            animated.push(...result.animated);
+            orbits.push(...result.orbits);
+            trails.push(...result.trails);
+            labels.push(...result.labels);
         });
     }
 
