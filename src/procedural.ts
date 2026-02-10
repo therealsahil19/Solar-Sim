@@ -73,6 +73,40 @@ export function clearMaterialCache(): void {
 
     Object.values(textureMaterialCache).forEach(mat => mat.dispose());
     for (const key in textureMaterialCache) delete textureMaterialCache[key];
+
+    if (cachedGlowTexture) {
+        cachedGlowTexture.dispose();
+        cachedGlowTexture = null;
+    }
+}
+
+/**
+ * Creates/Retrieves the shared glow texture/material.
+ */
+function getGlowMaterial(): THREE.SpriteMaterial {
+    if (!cachedGlowTexture) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const context = canvas.getContext('2d');
+        if (context) {
+            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.2, 'rgba(255, 255, 200, 0.5)');
+            gradient.addColorStop(0.5, 'rgba(255, 200, 100, 0.2)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 64, 64);
+        }
+        cachedGlowTexture = new THREE.CanvasTexture(canvas);
+    }
+    return new THREE.SpriteMaterial({
+        map: cachedGlowTexture,
+        color: 0xffaa00,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
 }
 
 /**
@@ -189,10 +223,34 @@ export function createGlowTexture(): THREE.CanvasTexture {
  * Extended Sun mesh with dispose method.
  */
 export class SunMesh extends THREE.Mesh {
-    dispose: () => void = () => {};
+    private glowMaterial: THREE.SpriteMaterial | null = null;
 
-    constructor(geometry?: THREE.BufferGeometry, material?: THREE.Material | THREE.Material[]) {
+
+
+    constructor(
+        geometry: THREE.BufferGeometry,
+        material: THREE.Material | THREE.Material[],
+        glowMaterial?: THREE.SpriteMaterial
+    ) {
         super(geometry, material);
+
+
+        this.glowMaterial = glowMaterial || null;
+    }
+
+    dispose(): void {
+        super.dispatchEvent({ type: 'dispose' } as any);
+        if (this.geometry) this.geometry.dispose();
+        if (Array.isArray(this.material)) {
+            this.material.forEach(m => m.dispose());
+        } else if (this.material) {
+            this.material.dispose();
+        }
+
+        if (this.glowMaterial) {
+            this.glowMaterial.dispose();
+        }
+        // explicit geometry disposal if needed, though super.geometry handles instance
     }
 }
 
@@ -213,9 +271,12 @@ export function createSun(
 
     const solidMaterial = new THREE.MeshBasicMaterial({ color: 0xffffaa });
 
+    const glowMaterial = getGlowMaterial();
+
     const sun = new SunMesh(
         geometry,
-        useTextures ? texturedMaterial : solidMaterial
+        useTextures ? texturedMaterial : solidMaterial,
+        glowMaterial
     );
 
     sun.castShadow = false;
@@ -233,24 +294,12 @@ export function createSun(
     };
     sun.userData = userData;
 
-    // Add Glow Sprite
-    const glowTexture = createGlowTexture();
-    const glowMaterial = new THREE.SpriteMaterial({
-        map: glowTexture,
-        color: 0xffaa00,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
-    });
+    // Add Glow Sprite (already created above)
     const glowSprite = new THREE.Sprite(glowMaterial);
     glowSprite.scale.set(12, 12, 1);
     sun.add(glowSprite);
 
-    sun.dispose = (): void => {
-        // Bolt Optimization: glowTexture is cached/shared, so we do not dispose it here.
-        glowMaterial.dispose();
-        geometry.dispose();
-    };
+    // Dispose logic is now in the class
 
     return sun;
 }

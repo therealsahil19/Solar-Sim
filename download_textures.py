@@ -41,21 +41,20 @@ textures = {
     "stars.jpg": "2k_stars_milky_way.jpg"
 }
 
-def download_texture(item):
+def download_texture(args):
     """
     Downloads a single texture.
     Args:
-        item: Tuple of (filename, remote_name)
+        args: Tuple of (filename, remote_name, ssl_context)
     Returns:
         filename if failed, None if success
     """
-    filename, remote_name = item
+    filename, remote_name, context = args
     url = f"{BASE_URL}/{remote_name}"
     filepath = os.path.join(TEXTURES_DIR, filename)
 
     try:
-        # Verify SSL certificates properly using default context
-        context = ssl.create_default_context()
+        # Verify SSL certificates properly using reused context
         with urllib.request.urlopen(url, context=context) as response, open(filepath, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)
         print(f"  - Downloading {filename}... ✅ Done.")
@@ -74,11 +73,19 @@ def main():
 
     failed_downloads = []
 
+    # Create SSL context once
+    context = ssl.create_default_context()
+    
+    # Pack arguments: (filename, remote_name, context)
+    download_args = []
+    for filename, remote_name in textures.items():
+        download_args.append((filename, remote_name, context))
+
     # Use ThreadPoolExecutor for parallel downloads
     # Adjust max_workers as needed; usually 5-10 is good for I/O bound tasks like this
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         # We convert dict items to a list to map over them
-        results = executor.map(download_texture, textures.items())
+        results = executor.map(download_texture, download_args)
 
     # Collect failures
     for result in results:

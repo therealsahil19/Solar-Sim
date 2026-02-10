@@ -341,88 +341,102 @@ function setupRaycasting(
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    let lastClickTime = 0;
-    let lastClickedMeshId: string | null = null;
     const doubleClickDelay = 300;
-
-    let pointerDownX = 0;
-    let pointerDownY = 0;
-    const DRAG_THRESHOLD = 5; // Pixels - movement below this is considered a click
+    const DRAG_THRESHOLD = 5;
 
     let width = window.innerWidth;
     let height = window.innerHeight;
 
-    const onWindowResize = (): void => {
+    // State
+    const ptrState = {
+        downX: 0,
+        downY: 0,
+        lastClickTime: 0,
+        lastClickedId: null as string | null
+    };
+
+    const handleResize = () => {
         width = window.innerWidth;
         height = window.innerHeight;
     };
-    window.addEventListener('resize', onWindowResize);
 
-    const onPointerDown = (event: PointerEvent): void => {
+    const handlePointerDown = (event: PointerEvent) => {
         if (event.button !== 0) return;
-        pointerDownX = event.clientX;
-        pointerDownY = event.clientY;
+        ptrState.downX = event.clientX;
+        ptrState.downY = event.clientY;
     };
-    rendererDomElement.addEventListener('pointerdown', onPointerDown);
 
-    const onPointerUp = (event: PointerEvent): void => {
+    const handlePointerUp = (event: PointerEvent) => {
         if (event.button !== 0) return;
 
-        const dx = event.clientX - pointerDownX;
-        const dy = event.clientY - pointerDownY;
+        const dx = event.clientX - ptrState.downX;
+        const dy = event.clientY - ptrState.downY;
         const distanceMoved = Math.sqrt(dx * dx + dy * dy);
 
         if (distanceMoved > DRAG_THRESHOLD) {
-            // This was a drag/pan, not a click - don't select anything
+            // Dragged - do nothing (camera control handles this)
             return;
         }
 
-        updateNormalizedCoordinates(mouse, event.clientX, event.clientY, width, height);
+        // Clicked - Raycast
+        performRaycast(event.clientX, event.clientY);
+    };
 
+    const performRaycast = (clientX: number, clientY: number) => {
+        updateNormalizedCoordinates(mouse, clientX, clientY, width, height);
         raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(interactionTargets, false);
 
+        const intersects = raycaster.intersectObjects(interactionTargets, false);
         if (intersects.length > 0) {
             const hit = intersects[0];
-            if (!hit) return;
-
-            let mesh: THREE.Object3D = hit.object;
-            let userData = mesh.userData;
-
-            // Handle InstancedMesh
-            if ((mesh as THREE.InstancedMesh).isInstancedMesh && context.instanceRegistry) {
-                const data = context.instanceRegistry.getIntersectionData(
-                    mesh as THREE.InstancedMesh,
-                    hit.instanceId ?? 0
-                );
-                if (data) {
-                    userData = data;
-                }
-            }
-
-            if (userData && userData.name) {
-                const currentTime = Date.now();
-                const isSameObject = lastClickedMeshId === mesh.uuid;
-                const isDoubleClick = isSameObject && (currentTime - lastClickTime) < doubleClickDelay;
-
-                lastClickTime = currentTime;
-                lastClickedMeshId = mesh.uuid;
-
-                callbacks.onObjectSelected(mesh);
-                updateSelectionUI(mesh);
-
-                if (isDoubleClick) {
-                    callbacks.onSetFocus(mesh);
-                }
-            }
+            processHit(hit);
         }
     };
-    rendererDomElement.addEventListener('pointerup', onPointerUp);
+
+    const processHit = (hit: THREE.Intersection) => {
+        if (!hit) return;
+
+        let mesh: THREE.Object3D = hit.object;
+        let userData = mesh.userData;
+
+        // Handle InstancedMesh
+        if ((mesh as THREE.InstancedMesh).isInstancedMesh && context.instanceRegistry) {
+            const data = context.instanceRegistry.getIntersectionData(
+                mesh as THREE.InstancedMesh,
+                hit.instanceId ?? 0
+            );
+            if (data) userData = data;
+        }
+
+        if (userData && userData.name) {
+            handleSelection(mesh);
+        }
+    };
+
+    const handleSelection = (mesh: THREE.Object3D) => {
+        const currentTime = Date.now();
+        const isSameObject = ptrState.lastClickedId === mesh.uuid;
+        const isDoubleClick = isSameObject && (currentTime - ptrState.lastClickTime) < doubleClickDelay;
+
+        ptrState.lastClickTime = currentTime;
+        ptrState.lastClickedId = mesh.uuid;
+
+        callbacks.onObjectSelected(mesh);
+        updateSelectionUI(mesh);
+
+        if (isDoubleClick) {
+            callbacks.onSetFocus(mesh);
+        }
+    };
+
+    window.addEventListener('resize', handleResize);
+    rendererDomElement.addEventListener('pointerdown', handlePointerDown);
+    rendererDomElement.addEventListener('pointerup', handlePointerUp);
 
     return () => {
-        rendererDomElement.removeEventListener('pointerdown', onPointerDown);
-        rendererDomElement.removeEventListener('pointerup', onPointerUp);
-        window.removeEventListener('resize', onWindowResize);
+        window.removeEventListener('resize', handleResize);
+        rendererDomElement.removeEventListener('pointerdown', handlePointerDown);
+        rendererDomElement.removeEventListener('pointerup', handlePointerUp);
     };
 }
 

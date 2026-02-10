@@ -187,6 +187,37 @@ vec3 solveKepler(float a, float e, float i, float w, float Om, float M0, float t
 /**
  * Factory function to create a GPU-accelerated debris field.
  */
+/**
+ * InstancedMesh with simplified Kepler physics on GPU.
+ */
+class DebrisSystem extends THREE.InstancedMesh implements DebrisMesh {
+    constructor(geometry: THREE.BufferGeometry, material: THREE.Material, count: number) {
+        super(geometry, material, count);
+    }
+
+    update(time: number): void {
+        const userData = (this.material as any).userData as ShaderMaterialUserData;
+        if (userData?.shader?.uniforms?.uTime) {
+            userData.shader.uniforms.uTime.value = time;
+        }
+    }
+
+    dispose(): void {
+        this.geometry.dispose();
+        if (this.material instanceof THREE.Material) {
+            this.material.dispose();
+        }
+        const matUserData = (this.material as any)?.userData as ShaderMaterialUserData | undefined;
+        if (matUserData?.shader) {
+            matUserData.shader = undefined;
+        }
+        // Force context loss cleanup implies we shouldn't hold refs
+    }
+}
+
+/**
+ * Factory function to create a GPU-accelerated debris field.
+ */
 function createDebrisSystem(config: DebrisConfig): DebrisMesh {
     const {
         count = 1000,
@@ -250,8 +281,7 @@ function createDebrisSystem(config: DebrisConfig): DebrisMesh {
         );
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mesh = new THREE.InstancedMesh(geometry, material, count) as any as DebrisMesh;
+    const mesh = new DebrisSystem(geometry, material, count);
     mesh.userData.type = config.type;
     mesh.castShadow = !(matConfig.opacity !== undefined && matConfig.opacity < 1.0);
     mesh.receiveShadow = true;
@@ -295,27 +325,6 @@ function createDebrisSystem(config: DebrisConfig): DebrisMesh {
     mesh.geometry.setAttribute('aOrbit', new THREE.InstancedBufferAttribute(aOrbit, 4));
     mesh.geometry.setAttribute('aParams', new THREE.InstancedBufferAttribute(aParams, 3));
     mesh.instanceMatrix.needsUpdate = true;
-
-    // Update Method
-    mesh.update = (time: number): void => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const userData = (mesh.material as any).userData as ShaderMaterialUserData;
-        if (userData?.shader?.uniforms?.uTime) {
-            userData.shader.uniforms.uTime.value = time;
-        }
-    };
-
-    mesh.dispose = (): void => {
-        mesh.geometry.dispose();
-        if (mesh.material instanceof THREE.Material) {
-            mesh.material.dispose();
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const matUserData = (mesh.material as any)?.userData as ShaderMaterialUserData | undefined;
-        if (matUserData?.shader) {
-            matUserData.shader = undefined;
-        }
-    };
 
     return mesh;
 }
