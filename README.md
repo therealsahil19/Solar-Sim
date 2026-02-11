@@ -21,7 +21,7 @@ A web-based 3D simulation of a solar system built with [Three.js](https://threej
     -   **Raycasting**: Click on planets to view details (Name, Type, Size, Distance) via the Info Panel.
     -   **Command Palette**: A power-user interface (`Cmd+K` or `Ctrl+K`) for quick navigation and actions.
 -   **Dynamic Visuals**:
-    -   **Orbit Trails**: Planets leave fading trail lines as they orbit (optimized with typed arrays).
+    -   **Orbit Trails**: Planets leave fading trail lines as they orbit (optimized with GPU-accelerated Data Textures).
     -   **Texture Toggling**: Switch between High-Res Textures (HD) and Solid Colors (LD) for performance on low-end devices.
     -   **Dynamic Labels**: Text labels that overlay the 3D scene using `CSS2DRenderer`.
     -   **Glow Effects**: Procedural sun glow generated via offscreen canvas.
@@ -52,14 +52,14 @@ This project implements several optimization strategies (internally referred to 
 
 3.  **Memory Management**:
     -   **Shared Geometry**: All orbit lines share a single unit-circle geometry, scaled per instance. The same applies to spheres.
-    -   **Typed Arrays**: Trail updates use `Float32Array.prototype.copyWithin` for highly efficient memory shifting (O(N)) instead of manual array iteration.
+    -   **Data Textures**: Trail updates use a **Ring Buffer** architecture stored in a **Data Texture**. The Vertex Shader unwinds this history based on a `uHead` uniform, eliminating the need for expensive CPU-side array shifting.
 
 4.  **Render Loop Splitting**:
     -   The loop is split into a **Pre-Render** phase (updating object rotations) and a **Post-Render** phase (updating trails). This allows the trail logic to read the most recent GPU-computed matrices without stalling the CPU.
 
 5.  **GPU Animation & Instancing**:
     -   **InstancedMesh (`InstanceRegistry`)**: Manages thousands of instances (like moons or asteroids) with O(1) draw calls per geometry.
-    -   **Asteroid Belt**: Uses `THREE.InstancedMesh` with Vertex Shader injection to animate orbits entirely on the GPU.
+    -   **Debris Systems**: Asteroid Belt, Kuiper Belt, and Oort Cloud use `THREE.InstancedMesh` with custom Vertex Shaders to animate Keplerian orbits entirely on the GPU.
     -   **Trails (`TrailManager`)**: Renders thousands of orbit trails using a single `THREE.LineSegments` geometry, massively reducing draw calls.
 
 6.  **Benchmarking**:
@@ -88,9 +88,10 @@ The project is organized into a modular architecture:
 │   ├── procedural.ts     # "Factory" - creates 3D objects (planets, stars)
 │   ├── input.ts          # "Controller" - handles user input and UI events
 │   ├── physics.ts        # "Engineer" - handles Keplerian orbits and multi-zone scaling
-│   ├── debris.ts         # "Generator" - creates GPU-accelerated asteroid belt
+│   ├── debris.ts         # "Generator" - creates GPU-accelerated debris fields
 │   ├── instancing.ts     # "Optimizer" - manages InstancedMesh groups
 │   ├── trails.ts         # "Optimizer" - manages unified orbit trail geometry
+│   ├── shaders.ts        # "Graphics" - GLSL shader strings for trails
 │   ├── benchmark.ts      # "Bolt" - performance benchmarking tool
 │   ├── style.css         # Design System tokens and styles
 │   ├── components/
@@ -229,6 +230,25 @@ The simulation is data-driven. `system.json` defines the hierarchy of celestial 
   }
 ]
 ```
+
+### Belt Configuration
+
+For asteroid belts and other debris fields, the configuration uses a `distribution` object instead of fixed `physics`.
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `name` | String | The display name of the belt. |
+| `type` | String | "Belt". |
+| `distribution` | Object | **Orbital distribution range**: |
+| `distribution.minA/maxA` | Number | Range for Semi-major axis (AU). |
+| `distribution.minE/maxE` | Number | Range for Eccentricity. |
+| `distribution.minI/maxI` | Number | Range for Inclination (degrees). |
+| `distribution.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
+| `visual` | Object | **Visual properties**: |
+| `visual.count` | Number | Number of particles to generate. |
+| `visual.color` | String | Hex color of the particles. |
+| `visual.size` | Number | Size of each particle. |
+| `visual.opacity` | Number | Opacity (0.0 - 1.0). |
 
 ## Running the Project
 
