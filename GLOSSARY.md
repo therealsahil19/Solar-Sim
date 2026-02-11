@@ -10,6 +10,7 @@ This document defines the domain-specific terminology, architectural patterns, a
 **Examples:**
 *   **Throttling:** Running logic every N frames (e.g., UI updates).
 *   **Instancing:** Using `THREE.InstancedMesh` for mass rendering.
+*   **Data Textures:** Storing orbit history in GPU textures to render thousands of trail points with 0 CPU geometry overhead.
 *   **Pre/Post-Render Split:** separating physics updates from trail rendering to prevent CPU stalls.
 
 ### Sentinel 🛡️
