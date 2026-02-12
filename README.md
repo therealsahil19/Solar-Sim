@@ -101,16 +101,20 @@ The project is organized into a modular architecture:
 │   │   ├── NavigationSidebar.ts # Hierarchical planet navigation tree
 │   │   └── SettingsPanel.ts     # Slide-out simulation preferences panel
 │   ├── managers/
+│   │   ├── LabelManager.ts      # Manages CSS2D labels
+│   │   ├── SceneManager.ts      # Handles scene initialization and updates
 │   │   ├── SettingsManager.ts   # "State" - persists user preferences
 │   │   ├── ThemeManager.ts      # "State" - handles visual themes
 │   │   └── ToastManager.ts      # "State" - manages stackable notifications
+│   ├── utils/
+│   │   ├── SkeletonUtils.ts     # UI skeleton loading states
+│   │   └── ThreeUtils.ts        # Three.js helper utilities
+│   └── types/                   # TypeScript type definitions
 ├── tests/
 │   ├── e2e/              # Playwright E2E tests
 │   └── unit/             # Vitest unit tests
 └── README.md             # This documentation
 ```
-
-### Architecture
 
 ### Architecture Patterns
 
@@ -203,6 +207,7 @@ The simulation is data-driven. `system.json` defines the hierarchy of celestial 
 | `visual.color` | String | Hex code for the fallback solid color. |
 | `visual.texture`| String | Path to the JPG texture (e.g., `textures/earth.jpg`). |
 | `visual.hasRing`| Bool | (Optional) Whether to render Saturn-like rings. |
+| `visual.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
 | `description` | String | Background info shown in the Info Panel. |
 | `moons` | Array | (Optional) Nested list of satellite objects (recursive schema). |
 
@@ -243,12 +248,12 @@ For asteroid belts and other debris fields, the configuration uses a `distributi
 | `distribution.minA/maxA` | Number | Range for Semi-major axis (AU). |
 | `distribution.minE/maxE` | Number | Range for Eccentricity. |
 | `distribution.minI/maxI` | Number | Range for Inclination (degrees). |
-| `distribution.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
 | `visual` | Object | **Visual properties**: |
 | `visual.count` | Number | Number of particles to generate. |
 | `visual.color` | String | Hex color of the particles. |
 | `visual.size` | Number | Size of each particle. |
 | `visual.opacity` | Number | Opacity (0.0 - 1.0). |
+| `visual.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
 
 ## Running the Project
 
@@ -352,8 +357,8 @@ The application is designed to be accessible:
 ## Quality & Audit
 
 The project undergoes regular visual and logical audits to ensure high standards:
-- [Visual QA Report](file:///c:/Users/mehna/OneDrive/Desktop/Solar-Sim/visual_report.md): Tracking UI inconsistencies and layout shifts.
-- [Security & Logic Audit (Hunted)](file:///c:/Users/mehna/OneDrive/Desktop/Solar-Sim/hunted.md): Identifying code smells, logic flaws, and potential security risks.
+- [Visual QA Report](visual_report.md): Tracking UI inconsistencies and layout shifts.
+- [Security & Logic Audit (Hunted)](hunted.md): Identifying code smells, logic flaws, and potential security risks.
 
 ## Troubleshooting
 
@@ -364,13 +369,6 @@ The project undergoes regular visual and logical audits to ensure high standards
 ### Performance Lag?
 - **Bolt Optimization**: Toggle Textures (T key) or Labels (L key) to reduce GPU load.
 - **Instancing**: The project automatically uses instancing for moons and asteroids to save draw calls.
-
-## Development
-
-This project maintains internal documentation for specific domains in the `.Jules/` directory:
--   `bolt.md`: Performance logs and optimization details.
--   `sentinel.md`: Security vulnerability tracking and fixes.
--   `palette.md`: Design system and UI/UX decisions.
 
 ---
 

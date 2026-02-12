@@ -28,7 +28,8 @@ Open the browser to http://localhost:5173
 - `src/instancing.ts` – InstanceRegistry for batching objects
 - `src/trails.ts` – TrailManager for unified orbit trail geometry
 - `src/components/CommandPalette.ts` – Cmd+K command palette UI
-- `src/managers/ThemeManager.ts` – visual themes, localStorage persistence
+- `src/managers/` - State management (Theme, Settings, Toast, Label, Scene)
+- `src/utils/` - Utility functions (SkeletonUtils, ThreeUtils)
 - `system.json` – data-driven config for planets/moons, including texture paths
 
 ## Architecture notes
@@ -46,10 +47,3 @@ For visual or behavioral tweaks (speed, labels, orbits), prefer editing:
 - `src/trails.ts` for trail visibility/updates
 
 For UI changes (theme, CommandPalette behavior), edit `src/managers/ThemeManager.ts` or `src/components/CommandPalette.ts`.
-
-## Internal docs
-The repo has .jules/ with domain-specific notes:
-
-- `.jules/bolt.md` – performance & optimization details
-- `.jules/sentinel.md` – security tracking
-- `.jules/palette.md` – design system & UI/UX decisions
