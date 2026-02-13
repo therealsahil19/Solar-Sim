@@ -65,6 +65,15 @@ This project implements several optimization strategies (internally referred to 
 6.  **Benchmarking**:
     -   **Bolt Benchmark (`benchmark.ts`)**: A built-in performance suite that measures frame timing statistics, P95/P99 latency, and jank percentage.
 
+7.  **Spatial Grid**:
+    -   **LabelManager**: Uses a spatial grid to efficiently manage 2D label collisions and occlusion, ensuring readable text without overlapping.
+
+8.  **Scene Management**:
+    -   **SceneManager**: Explicitly disables `matrixWorldAutoUpdate` to prevent redundant world matrix calculations by the renderer.
+
+9.  **Lazy Loading**:
+    -   **Texture Loading**: Textures are lazily loaded after the initial scene render to reduce time-to-interactive.
+
 ## Security ("Sentinel")
 
 The application enforces strict security measures:
@@ -101,6 +110,8 @@ The project is organized into a modular architecture:
 │   │   ├── NavigationSidebar.ts # Hierarchical planet navigation tree
 │   │   └── SettingsPanel.ts     # Slide-out simulation preferences panel
 │   ├── managers/
+│   │   ├── LabelManager.ts      # "State" - manages 2D labels and occlusion
+│   │   ├── SceneManager.ts      # "State" - wraps Three.js scene components
 │   │   ├── SettingsManager.ts   # "State" - persists user preferences
 │   │   ├── ThemeManager.ts      # "State" - handles visual themes
 │   │   └── ToastManager.ts      # "State" - manages stackable notifications
