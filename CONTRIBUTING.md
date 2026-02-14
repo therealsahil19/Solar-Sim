@@ -76,6 +76,8 @@ The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D 
 | **Modal** | Accessible `<dialog>` wrapper. | Manages focus trapping and lifecycle (`open`/`close`). |
 | **SettingsPanel** | Slide-out preferences menu. | Subscribes to `SettingsManager` and triggers callbacks. |
 | **ToastManager** | Notification system. | Singleton that provides `show(msg, options)` for feedback. |
+| **LabelManager** | Manages 2D labels. | Uses grid collision for visibility; decoupled from Scene. |
+| **SceneManager** | Wraps Three.js boilerplates. | Exposes Scene, Camera, and Renderer. |
 
 ### Architecture Visualization
 
@@ -92,6 +94,7 @@ graph TD
     
     subgraph "Visual Engine"
         CONDUCTOR["Conductor (main.ts)"]
+        SCENE_MGR["SceneManager"]
         FACTORY["Factory (procedural.ts)"]
         OPTIMIZERS["Optimizers (instancing, trails)"]
     end
@@ -106,6 +109,7 @@ graph TD
     MANAGERS -->|Apply Setting| CONDUCTOR
     JSON -->|Build Scene| FACTORY
     FACTORY -->|Return Meshes| CONDUCTOR
+    CONDUCTOR -->|Init| SCENE_MGR
     CONDUCTOR -->|Draw| OPTIMIZERS
     UI_COMP -->|Trigger Action| CONTROLLERS
 ```

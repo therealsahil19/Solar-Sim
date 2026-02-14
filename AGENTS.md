@@ -29,10 +29,13 @@ Open the browser to http://localhost:5173
 - `src/trails.ts` – TrailManager for unified orbit trail geometry
 - `src/components/CommandPalette.ts` – Cmd+K command palette UI
 - `src/managers/ThemeManager.ts` – visual themes, localStorage persistence
+- `src/managers/LabelManager.ts` – Manages 2D labels with spatial grid collision
+- `src/managers/SceneManager.ts` – Wraps Three.js scene, camera, and renderer
 - `system.json` – data-driven config for planets/moons, including texture paths
 
 ## Architecture notes
 The codebase is modular: `main.ts` is the orchestrator, `procedural.ts` is the factory, `instancing.ts`/`trails.ts` are optimizers.
+Label collision logic is optimized via a spatial grid in `LabelManager`.
 Orbit/trail logic is heavily optimized; be conservative when changing those files.
 Configuration changes (e.g., orbital parameters, colors, textures) should mostly be done through `system.json`, not hard-coding in TS.
 

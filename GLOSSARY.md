@@ -52,6 +52,10 @@ This document defines the domain-specific terminology, architectural patterns, a
 **Definition:** Disabling rendering for objects outside the camera's view.
 **Note:** Often disabled (`frustumCulled = false`) for our procedural belts because the bounding box of the entire belt is too large or hard to calculate dynamically.
 
+### Spatial Grid
+**Definition:** A technique to partition 2D space into cells to optimize collision detection.
+**In Solar-Sim:** Used by `LabelManager` to detect overlapping labels. Instead of checking every label against every other label (O(N²)), we only check labels within the same grid cell (O(N)), ensuring performant UI updates on smaller screens.
+
 ---
 
 ## Physics & Simulation
