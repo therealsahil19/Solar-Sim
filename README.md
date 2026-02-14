@@ -115,6 +115,13 @@ The project is organized into a modular architecture:
 │   │   ├── SettingsManager.ts   # "State" - persists user preferences
 │   │   ├── ThemeManager.ts      # "State" - handles visual themes
 │   │   └── ToastManager.ts      # "State" - manages stackable notifications
+│   ├── types/
+│   │   ├── index.ts             # Shared type definitions
+│   │   ├── system.ts            # System configuration types
+│   │   └── three-extensions.d.ts # Three.js augmentation types
+│   ├── utils/
+│   │   ├── SkeletonUtils.ts     # Skeleton loading UI helper
+│   │   └── ThreeUtils.ts        # Three.js helper functions
 ├── tests/
 │   ├── e2e/              # Playwright E2E tests
 │   └── unit/             # Vitest unit tests
@@ -342,6 +349,7 @@ While the project currently relies on static assets and a simple HTTP server (Po
 | **O** | Toggle Orbits & Trails (Show/Hide) |
 | **T** | Toggle Textures (HD / LD) |
 | **,** (Comma) | Toggle Settings Panel |
+| **?** (or Shift+/) | Open Welcome / Help Modal |
 | **Esc** | Reset View |
 | **1-9** | Focus on Planet 1-9 |
 

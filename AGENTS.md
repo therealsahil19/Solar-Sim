@@ -49,10 +49,3 @@ For visual or behavioral tweaks (speed, labels, orbits), prefer editing:
 - `src/trails.ts` for trail visibility/updates
 
 For UI changes (theme, CommandPalette behavior), edit `src/managers/ThemeManager.ts` or `src/components/CommandPalette.ts`.
-
-## Internal docs
-The repo has .jules/ with domain-specific notes:
-
-- `.jules/bolt.md` – performance & optimization details
-- `.jules/sentinel.md` – security tracking
-- `.jules/palette.md` – design system & UI/UX decisions
