@@ -68,7 +68,7 @@ The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D 
 2.  **Input (`input.ts`)**: The "Controller". It bridges the gap. It listens for user actions (clicks, keys) and updates the UI or the Scene accordingly.
 3.  **Components (`src/components/`)**: Pure UI classes. They do not import Three.js directly (mostly). They receive data and callbacks via their constructors.
 
-**Core Components:**
+**Core Components (`src/components/`):**
 
 | Component | Responsibility | Communication |
 | :--- | :--- | :--- |
@@ -77,6 +77,11 @@ The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D 
 | **CommandPalette** | "Cmd+K" power menu. | Executes callbacks for global actions (e.g., `onToggleOrbits`). |
 | **Modal** | Accessible `<dialog>` wrapper. | Manages focus trapping and lifecycle (`open`/`close`). |
 | **SettingsPanel** | Slide-out preferences menu. | Subscribes to `SettingsManager` and triggers callbacks. |
+
+**Core Managers (`src/managers/`):**
+
+| Manager | Responsibility | Communication |
+| :--- | :--- | :--- |
 | **ToastManager** | Notification system. | Singleton that provides `show(msg, options)` for feedback. |
 | **LabelManager** | Manages 2D labels. | Uses grid collision for visibility; decoupled from Scene. |
 | **SceneManager** | Wraps Three.js boilerplates. | Exposes Scene, Camera, and Renderer. |
