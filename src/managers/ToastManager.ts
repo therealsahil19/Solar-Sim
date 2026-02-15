@@ -34,6 +34,15 @@ export class ToastManager {
     }
 
     /**
+     * Resets the singleton instance.
+     * @internal For testing purposes only.
+     */
+    public static resetInstance(): void {
+        // @ts-ignore
+        ToastManager.instance = null;
+    }
+
+    /**
      * Shows a toast notification.
      * @param message Text to display
      * @param options Configuration options

@@ -8,6 +8,6 @@ import * as THREE from 'three';
  * @param target The vector to store the position in.
  */
 export function getPositionFromMatrix(object: THREE.Object3D, target: THREE.Vector3): void {
-    const te = object.matrixWorld.elements as any;
+    const te = object.matrixWorld.elements;
     target.set(te[12], te[13], te[14]);
 }

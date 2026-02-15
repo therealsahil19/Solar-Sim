@@ -15,7 +15,7 @@ vi.mock('three', async () => {
             this.shadowMap = { enabled: false, type: 0, mapSize: { width: 1024, height: 1024 }, bias: 0 };
         }
 
-        setSize() {}
+        setSize() { }
 
         render(scene: THREE.Scene, camera: THREE.Camera) {
             if (scene.matrixWorldAutoUpdate) {
@@ -26,7 +26,7 @@ vi.mock('three', async () => {
             }
         }
 
-        dispose() {}
+        dispose() { }
     }
 
     class MockTextureLoader {
@@ -37,10 +37,6 @@ vi.mock('three', async () => {
     }
 
     class MockScene extends actual.Scene {
-        constructor() {
-            super();
-            this.matrixWorldAutoUpdate = true;
-        }
     }
 
     return {
@@ -55,8 +51,8 @@ vi.mock('three', async () => {
 vi.mock('three/addons/renderers/CSS2DRenderer.js', () => ({
     CSS2DRenderer: class {
         domElement = document.createElement('div');
-        setSize() {}
-        render() {}
+        setSize() { }
+        render() { }
     },
     CSS2DObject: class extends THREE.Object3D {
         constructor() { super(); }
@@ -67,9 +63,9 @@ vi.mock('three/addons/renderers/CSS2DRenderer.js', () => ({
 vi.mock('three/addons/controls/OrbitControls.js', () => ({
     OrbitControls: class {
         target = new THREE.Vector3();
-        constructor() {}
-        update() {}
-        dispose() {}
+        constructor() { }
+        update() { }
+        dispose() { }
     }
 }));
 
@@ -104,19 +100,19 @@ describe('Redundant Scene Update Optimization', () => {
         vi.mock('../../src/instancing', () => ({
             InstanceRegistry: class {
                 groups = new Map();
-                constructor() {}
-                addInstance() {}
-                build() {}
-                update() {}
-                dispose() {}
+                constructor() { }
+                addInstance() { }
+                build() { }
+                update() { }
+                dispose() { }
             }
         }));
 
         vi.mock('../../src/trails', () => ({
             TrailManager: class {
-                constructor() {}
-                update() {}
-                dispose() {}
+                constructor() { }
+                update() { }
+                dispose() { }
             }
         }));
 

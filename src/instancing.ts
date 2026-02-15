@@ -115,7 +115,6 @@ export class InstanceRegistry implements Disposable {
         this.groups.forEach((group, key) => {
             if (group.mesh) {
                 this.scene.remove(group.mesh);
-                group.mesh.geometry?.dispose();
                 const material = group.mesh.material;
                 if (Array.isArray(material)) {
                     material.forEach(m => m.dispose());
@@ -144,32 +143,32 @@ export class InstanceRegistry implements Disposable {
 
     /**
      * Updates all instance matrices based on their pivots.
-     * This is the O(N) operation, but N is number of objects, not pixels.
+     * ⚡ Optimization: Processes only dynamic instances.
+     * Uses TypedArray.set() for optimized bulk copy.
      */
     update(): void {
         this.groups.forEach(group => {
             if (!group.mesh) return;
 
-            let needsUpdate = false;
             const instanceMatrix = group.mesh.instanceMatrix;
             const array = instanceMatrix.array;
             const forceUpdate = group.firstUpdatePending;
+            let needsUpdate = forceUpdate;
 
+            // Only iterate if we have dynamic instances or a fresh build
             for (let i = 0; i < group.instances.length; i++) {
                 const instanceData = group.instances[i];
                 if (!instanceData) continue;
 
+                // Skip static instances unless it's the first update after build
                 if (!instanceData.dynamic && !forceUpdate) continue;
 
                 const { pivot, index } = instanceData;
-
-                // Bolt Optimization: Direct buffer access avoids setMatrixAt overhead (function calls + checks)
-                // Use TypedArray.set() for optimized bulk copy
                 const te = pivot.matrixWorld.elements;
                 const offset = index * 16;
 
+                // Bulk copy matrix elements into the buffer
                 array.set(te, offset);
-
                 needsUpdate = true;
             }
 

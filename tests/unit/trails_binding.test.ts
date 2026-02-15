@@ -3,51 +3,34 @@ import * as THREE from 'three';
 import { TrailManager } from '../../src/trails';
 
 describe('TrailManager Texture Binding', () => {
-    it('should bind the raw WebGLTexture, not the Three.js Texture object', () => {
+    it('should use renderer.copyTextureToTexture for updates', () => {
         const scene = new THREE.Scene();
         const manager = new TrailManager(scene, 10, 10);
 
-        // Mock WebGLTexture
-        const mockWebGLTexture = { isWebGLTexture: true };
-
-        // Mock WebGLContext
-        const gl = {
-            TEXTURE_2D: 3553,
-            RGBA: 6408,
-            FLOAT: 5126,
-            texSubImage2D: vi.fn(),
-        };
-
-        // Mock Renderer Properties
-        const properties = {
-            get: vi.fn().mockReturnValue({ __webglTexture: mockWebGLTexture })
-        };
-
-        // Mock Renderer State
-        const state = {
-            bindTexture: vi.fn(),
-        };
-
         // Mock Renderer
         const renderer = {
-            getContext: () => gl,
-            properties: properties,
-            state: state,
+            copyTextureToTexture: vi.fn(),
+            properties: { get: vi.fn() },
+            state: { bindTexture: vi.fn() }
         } as unknown as THREE.WebGLRenderer;
 
         // Trigger update
-        // We need at least one trail to trigger uploadTextureRow
+        // We need at least one trail to trigger processing
         const obj = new THREE.Object3D();
         manager.register(obj, 0xffffff);
+
         manager.update(renderer);
 
-        // Verify bindTexture was called
-        expect(state.bindTexture).toHaveBeenCalled();
+        // Verify copyTextureToTexture was called
+        expect(renderer.copyTextureToTexture).toHaveBeenCalled();
 
         // Check arguments
-        const [target, texture] = state.bindTexture.mock.calls[0];
-        expect(target).toBe(gl.TEXTURE_2D);
-        expect(texture).toBe(mockWebGLTexture);
-        expect(texture).not.toBe(manager['historyTexture']);
+        const args = (renderer.copyTextureToTexture as any).mock.calls[0];
+        // args[0] is position (Vector2)
+        // args[1] is srcTexture (rowTexture)
+        // args[2] is dstTexture (historyTexture)
+        expect(args[0]).toBeInstanceOf(THREE.Vector2);
+        expect(args[1].isDataTexture).toBe(true);
+        expect(args[2]).toBe(manager['historyTexture']);
     });
 });

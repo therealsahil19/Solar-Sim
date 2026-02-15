@@ -181,10 +181,16 @@ export class CommandPalette implements Disposable {
      * Binds event listeners.
      */
     private bindEvents(): void {
-        // Input Filter
+        // Input Filter with Debounce
+        let debounceTimer: number | null = null;
         this.input.addEventListener('input', (e) => {
-            const target = e.target as HTMLInputElement;
-            this.filter(target.value);
+            if (debounceTimer) {
+                window.clearTimeout(debounceTimer);
+            }
+            debounceTimer = window.setTimeout(() => {
+                const target = e.target as HTMLInputElement;
+                this.filter(target.value);
+            }, 100);
         });
 
         // Keyboard Navigation
@@ -304,11 +310,15 @@ export class CommandPalette implements Disposable {
 
     /**
      * Renders the filtered list of items to the DOM.
+     * ⚡ Optimization: Recycles existing DOM elements to avoid layout thrashing.
      */
     private renderList(): void {
-        this.list.innerHTML = '';
+        const currentCount = this.list.children.length;
+        const targetCount = this.filteredItems.length;
 
-        if (this.filteredItems.length === 0) {
+        // Handle empty state
+        if (targetCount === 0) {
+            this.list.innerHTML = '';
             const empty = document.createElement('li');
             empty.className = 'cmd-empty';
             empty.textContent = 'No results found.';
@@ -316,45 +326,61 @@ export class CommandPalette implements Disposable {
             return;
         }
 
-        this.filteredItems.forEach((item, index) => {
-            const li = document.createElement('li');
-            li.id = `cmd-item-${index}`;
-            li.setAttribute('role', 'option');
-            li.className = 'cmd-item';
+        // Remove "No results" if it exists
+        if (this.list.querySelector('.cmd-empty')) {
+            this.list.innerHTML = '';
+        }
 
-            // Icon
+        // Adjust number of list items
+        if (currentCount > targetCount) {
+            for (let i = currentCount - 1; i >= targetCount; i--) {
+                this.list.removeChild(this.list.children[i]);
+            }
+        }
+
+        this.filteredItems.forEach((item, index) => {
+            let li = this.list.children[index] as HTMLLIElement;
+
+            if (!li) {
+                li = document.createElement('li');
+                li.setAttribute('role', 'option');
+                li.className = 'cmd-item';
+
+                // Static parts that don't change
+                li.innerHTML = `
+                    <span class="cmd-item-icon"></span>
+                    <span class="cmd-item-text"></span>
+                    <span class="cmd-item-meta"></span>
+                `;
+
+                li.addEventListener('click', () => {
+                    this.selectedIndex = index;
+                    this.executeCurrent();
+                });
+
+                li.addEventListener('mouseenter', () => {
+                    this.selectIndex(index, false);
+                });
+
+                this.list.appendChild(li);
+            }
+
+            // Update dynamic content
+            li.id = `cmd-item-${index}`;
+
+            const iconSpan = li.children[0] as HTMLElement;
+            const textSpan = li.children[1] as HTMLElement;
+            const metaSpan = li.children[2] as HTMLElement;
+
             let icon = '⚡';
             if (item.type === 'Planet') icon = '🪐';
             if (item.type === 'Moon') icon = '🌑';
             if (item.type === 'Star') icon = '☀️';
             if (item.type === 'Dwarf Planet') icon = '☄️';
 
-            const iconSpan = document.createElement('span');
-            iconSpan.className = 'cmd-item-icon';
-            iconSpan.textContent = icon;
-
-            const textSpan = document.createElement('span');
-            textSpan.className = 'cmd-item-text';
-            textSpan.textContent = item.name;
-
-            const metaSpan = document.createElement('span');
-            metaSpan.className = 'cmd-item-meta';
-            metaSpan.textContent = item.type;
-
-            li.appendChild(iconSpan);
-            li.appendChild(textSpan);
-            li.appendChild(metaSpan);
-
-            li.addEventListener('click', () => {
-                this.selectedIndex = index;
-                this.executeCurrent();
-            });
-
-            li.addEventListener('mouseenter', () => {
-                this.selectIndex(index, false);
-            });
-
-            this.list.appendChild(li);
+            if (iconSpan.textContent !== icon) iconSpan.textContent = icon;
+            if (textSpan.textContent !== item.name) textSpan.textContent = item.name;
+            if (metaSpan.textContent !== item.type) metaSpan.textContent = item.type;
         });
     }
 

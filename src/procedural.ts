@@ -22,6 +22,7 @@ import type { InstanceRegistry } from './instancing';
 
 // --- Shared Resources ---
 const baseSphereGeometry = new THREE.SphereGeometry(1, 64, 64);
+const ringGeometryCache: Record<string, THREE.RingGeometry> = {};
 
 // Material Cache
 const materialCache: Record<string, THREE.MeshStandardMaterial> = {};
@@ -78,6 +79,9 @@ export function clearMaterialCache(): void {
         cachedGlowTexture.dispose();
         cachedGlowTexture = null;
     }
+
+    Object.values(ringGeometryCache).forEach(geo => geo.dispose());
+    for (const key in ringGeometryCache) delete ringGeometryCache[key];
 }
 
 /**
@@ -429,7 +433,12 @@ function createBodyRing(
 
     const inner = ringData.inner ?? 1.4;
     const outer = ringData.outer ?? 2.2;
-    const ringGeo = new THREE.RingGeometry(inner, outer, 128);
+    const cacheKey = `${inner}_${outer}`;
+
+    if (!ringGeometryCache[cacheKey]) {
+        ringGeometryCache[cacheKey] = new THREE.RingGeometry(inner, outer, 128);
+    }
+    const ringGeo = ringGeometryCache[cacheKey];
 
     const pos = ringGeo.attributes.position as THREE.BufferAttribute;
     const uv = ringGeo.attributes.uv as THREE.BufferAttribute;
@@ -480,7 +489,7 @@ function createBodyLabel(data: CelestialBody, parentData: OrbitalParameters | nu
     const label = new CSS2DObject(labelDiv);
     label.position.set(0, data.visual.size + 1.0, 0);
     label.userData.isMoon = (data.type === 'Moon');
-    label.userData.parentPlanet = parentData ? null : null;
+    label.userData.parentPlanet = parentData ? parentData.name : null;
     return label;
 }
 

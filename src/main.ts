@@ -65,7 +65,6 @@ const planets: THREE.Group[] = [];
 
 const allOrbits: THREE.LineLoop[] = [];
 const allTrails: unknown[] = [];
-// const allLabels: CSS2DObject[] = []; // Managed by LabelManager
 
 let playerShip: THREE.Group | null = null;
 let starfield: THREE.Points | null = null;
@@ -238,8 +237,11 @@ export async function init(): Promise<void> {
         // Security check: only allow local files or trusted domains
         try {
             const parsedUrl = new URL(configUrl, window.location.origin);
-            if (parsedUrl.origin !== window.location.origin) {
-                console.warn('Blocked external config URL:', configUrl);
+            const isLocal = parsedUrl.origin === window.location.origin;
+            const isTrustedProtocol = parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+
+            if (!isLocal || !isTrustedProtocol) {
+                console.warn('Blocked external/untrusted config URL:', configUrl);
                 configUrl = 'system.json';
                 ToastManager.getInstance().show("External config blocked. Loaded default system.", { type: 'error' });
             }
@@ -367,7 +369,6 @@ export async function init(): Promise<void> {
     if (textureLoader.lazyLoadQueue && textureLoader.lazyLoadQueue.length > 0) {
         setTimeout(() => {
             if (initFailed || !textureLoader.lazyLoadQueue) return;
-            console.log(`Bolt ⚡: Lazy loading ${textureLoader.lazyLoadQueue.length} textures...`);
             textureLoader.lazyLoadQueue.forEach(item => {
                 const tex = textureLoader.load(item.url);
                 item.material.map = tex;

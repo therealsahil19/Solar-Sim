@@ -89,8 +89,11 @@ describe('CommandPalette', () => {
         const input = document.querySelector('input') as HTMLInputElement;
 
         // Search for 'Earth'
+        vi.useFakeTimers();
         input.value = 'Earth';
         input.dispatchEvent(new Event('input'));
+        vi.runAllTimers();
+        vi.useRealTimers();
 
         const items = document.querySelectorAll('.cmd-item');
         expect(items.length).toBeGreaterThan(0);
@@ -102,8 +105,11 @@ describe('CommandPalette', () => {
         const input = document.querySelector('input') as HTMLInputElement;
 
         // Search for 'Toggle Orbits'
+        vi.useFakeTimers();
         input.value = 'Toggle Orbits';
         input.dispatchEvent(new Event('input'));
+        vi.runAllTimers();
+        vi.useRealTimers();
 
         const items = document.querySelectorAll('.cmd-item');
         expect(items.length).toBe(1);
@@ -134,11 +140,14 @@ describe('CommandPalette', () => {
         const input = document.querySelector('input') as HTMLInputElement;
 
         // Filter for "Toggle Orbits"
+        vi.useFakeTimers();
         input.value = 'Toggle Orbits';
         input.dispatchEvent(new Event('input'));
+        vi.runAllTimers();
 
         // Press Enter
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        vi.useRealTimers();
 
         expect(callbacks.onToggleOrbits).toHaveBeenCalled();
         expect(palette.isOpen()).toBe(false);
@@ -149,11 +158,14 @@ describe('CommandPalette', () => {
         const input = document.querySelector('input') as HTMLInputElement;
 
         // Filter for "Earth"
+        vi.useFakeTimers();
         input.value = 'Earth';
         input.dispatchEvent(new Event('input'));
+        vi.runAllTimers();
 
         // Press Enter
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        vi.useRealTimers();
 
         expect(callbacks.onSelectByName).toHaveBeenCalledWith('Earth');
         expect(palette.isOpen()).toBe(false);
@@ -165,5 +177,42 @@ describe('CommandPalette', () => {
 
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
         expect(palette.isOpen()).toBe(false);
+    });
+
+    it('should show "No results found" when query returns no items', () => {
+        palette.open();
+        const input = document.querySelector('input') as HTMLInputElement;
+
+        vi.useFakeTimers();
+        input.value = 'ZZZ_INVALID_QUERY_ZZZ';
+        input.dispatchEvent(new Event('input'));
+        vi.runAllTimers();
+
+        const emptyItem = document.querySelector('.cmd-empty');
+        expect(emptyItem).toBeTruthy();
+        expect(emptyItem?.textContent).toBe('No results found.');
+        vi.useRealTimers();
+    });
+
+    it('should debounce search input', () => {
+        palette.open();
+        const input = document.querySelector('input') as HTMLInputElement;
+
+        vi.useFakeTimers();
+        input.value = 'E';
+        input.dispatchEvent(new Event('input'));
+        input.value = 'Ea';
+        input.dispatchEvent(new Event('input'));
+        input.value = 'Earth';
+        input.dispatchEvent(new Event('input'));
+
+        // Should still show all items (since it hasn't filtered yet)
+        const initialCount = document.querySelectorAll('.cmd-item').length;
+        expect(initialCount).toBeGreaterThan(1);
+
+        vi.advanceTimersByTime(150);
+        // After 150ms, it should have filtered down to Earth
+        expect(document.querySelectorAll('.cmd-item').length).toBe(1);
+        vi.useRealTimers();
     });
 });
