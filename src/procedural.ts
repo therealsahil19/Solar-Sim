@@ -482,14 +482,14 @@ function createBodyRing(
 /**
  * Creates a label for the celestial body.
  */
-function createBodyLabel(data: CelestialBody, parentData: OrbitalParameters | null): CSS2DObject {
+function createBodyLabel(data: CelestialBody, parentBody: CelestialBody | null): CSS2DObject {
     const labelDiv = document.createElement('div');
     labelDiv.className = 'planet-label';
     labelDiv.textContent = data.name;
     const label = new CSS2DObject(labelDiv);
     label.position.set(0, data.visual.size + 1.0, 0);
     label.userData.isMoon = (data.type === 'Moon');
-    label.userData.parentPlanet = parentData ? parentData.name : null;
+    label.userData.parentPlanet = parentBody ? parentBody.name : null;
     return label;
 }
 
@@ -500,7 +500,7 @@ export function createSystem(
     data: CelestialBody,
     textureLoader: ExtendedTextureLoader,
     useTextures: boolean,
-    parentData: OrbitalParameters | null = null
+    parentBody: CelestialBody | null = null
 ): SystemResult {
     // ⚡ Bolt Optimization: Pre-calculate period if missing to avoid repeated Math.pow() in loop
     if (data.physics && data.physics.period === undefined) {
@@ -536,7 +536,7 @@ export function createSystem(
     }
 
     // Label
-    const label = createBodyLabel(data, parentData);
+    const label = createBodyLabel(data, parentBody);
     pivot.add(label);
 
     // Trails
@@ -552,7 +552,7 @@ export function createSystem(
         pivot: pivot,
         mesh: visualGroup,
         physics: data.physics,
-        parent: parentData
+        parent: parentBody ? parentBody.physics : null
     }];
 
     const orbits: THREE.LineLoop[] = orbitLine ? [orbitLine] : [];
@@ -562,7 +562,7 @@ export function createSystem(
     // Recursion (Moons)
     if (data.moons && data.moons.length > 0) {
         data.moons.forEach(moonData => {
-            const result = createSystem(moonData, textureLoader, useTextures, data.physics);
+            const result = createSystem(moonData, textureLoader, useTextures, data);
             pivot.add(result.pivot);
             if (result.orbit) pivot.add(result.orbit);
 
