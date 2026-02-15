@@ -9,5 +9,5 @@ import * as THREE from 'three';
  */
 export function getPositionFromMatrix(object: THREE.Object3D, target: THREE.Vector3): void {
     const te = object.matrixWorld.elements;
-    target.set(te[12], te[13], te[14]);
+    target.set(te[12] ?? 0, te[13] ?? 0, te[14] ?? 0);
 }
