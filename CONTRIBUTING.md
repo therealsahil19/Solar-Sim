@@ -54,6 +54,8 @@ We follow a modular architecture using TypeScript and Vite.
 - **`src/input.ts`**: The "Controller". Handles user input, raycasting, and UI updates.
 - **`src/components/`**: UI classes (e.g., `CommandPalette.ts`, `NavigationSidebar.ts`).
 - **`src/managers/`**: State managers (e.g., `ThemeManager.ts`, `ToastManager.ts`).
+- **`src/types/`**: Shared type definitions and system configuration.
+- **`src/utils/`**: Helper functions and utilities.
 - **`src/benchmark.ts`**: Performance benchmarking utility.
 - **`system.json`**: The data source for the solar system hierarchy.
 
