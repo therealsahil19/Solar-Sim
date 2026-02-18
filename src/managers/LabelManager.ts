@@ -257,7 +257,10 @@ export class LabelManager {
         } else {
             // Clear existing grid efficiently
             for (let i = 0; i < this.labelGrid.length; i++) {
-                this.labelGrid[i].length = 0;
+                const cell = this.labelGrid[i];
+                if (cell) {
+                    cell.length = 0;
+                }
             }
         }
 
@@ -275,10 +278,12 @@ export class LabelManager {
                     const idx = this.getGridIndex(c, r);
                     if (idx !== -1) {
                         const cell = this.labelGrid[idx];
-                        for (const other of cell) {
-                            if (this.checkOverlap(item, other)) {
-                                isBlocked = true;
-                                break;
+                        if (cell) {
+                            for (const other of cell) {
+                                if (this.checkOverlap(item, other)) {
+                                    isBlocked = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -305,7 +310,10 @@ export class LabelManager {
                     for (let c = startCol; c <= endCol; c++) {
                         const idx = this.getGridIndex(c, r);
                         if (idx !== -1) {
-                            this.labelGrid[idx].push(item);
+                            const cell = this.labelGrid[idx];
+                            if (cell) {
+                                cell.push(item);
+                            }
                         }
                     }
                 }

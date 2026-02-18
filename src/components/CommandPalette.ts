@@ -334,7 +334,10 @@ export class CommandPalette implements Disposable {
         // Adjust number of list items
         if (currentCount > targetCount) {
             for (let i = currentCount - 1; i >= targetCount; i--) {
-                this.list.removeChild(this.list.children[i]);
+                const child = this.list.children[i];
+                if (child) {
+                    this.list.removeChild(child);
+                }
             }
         }
 
