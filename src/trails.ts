@@ -62,6 +62,7 @@ export class TrailManager implements Disposable {
 
     // Reuse vector to avoid GC
     private _tempVec: THREE.Vector3;
+    private _pendingFlush = false;
 
     /**
      * Initializes the trail system.
@@ -86,7 +87,7 @@ export class TrailManager implements Disposable {
 
         this.historyData = new Float32Array(totalPixels * 4);
         this.historyTexture = new THREE.DataTexture(
-            this.historyData as any,
+            this.historyData as BufferSource,
             width,
             height,
             THREE.RGBAFormat,
@@ -102,7 +103,7 @@ export class TrailManager implements Disposable {
 
         // Helper texture for updates
         this.rowTexture = new THREE.DataTexture(
-            this.updateRowBuffer as any,
+            this.updateRowBuffer as BufferSource,
             this.maxTrails,
             1,
             THREE.RGBAFormat,
@@ -221,8 +222,8 @@ export class TrailManager implements Disposable {
         // Pre-fill history in texture to prevent (0,0,0) artifacts
         target.updateMatrixWorld(true);
         // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
-        const te = target.matrixWorld.elements as any;
-        const sx = te[12], sy = te[13], sz = te[14];
+        const te = target.matrixWorld.elements;
+        const sx = te[12]!, sy = te[13]!, sz = te[14]!;
 
         // Fill the entire column for this trail (Transposed layout: Column = trailIndex)
         // Data index = (y * width + x) * 4
@@ -238,8 +239,19 @@ export class TrailManager implements Disposable {
             data[pxIndex + 3] = 1.0;
         }
 
-        // Trigger full texture update (slow but infrequent)
-        this.historyTexture.needsUpdate = true;
+        // Defer texture update — call flushRegistrations() after all registrations
+        this._pendingFlush = true;
+    }
+
+    /**
+     * Batched GPU upload after all registrations complete.
+     * Call this once after all register() calls to avoid GPU bandwidth spikes.
+     */
+    flushRegistrations(): void {
+        if (this._pendingFlush) {
+            this.historyTexture.needsUpdate = true;
+            this._pendingFlush = false;
+        }
     }
 
     /**
@@ -261,8 +273,8 @@ export class TrailManager implements Disposable {
             // Capture position
             // We use matrixWorld directly to avoid object update overhead if already updated
             // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
-            const te = trail.target.matrixWorld.elements as any;
-            this._tempVec.set(te[12], te[13], te[14]);
+            const te = trail.target.matrixWorld.elements;
+            this._tempVec.set(te[12]!, te[13]!, te[14]!);
 
             // Write to update buffer at index 'trail.index'
             const offset = trail.index * 4;
@@ -272,7 +284,7 @@ export class TrailManager implements Disposable {
             this.updateRowBuffer[offset + 3] = 1.0;
         }
 
-        // Sync to main CPU buffer (restore original behavior for data integrity)
+        // Sync to main CPU buffer for data integrity (needed when GPU texture not yet created)
         const historyOffset = this.globalHead * this.maxTrails * 4;
         this.historyData.set(this.updateRowBuffer, historyOffset);
 

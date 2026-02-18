@@ -28,6 +28,7 @@ const ringGeometryCache: Record<string, THREE.RingGeometry> = {};
 const materialCache: Record<string, THREE.MeshStandardMaterial> = {};
 // ⚡ Bolt Optimization: Cache materials by texture URL to enable instancing
 const textureMaterialCache: Record<string, THREE.MeshStandardMaterial> = {};
+const ringMaterialCache: Record<string, THREE.MeshStandardMaterial> = {};
 let cachedGlowTexture: THREE.CanvasTexture | null = null;
 
 /**
@@ -75,6 +76,9 @@ export function clearMaterialCache(): void {
     Object.values(textureMaterialCache).forEach(mat => mat.dispose());
     for (const key in textureMaterialCache) delete textureMaterialCache[key];
 
+    Object.values(ringMaterialCache).forEach(mat => mat.dispose());
+    for (const key in ringMaterialCache) delete ringMaterialCache[key];
+
     if (cachedGlowTexture) {
         cachedGlowTexture.dispose();
         cachedGlowTexture = null;
@@ -88,24 +92,10 @@ export function clearMaterialCache(): void {
  * Creates/Retrieves the shared glow texture/material.
  */
 function getGlowMaterial(): THREE.SpriteMaterial {
-    if (!cachedGlowTexture) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 64;
-        canvas.height = 64;
-        const context = canvas.getContext('2d');
-        if (context) {
-            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-            gradient.addColorStop(0.2, 'rgba(255, 255, 200, 0.5)');
-            gradient.addColorStop(0.5, 'rgba(255, 200, 100, 0.2)');
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            context.fillStyle = gradient;
-            context.fillRect(0, 0, 64, 64);
-        }
-        cachedGlowTexture = new THREE.CanvasTexture(canvas);
-    }
+    // Reuse the consolidated glow texture
+    const texture = createGlowTexture();
     return new THREE.SpriteMaterial({
-        map: cachedGlowTexture,
+        map: texture,
         color: 0xffaa00,
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -243,7 +233,6 @@ export class SunMesh extends THREE.Mesh {
     }
 
     dispose(): void {
-        super.dispatchEvent({ type: 'dispose' } as any);
         if (this.geometry) this.geometry.dispose();
         if (Array.isArray(this.material)) {
             this.material.forEach(m => m.dispose());
@@ -450,26 +439,34 @@ function createBodyRing(
         }
     }
 
-    let ringMat: THREE.MeshStandardMaterial;
-    if (ringData.texture && useTextures) {
-        const ringTexture = textureLoader.load(ringData.texture);
-        ringMat = new THREE.MeshStandardMaterial({
-            map: ringTexture,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.9,
-            roughness: 0.5,
-            metalness: 0.1
-        });
-    } else {
-        ringMat = new THREE.MeshStandardMaterial({
-            color: ringData.color ?? 0xcfb096,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.6,
-            roughness: 0.8,
-            metalness: 0.2
-        });
+    // ⚡ Bolt Optimization: Cache ring materials to avoid duplicate allocations
+    const matCacheKey = (ringData.texture && useTextures)
+        ? `tex_${ringData.texture}`
+        : `col_${ringData.color ?? 0xcfb096}`;
+
+    let ringMat = ringMaterialCache[matCacheKey];
+    if (!ringMat) {
+        if (ringData.texture && useTextures) {
+            const ringTexture = textureLoader.load(ringData.texture);
+            ringMat = new THREE.MeshStandardMaterial({
+                map: ringTexture,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.9,
+                roughness: 0.5,
+                metalness: 0.1
+            });
+        } else {
+            ringMat = new THREE.MeshStandardMaterial({
+                color: ringData.color ?? 0xcfb096,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.6,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+        }
+        ringMaterialCache[matCacheKey] = ringMat;
     }
 
     const ring = new THREE.Mesh(ringGeo, ringMat);

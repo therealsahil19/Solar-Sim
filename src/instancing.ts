@@ -234,9 +234,9 @@ export class InstanceRegistry implements Disposable {
             }
             // Cleanup pivot userData pollution
             group.instances.forEach(({ pivot }) => {
-                delete pivot.userData.isInstance;
-                delete pivot.userData.instanceId;
-                delete pivot.userData.instanceKey;
+                pivot.userData.isInstance = undefined;
+                pivot.userData.instanceId = undefined;
+                pivot.userData.instanceKey = undefined;
             });
         });
         this.groups.clear();

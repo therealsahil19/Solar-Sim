@@ -79,7 +79,6 @@ let useTextures = true;
 let isShipView = false;
 let isPaused = false;
 let showLabels = true;
-// let labelsNeedUpdate = true; // Managed by LabelManager
 let showOrbits = true;
 let timeScale = 1.0;
 
@@ -298,6 +297,7 @@ export async function init(): Promise<void> {
         }
 
         instanceRegistry.build();
+        trailManager?.flushRegistrations();
 
         instanceRegistry.groups.forEach(group => {
             if (group.mesh) interactionTargets.push(group.mesh);

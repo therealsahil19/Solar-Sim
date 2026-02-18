@@ -112,6 +112,7 @@ describe('Redundant Scene Update Optimization', () => {
             TrailManager: class {
                 constructor() { }
                 update() { }
+                flushRegistrations() { }
                 dispose() { }
             }
         }));

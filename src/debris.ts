@@ -88,10 +88,12 @@ export interface DebrisMesh extends THREE.InstancedMesh {
     dispose: () => void;
 }
 
-// Extended material userData interface
 interface ShaderMaterialUserData {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    shader?: any;
+    shader?: {
+        uniforms: Record<string, { value: unknown }>;
+        vertexShader: string;
+        fragmentShader: string;
+    } | undefined;
 }
 
 // GLSL: Constants & Helper Functions
@@ -196,7 +198,8 @@ class DebrisSystem extends THREE.InstancedMesh implements DebrisMesh {
     }
 
     update(time: number): void {
-        const userData = (this.material as any).userData as ShaderMaterialUserData;
+        const mat = this.material as THREE.Material;
+        const userData = mat.userData as ShaderMaterialUserData;
         if (userData?.shader?.uniforms?.uTime) {
             userData.shader.uniforms.uTime.value = time;
         }
@@ -207,8 +210,9 @@ class DebrisSystem extends THREE.InstancedMesh implements DebrisMesh {
         if (this.material instanceof THREE.Material) {
             this.material.dispose();
         }
-        const matUserData = (this.material as any)?.userData as ShaderMaterialUserData | undefined;
-        if (matUserData?.shader) {
+        const mat = this.material as THREE.Material;
+        const matUserData = mat?.userData as ShaderMaterialUserData | undefined;
+        if (matUserData && matUserData.shader) {
             matUserData.shader = undefined;
         }
         // Force context loss cleanup implies we shouldn't hold refs
@@ -343,7 +347,6 @@ function createDebrisSystem(config: DebrisConfig): DebrisMesh {
  * });
  */
 export function createBelt(config: BeltSystemConfig): DebrisMesh {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return createDebrisSystem({
         type: config.name.toLowerCase().replace(' ', '_'),
         count: config.visual.count,
@@ -354,5 +357,5 @@ export function createBelt(config: BeltSystemConfig): DebrisMesh {
             size: config.visual.size ?? 0.2,
             opacity: config.visual.opacity ?? 1.0
         }
-    } as DebrisConfig);
+    });
 }
