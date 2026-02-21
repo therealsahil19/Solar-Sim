@@ -21,7 +21,7 @@ Open the browser to http://localhost:5173
 
 ## Key files
 - `index.html` – entry point
-- `src/main.ts` – scene setup, render loop, update phases
+- `src/main.ts` – scene setup (asynchronous chunking), render loop, update phases
 - `src/procedural.ts` – factory to create planets, moons, stars
 - `src/input.ts` – input handling, UI overlays, CommandPalette & ThemeManager init
 - `src/debris.ts` – GPU-animated asteroid belt via InstancedMesh + vertex shader

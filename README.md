@@ -63,7 +63,7 @@ This project implements several optimization strategies (internally referred to 
     -   **Trails (`TrailManager`)**: Renders thousands of orbit trails using a single `THREE.LineSegments` geometry, massively reducing draw calls.
 
 6.  **Benchmarking**:
-    -   **Bolt Benchmark (`benchmark.ts`)**: A built-in performance suite that measures frame timing statistics, P95/P99 latency, and jank percentage.
+    -   **Bolt Benchmark (`benchmark.ts`)**: A performance suite that measures frame timing statistics, P95/P99 latency, and jank percentage. Designed for modular import to avoid global scope pollution.
 
 7.  **Spatial Grid**:
     -   **LabelManager**: Uses a spatial grid to efficiently manage 2D label collisions and occlusion, ensuring readable text without overlapping.
@@ -73,6 +73,9 @@ This project implements several optimization strategies (internally referred to 
 
 9.  **Lazy Loading**:
     -   **Texture Loading**: Textures are lazily loaded after the initial scene render to reduce time-to-interactive.
+
+10. **Chunked Initialization**:
+    -   System data parsing and scene graph generation are split into asynchronous chunks (`requestAnimationFrame`), yielding to the main thread. This allows the Skeleton UI to render immediately and prevents browser freezing.
 
 ## Security ("Sentinel")
 
@@ -141,7 +144,7 @@ The simulation is built on a decoupled, event-driven architecture designed for h
 5.  **State (managers/)**: Independent modules that handle persistence and cross-component state.
 
 1.  **`src/main.ts`**:
-    -   **Orchestrator**: Sets up the Three.js `Scene`, `Camera`, `Renderer`, and `Lighting`.
+    -   **Orchestrator**: Sets up the Three.js `Scene`, `Camera`, `Renderer`, and `Lighting` via heavily modularized initialization helpers.
     -   **Render Loop**: Manages the animation loop, split into Pre-Render (updates) and Post-Render (trails) phases for optimization.
     -   **Throttling**: Uses `frameCount` to throttle expensive operations like UI updates and Nearest Neighbor search for the ship.
 
@@ -196,7 +199,7 @@ The simulation is built on a decoupled, event-driven architecture designed for h
     -   **Feedback**: Decoupled from core logic, triggered by UI events or status changes.
 
 13. **`src/benchmark.ts`**:
-    -   **Tooling**: Provides the `boltBenchmark()` global function for performance auditing.
+    -   **Tooling**: Provides the `startBenchmark` function for performance auditing (must be explicitly imported).
     -   **Metrics**: Calculates average FPS, jank percentage, and P99 frame times.
 
 ## Configuration (`system.json`)

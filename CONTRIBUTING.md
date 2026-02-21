@@ -49,7 +49,7 @@ The project uses **Vite** for building and serving the application.
 We follow a modular architecture using TypeScript and Vite.
 
 - **`index.html`**: The entry point. Loads styles and `src/main.ts`.
-- **`src/main.ts`**: The "Conductor". Initializes the scene, render loop, and coordinates modules.
+- **`src/main.ts`**: The "Conductor". Initializes the scene, render loop, and coordinates modules using asynchronous chunked loading.
 - **`src/procedural.ts`**: The "Factory". Pure functions that generate 3D objects (planets, stars).
 - **`src/input.ts`**: The "Controller". Handles user input, raycasting, and UI updates.
 - **`src/components/`**: UI classes (e.g., `CommandPalette.ts`, `NavigationSidebar.ts`).
@@ -203,6 +203,8 @@ Tests are organized by type:
 - **Unit Tests (`tests/unit/`)**: Vitest tests for individual functions and classes.
   - `physics.test.ts`: Verifies orbital calculations and scaling logic.
   - `ToastManager.test.ts`: Tests notification state management.
+  - `SettingsPanel.test.ts`: Tests UI state toggling and preference callbacks.
+  - `main.test.ts`: Asserts safe scene initialization and teardown memory handling.
 
 ### 2. Best Practices
 - **Isolation**: Each `test()` block should ideally be independent.
