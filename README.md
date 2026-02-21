@@ -123,8 +123,8 @@ The project is organized into a modular architecture:
 │   │   ├── SkeletonUtils.ts     # Skeleton loading UI helper
 │   │   └── ThreeUtils.ts        # Three.js helper functions
 ├── tests/
-│   ├── e2e/              # Playwright E2E tests
-│   └── unit/             # Vitest unit tests
+│   ├── e2e/              # Playwright E2E tests (*.spec.js, *.spec.ts)
+│   └── unit/             # Vitest unit tests (*.test.ts)
 └── README.md             # This documentation
 ```
 
@@ -368,12 +368,6 @@ The application is designed to be accessible:
 -   **Keyboard Navigation**: All core actions are mapped to keyboard shortcuts.
 -   **Visuals**: High contrast UI text and support for disabling complex textures/labels for clarity.
 
-## Quality & Audit
-
-The project undergoes regular visual and logical audits to ensure high standards:
-- [Visual QA Report](file:///c:/Users/mehna/OneDrive/Desktop/Solar-Sim/visual_report.md): Tracking UI inconsistencies and layout shifts.
-- [Security & Logic Audit (Hunted)](file:///c:/Users/mehna/OneDrive/Desktop/Solar-Sim/hunted.md): Identifying code smells, logic flaws, and potential security risks.
-
 ## Troubleshooting
 
 ### Textures not loading?
@@ -383,13 +377,6 @@ The project undergoes regular visual and logical audits to ensure high standards
 ### Performance Lag?
 - **Bolt Optimization**: Toggle Textures (T key) or Labels (L key) to reduce GPU load.
 - **Instancing**: The project automatically uses instancing for moons and asteroids to save draw calls.
-
-## Development
-
-This project maintains internal documentation for specific domains in the `.Jules/` directory:
--   `bolt.md`: Performance logs and optimization details.
--   `sentinel.md`: Security vulnerability tracking and fixes.
--   `palette.md`: Design system and UI/UX decisions.
 
 ---
 
