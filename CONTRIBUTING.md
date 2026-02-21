@@ -57,6 +57,7 @@ We follow a modular architecture using TypeScript and Vite.
 - **`src/types/`**: Shared type definitions and system configuration.
 - **`src/utils/`**: Helper functions and utilities.
 - **`src/benchmark.ts`**: Performance benchmarking utility.
+- **`tests/`**: Contains E2E tests (`e2e/`) and Unit tests (`unit/`).
 - **`system.json`**: The data source for the solar system hierarchy.
 
 ### Component Architecture
@@ -194,10 +195,14 @@ function getDistance(objA: THREE.Object3D, objB: THREE.Object3D): number { ... }
 We use **Playwright** for End-to-End (E2E) testing and **Vitest** for Unit testing.
 
 ### 1. Structure
-Tests are organized by component or user flow:
-- `navigation-sidebar.spec.js`: Tests for the planet tree and search.
-- `settings-panel.spec.js`: Tests for toggles, themes, and persistence.
-- `keyboard-shortcuts.spec.js`: Verifies all global hotkeys.
+Tests are organized by type:
+- **E2E Tests (`tests/e2e/`)**: Playwright tests for user flows and UI interactions.
+  - `navigation-sidebar.spec.js`: Tests for the planet tree and search.
+  - `settings-panel.spec.js`: Tests for toggles, themes, and persistence.
+  - `keyboard-shortcuts.spec.js`: Verifies all global hotkeys.
+- **Unit Tests (`tests/unit/`)**: Vitest tests for individual functions and classes.
+  - `physics.test.ts`: Verifies orbital calculations and scaling logic.
+  - `ToastManager.test.ts`: Tests notification state management.
 
 ### 2. Best Practices
 - **Isolation**: Each `test()` block should ideally be independent.
