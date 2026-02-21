@@ -401,11 +401,14 @@ function setupRaycasting(
 
         // Handle InstancedMesh
         if ((mesh as THREE.InstancedMesh).isInstancedMesh && context.instanceRegistry) {
-            const data = context.instanceRegistry.getIntersectionData(
+            const pivot = context.instanceRegistry.getPivot(
                 mesh as THREE.InstancedMesh,
                 hit.instanceId ?? 0
             );
-            if (data) userData = data;
+            if (pivot) {
+                mesh = pivot;
+                userData = pivot.userData;
+            }
         }
 
         if (userData && userData.name) {

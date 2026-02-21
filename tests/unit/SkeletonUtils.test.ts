@@ -58,4 +58,18 @@ describe('SkeletonUtils', () => {
         expect(container.querySelectorAll('.skeleton').length).toBe(0);
         expect(container.querySelector('.content')).not.toBeNull();
     });
+
+    it('should handle count <= 0 gracefully', () => {
+        injectSkeletons(container, 0);
+        expect(container.querySelectorAll('.skeleton').length).toBe(0);
+
+        injectSkeletons(container, -1);
+        expect(container.querySelectorAll('.skeleton').length).toBe(0);
+    });
+
+    it('should safely handle null container', () => {
+        expect(() => injectSkeletons(null as any, 3)).not.toThrow();
+        expect(() => removeSkeletons(null as any)).not.toThrow();
+    });
 });
+

@@ -126,8 +126,4 @@ export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
     };
 }
 
-// Auto-expose to window for console access
-if (typeof window !== 'undefined') {
-    window.boltBenchmark = startBenchmark;
-    console.log('%c⚡ Bolt Benchmark loaded. Run boltBenchmark() in console.', 'color: #ffc107;');
-}
+// Consumers can import startBenchmark directly if needed

@@ -45,6 +45,10 @@ export class LabelManager {
     private labelGridCols = 0;
     private labelGridRows = 0;
 
+    // Resuable objects for update loop
+    private frustum = new THREE.Frustum();
+    private projScreenMatrix = new THREE.Matrix4();
+
     /**
      * Creates a new LabelManager.
      * @param renderer - The CSS2DRenderer instance.
@@ -120,10 +124,8 @@ export class LabelManager {
         let labelPoolIndex = 0;
 
         // 1. Create Frustum for culling
-        const frustum = new THREE.Frustum();
-        const projScreenMatrix = new THREE.Matrix4();
-        projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
-        frustum.setFromProjectionMatrix(projScreenMatrix);
+        this.projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+        this.frustum.setFromProjectionMatrix(this.projScreenMatrix);
 
         const len = this.labels.length;
         for (let i = 0; i < len; i++) {
@@ -145,7 +147,7 @@ export class LabelManager {
                 label.getWorldPosition(this.tempVec);
 
                 // Frustum Culling: Skip expensive projection if off-screen
-                if (!frustum.containsPoint(this.tempVec)) {
+                if (!this.frustum.containsPoint(this.tempVec)) {
                     continue;
                 }
 

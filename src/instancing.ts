@@ -16,8 +16,6 @@ import type { Disposable, SolarSimUserData } from './types';
 interface InstanceData {
     /** The pivot Object3D that determines position/rotation */
     pivot: THREE.Object3D;
-    /** Index in the instanced mesh */
-    index: number;
     /** Whether the instance is dynamic (moves every frame) */
     dynamic: boolean;
 }
@@ -100,7 +98,7 @@ export class InstanceRegistry implements Disposable {
             instanceKey: key
         });
 
-        group.instances.push({ pivot, index, dynamic });
+        group.instances.push({ pivot, dynamic });
         this.dirty = true;
     }
 
@@ -163,9 +161,9 @@ export class InstanceRegistry implements Disposable {
                 // Skip static instances unless it's the first update after build
                 if (!instanceData.dynamic && !forceUpdate) continue;
 
-                const { pivot, index } = instanceData;
+                const { pivot } = instanceData;
                 const te = pivot.matrixWorld.elements;
-                const offset = index * 16;
+                const offset = i * 16;
 
                 // Bulk copy matrix elements into the buffer
                 array.set(te, offset);
@@ -199,6 +197,23 @@ export class InstanceRegistry implements Disposable {
 
         const instance = group.instances[instanceId];
         return instance?.pivot.userData ?? null;
+    }
+
+    /**
+     * Retrieves the pivot object for a specific instance in an InstancedMesh.
+     */
+    getPivot(
+        instanceMesh: THREE.InstancedMesh,
+        instanceId: number
+    ): THREE.Object3D | null {
+        const registryKey = instanceMesh.userData.registryKey as string | undefined;
+        if (!registryKey) return null;
+
+        const group = this.groups.get(registryKey);
+        if (!group) return null;
+
+        const instance = group.instances[instanceId];
+        return instance ? instance.pivot : null;
     }
 
     /**

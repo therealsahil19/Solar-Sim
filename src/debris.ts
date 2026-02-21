@@ -96,15 +96,20 @@ interface ShaderMaterialUserData {
     } | undefined;
 }
 
+import { SCALE_CONFIG } from './physics';
+
+const VISUAL_LIMIT_1 = SCALE_CONFIG.LIMIT_LINEAR * SCALE_CONFIG.AU_SCALE;
+const VISUAL_LIMIT_2 = VISUAL_LIMIT_1 + Math.log(1 + (SCALE_CONFIG.LIMIT_KUIPER - SCALE_CONFIG.LIMIT_LINEAR)) * SCALE_CONFIG.AU_SCALE * SCALE_CONFIG.LOG_FACTOR_KUIPER;
+
 // GLSL: Constants & Helper Functions
 const DEBRIS_SHADER_HEAD = `
-#define AU_SCALE 40.0
-#define LIMIT_1 30.0
-#define LIMIT_2 50.0
-#define VISUAL_LIMIT_1 1200.0
-#define LOG_FACTOR_K 1.5
-#define VISUAL_LIMIT_2 1382.67
-#define LOG_FACTOR_O 4.0
+#define AU_SCALE ${SCALE_CONFIG.AU_SCALE.toFixed(1)}
+#define LIMIT_1 ${SCALE_CONFIG.LIMIT_LINEAR.toFixed(1)}
+#define LIMIT_2 ${SCALE_CONFIG.LIMIT_KUIPER.toFixed(1)}
+#define VISUAL_LIMIT_1 ${VISUAL_LIMIT_1.toFixed(1)}
+#define LOG_FACTOR_K ${SCALE_CONFIG.LOG_FACTOR_KUIPER.toFixed(1)}
+#define VISUAL_LIMIT_2 ${VISUAL_LIMIT_2.toFixed(3)}
+#define LOG_FACTOR_O ${SCALE_CONFIG.LOG_FACTOR_OORT.toFixed(1)}
 #ifndef PI
 #define PI 3.14159265359
 #endif

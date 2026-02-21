@@ -62,6 +62,7 @@ export class TrailManager implements Disposable {
 
     // Reuse vector to avoid GC
     private _tempVec: THREE.Vector3;
+    private _tempVec2: THREE.Vector2;
     private _pendingFlush = false;
 
     /**
@@ -78,6 +79,7 @@ export class TrailManager implements Disposable {
         this.pointsPerTrail = pointsPerTrail;
         this.segmentsPerTrail = pointsPerTrail;
         this._tempVec = new THREE.Vector3();
+        this._tempVec2 = new THREE.Vector2();
 
         // 1. Setup DataTexture (History)
         // Transposed Layout: Width = MaxTrails, Height = Points
@@ -290,7 +292,8 @@ export class TrailManager implements Disposable {
 
         // Upload texture row using copyTextureToTexture mechanism
         this.rowTexture.needsUpdate = true;
-        renderer.copyTextureToTexture(new THREE.Vector2(0, this.globalHead), this.rowTexture, this.historyTexture);
+        this._tempVec2.set(0, this.globalHead);
+        renderer.copyTextureToTexture(this._tempVec2, this.rowTexture, this.historyTexture);
     }
 
     /**

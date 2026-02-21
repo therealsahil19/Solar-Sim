@@ -38,8 +38,7 @@ export class ToastManager {
      * @internal For testing purposes only.
      */
     public static resetInstance(): void {
-        // @ts-ignore
-        ToastManager.instance = null;
+        (ToastManager as any).instance = null;
     }
 
     /**

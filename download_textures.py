@@ -60,7 +60,7 @@ def download_texture(args):
 
     try:
         # Verify SSL certificates properly using reused context
-        with urllib.request.urlopen(url, context=context) as response:
+        with urllib.request.urlopen(url, context=context, timeout=10) as response:
             content = response.read()
             
             # Verify SHA-256

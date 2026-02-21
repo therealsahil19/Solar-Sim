@@ -15,8 +15,7 @@ import {
     createSystem,
     clearMaterialCache,
     type ExtendedTextureLoader,
-    type AnimatedBody,
-    type SunMesh
+    type AnimatedBody
 } from './procedural';
 import type { CelestialBody } from './types/system';
 import type { SolarSimUserData } from './types';
@@ -38,7 +37,6 @@ import './benchmark'; // Auto-load performance benchmark
 
 declare global {
     interface Window {
-        scene: THREE.Scene | null;
         playerShip: THREE.Group | null;
         controls: OrbitControls | null;
         isPaused: boolean;
@@ -100,7 +98,6 @@ let sceneManager: SceneManager | null = null;
 
 let animationFrameId: number | null = null;
 
-window.scene = null;
 window.playerShip = null;
 window.controls = null;
 window.isPaused = isPaused;
@@ -140,38 +137,28 @@ const LAZY_LOAD_DELAY = 2000;
 /**
  * Initializes the application.
  */
-export async function init(): Promise<void> {
-    // Reset Global State
-    interactionTargets.length = 0;
-    animatedObjects.length = 0;
-    planets.length = 0;
-    allOrbits.length = 0;
-    allTrails.length = 0;
+// ============================================================================
+// Initialization Helpers
+// ============================================================================
 
-    clearMaterialCache();
-
-    // Setup Three.js Components
+function initThreeJSEnvironment(): void {
     if (!sceneManager) {
         sceneManager = new SceneManager();
     }
-
-    // Bind to local variables for compatibility
     scene = sceneManager.scene;
     camera = sceneManager.camera;
     renderer = sceneManager.renderer;
-    labelRenderer = sceneManager.labelRenderer; // Ensure labelRenderer is typed in SceneManager
+    labelRenderer = sceneManager.labelRenderer;
 
-    window.scene = scene;
-
-    // Cancel any existing animation loop
     if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
     }
 
     labelManager = new LabelManager(labelRenderer, camera);
+}
 
-    // Lighting
+function initLighting(): void {
     const pointLight = new THREE.PointLight(0xffffff, 1.5, 0, 0);
     pointLight.castShadow = true;
     pointLight.shadow.mapSize.width = 1024;
@@ -181,147 +168,156 @@ export async function init(): Promise<void> {
 
     const ambientLight = new THREE.AmbientLight(0x606060);
     scene.add(ambientLight);
+}
 
-    // Loading Manager
-    // Note: We no longer have a blocking loading screen.
-    // The UI is shown immediately with skeletons.
-    const navList = document.getElementById('nav-list');
-    if (navList) {
-        injectSkeletons(navList, 5, { height: '32px' }, 'nav-btn');
-    }
-    const manager = new THREE.LoadingManager();
-    let initFailed = false;
-
-    manager.onLoad = function (): void {
-        if (initFailed) return;
-        const screen = document.getElementById('loading-screen');
-        if (screen) screen.setAttribute('aria-hidden', 'true');
-        // ToastManager.getInstance().show("Simulation Ready", { type: 'success' });
-    };
-
+function initManagers(manager: THREE.LoadingManager): ExtendedTextureLoader {
     const textureLoader = new THREE.TextureLoader(manager) as ExtendedTextureLoader;
     textureLoader.lazyLoadQueue = [];
 
     instanceRegistry = new InstanceRegistry(scene);
     trailManager = new TrailManager(scene, MAX_TRAILS, TRAIL_POINTS);
-    window.trailManager = trailManager; // Expose for performance testing
+    window.trailManager = trailManager;
 
     textureLoader.instanceRegistry = instanceRegistry;
     textureLoader.trailManager = trailManager;
+    return textureLoader;
+}
 
-    // Create Initial Objects
+function initInitialObjects(textureLoader: ExtendedTextureLoader): void {
     starfield = createStarfield();
     scene.add(starfield);
 
-    const sun: SunMesh = createSun(textureLoader, useTextures);
+    const sun = createSun(textureLoader, useTextures);
     scene.add(sun);
     interactionTargets.push(sun);
 
     playerShip = createPlayerShip();
     scene.add(playerShip);
     window.playerShip = playerShip;
+}
 
-    // ⚡ Bolt Optimization: Start Rendering Immediately
-    // Start the loop now so the user sees the starfield/sun while
-    // the rest of the system streams in via chunked loading.
+async function fetchSystemData(): Promise<CelestialBody[]> {
+    const urlParams = new URLSearchParams(window.location.search);
+    let configUrl = urlParams.get('config') ?? 'system.json';
+
+    try {
+        const parsedUrl = new URL(configUrl, window.location.origin);
+        const isLocal = parsedUrl.origin === window.location.origin;
+        const isTrustedProtocol = parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+
+        if (!isLocal || !isTrustedProtocol) {
+            console.warn('Blocked external/untrusted config URL:', configUrl);
+            configUrl = 'system.json';
+            ToastManager.getInstance().show("External config blocked. Loaded default system.", { type: 'error' });
+        }
+    } catch (e) {
+        console.warn('Invalid config URL:', configUrl);
+        configUrl = 'system.json';
+    }
+
+    const response = await fetch(configUrl);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const planetData = await response.json() as CelestialBody[];
+
+    if (!Array.isArray(planetData)) {
+        throw new Error('Invalid configuration: planetData must be an array.');
+    }
+    return planetData;
+}
+
+async function buildSystemChunks(planetData: CelestialBody[], textureLoader: ExtendedTextureLoader): Promise<void> {
+    const CHUNK_SIZE = 5;
+    for (let i = 0; i < planetData.length; i += CHUNK_SIZE) {
+        const chunk = planetData.slice(i, i + CHUNK_SIZE);
+
+        chunk.forEach(config => {
+            if (config.type === 'Belt') {
+                const belt = createBelt(config as any);
+                scene.add(belt);
+                belts.push(belt);
+                return;
+            }
+
+            const systemNode = createSystem(config, textureLoader, useTextures, null);
+
+            scene.add(systemNode.pivot);
+            if (systemNode.orbit) scene.add(systemNode.orbit);
+
+            interactionTargets.push(...systemNode.interactables);
+            animatedObjects.push(...systemNode.animated);
+            allOrbits.push(...systemNode.orbits);
+            allTrails.push(...systemNode.trails);
+            if (labelManager) systemNode.labels.forEach(l => labelManager?.add(l));
+
+            if (systemNode.animated.length > 0) {
+                const primary = systemNode.animated[0];
+                if (primary?.pivot) planets.push(primary.pivot);
+            }
+        });
+
+        await new Promise(resolve => requestAnimationFrame(resolve));
+    }
+}
+
+/**
+ * Initializes the entire application state and kicks off the render loop.
+ */
+export async function init(): Promise<void> {
+    interactionTargets.length = 0;
+    animatedObjects.length = 0;
+    planets.length = 0;
+    allOrbits.length = 0;
+    allTrails.length = 0;
+
+    clearMaterialCache();
+
+    initThreeJSEnvironment();
+    initLighting();
+
+    const navList = document.getElementById('nav-list');
+    if (navList) {
+        injectSkeletons(navList, 5, { height: '32px' }, 'nav-btn');
+    }
+
+    let initFailed = false;
+    const manager = new THREE.LoadingManager();
+    manager.onLoad = function (): void {
+        if (initFailed) return;
+        const screen = document.getElementById('loading-screen');
+        if (screen) screen.setAttribute('aria-hidden', 'true');
+    };
+
+    const textureLoader = initManagers(manager);
+    initInitialObjects(textureLoader);
+
     lastFrameTime = performance.now();
     animate();
 
-    // Load System Data
     let planetData: CelestialBody[] | null = null;
     try {
-        const urlParams = new URLSearchParams(window.location.search);
-        let configUrl = urlParams.get('config') ?? 'system.json';
+        planetData = await fetchSystemData();
+        await buildSystemChunks(planetData, textureLoader);
 
-        // Security check: only allow local files or trusted domains
-        try {
-            const parsedUrl = new URL(configUrl, window.location.origin);
-            const isLocal = parsedUrl.origin === window.location.origin;
-            const isTrustedProtocol = parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
-
-            if (!isLocal || !isTrustedProtocol) {
-                console.warn('Blocked external/untrusted config URL:', configUrl);
-                configUrl = 'system.json';
-                ToastManager.getInstance().show("External config blocked. Loaded default system.", { type: 'error' });
-            }
-        } catch (e) {
-            // Invalid URL, fallback to default
-            console.warn('Invalid config URL:', configUrl);
-            configUrl = 'system.json';
-        }
-
-        const response = await fetch(configUrl);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        planetData = await response.json() as CelestialBody[];
-
-        if (!Array.isArray(planetData)) {
-            throw new Error('Invalid configuration: planetData must be an array.');
-        }
-
-        // ⚡ Bolt Optimization: Chunked Loading
-        // Instead of processing all systems in one blocking call, we process them
-        // in chunks to allow the browser to paint and handle events.
-        const CHUNK_SIZE = 5;
-        for (let i = 0; i < planetData.length; i += CHUNK_SIZE) {
-            const chunk = planetData.slice(i, i + CHUNK_SIZE);
-
-            chunk.forEach(config => {
-                if (config.type === 'Belt') {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const belt = createBelt(config as any);
-                    scene.add(belt);
-                    belts.push(belt);
-                    return;
-                }
-
-                const systemNode = createSystem(config, textureLoader, useTextures, null);
-
-                scene.add(systemNode.pivot);
-                if (systemNode.orbit) scene.add(systemNode.orbit);
-
-                interactionTargets.push(...systemNode.interactables);
-                animatedObjects.push(...systemNode.animated);
-                allOrbits.push(...systemNode.orbits);
-                allTrails.push(...systemNode.trails);
-                systemNode.labels.forEach(l => labelManager?.add(l));
-                // allLabels.push(...systemNode.labels);
-
-                if (systemNode.animated.length > 0) {
-                    const primary = systemNode.animated[0];
-                    if (primary?.pivot) planets.push(primary.pivot);
-                }
-            });
-
-            // Yield to main thread
-            await new Promise(resolve => requestAnimationFrame(resolve));
-        }
-
-        instanceRegistry.build();
+        instanceRegistry!.build();
         trailManager?.flushRegistrations();
 
-        instanceRegistry.groups.forEach(group => {
+        instanceRegistry!.groups.forEach(group => {
             if (group.mesh) interactionTargets.push(group.mesh);
         });
-
-        if (!initFailed) {
-            // Reveal content if hidden (though we are now optimistic)
-        }
-
     } catch (error) {
         console.error("Failed to load system data:", error);
         initFailed = true;
         throw error;
     }
 
-    // Setup Controls & Input
-    controls = setupControls(camera, renderer.domElement);
+    controls = setupControls(camera, renderer!.domElement);
     window.controls = controls;
 
     const context = {
         camera,
-        rendererDomElement: renderer.domElement,
+        rendererDomElement: renderer!.domElement,
         interactionTargets,
-        instanceRegistry,
+        instanceRegistry: instanceRegistry!,
         planetData: planetData ?? undefined
     };
 
@@ -340,19 +336,12 @@ export async function init(): Promise<void> {
 
     interactionHelpers = setupInteraction(context, callbacks);
 
-    // Apply Saved Settings
     if (interactionHelpers.settingsPanel) {
         const savedSettings = interactionHelpers.settingsPanel.getSettings();
 
-        if (!savedSettings.textures && useTextures) {
-            toggleTextures(document.getElementById('btn-texture'));
-        }
-        if (!savedSettings.labels && showLabels) {
-            toggleLabels();
-        }
-        if (!savedSettings.orbits && showOrbits) {
-            toggleOrbits();
-        }
+        if (!savedSettings.textures && useTextures) toggleTextures(document.getElementById('btn-texture'));
+        if (!savedSettings.labels && showLabels) toggleLabels();
+        if (!savedSettings.orbits && showOrbits) toggleOrbits();
         if (savedSettings.speed !== 1.0) {
             updateTimeScale(savedSettings.speed);
             const dockSlider = document.getElementById('slider-speed') as HTMLInputElement | null;
@@ -380,321 +369,321 @@ export async function init(): Promise<void> {
     }
 
     window.addEventListener('resize', onWindowResize);
-
     lastFrameTime = performance.now();
+}
 
-    // ============================================================================
-    // Logic Helpers
-    // ============================================================================
+// ============================================================================
+// Logic Helpers
+// ============================================================================
 
-    function toggleCameraView(): void {
-        isShipView = !isShipView;
-        const btn = document.getElementById('btn-camera');
-        if (btn) btn.setAttribute('aria-pressed', String(isShipView));
+function toggleCameraView(): void {
+    isShipView = !isShipView;
+    const btn = document.getElementById('btn-camera');
+    if (btn) btn.setAttribute('aria-pressed', String(isShipView));
 
-        if (isShipView) {
-            focusTarget = null;
-            if (playerShip && controls) {
-                controls.target.copy(playerShip.position);
-                camera.position.set(
-                    playerShip.position.x + 5,
-                    playerShip.position.y + 3,
-                    playerShip.position.z + 5
-                );
-            }
-        } else {
-            if (controls) {
-                controls.target.set(0, 0, 0);
-                camera.position.set(0, 60, 100);
-            }
-        }
-        controls?.update();
-    }
-
-    function resetCamera(): void {
-        isShipView = false;
+    if (isShipView) {
         focusTarget = null;
-        const btn = document.getElementById('btn-camera');
-        if (btn) btn.setAttribute('aria-pressed', 'false');
-
-        if (controls) {
-            controls.target.set(0, 0, 0);
-            camera.position.set(0, 60, 100);
-            controls.update();
-        }
-        ToastManager.getInstance().show("View Reset");
-    }
-
-    function setFocusTarget(mesh: THREE.Object3D): void {
-        focusTarget = mesh;
-        isShipView = false;
-        const name = mesh.userData.name ?? "Object";
-        ToastManager.getInstance().show(`Following ${name}`);
-    }
-
-    function updateTimeScale(scale: number): void {
-        timeScale = scale;
-    }
-
-    function toggleTextures(btnElement: HTMLElement | null): void {
-        useTextures = !useTextures;
-        if (btnElement) {
-            btnElement.textContent = useTextures ? "HD" : "LD";
-            btnElement.setAttribute('aria-pressed', String(useTextures));
-        }
-        interactionTargets.forEach(mesh => {
-            const userData = mesh.userData as SolarSimUserData;
-            if (useTextures && userData.texturedMaterial) {
-                (mesh as THREE.Mesh).material = userData.texturedMaterial;
-            } else if (!useTextures && userData.solidMaterial) {
-                (mesh as THREE.Mesh).material = userData.solidMaterial;
-            }
-        });
-        if (instanceRegistry) {
-            instanceRegistry.groups.forEach(group => {
-                if (group.mesh && group.instances.length > 0) {
-                    const sampleUserData = group.instances[0]?.pivot.userData as SolarSimUserData;
-                    if (useTextures && sampleUserData?.texturedMaterial) {
-                        group.mesh.material = sampleUserData.texturedMaterial;
-                    } else if (!useTextures && sampleUserData?.solidMaterial) {
-                        group.mesh.material = sampleUserData.solidMaterial;
-                    }
-                }
-            });
-        }
-        ToastManager.getInstance().show(`Textures: ${useTextures ? "ON" : "OFF"}`);
-    }
-
-    function toggleLabels(): void {
-        showLabels = !showLabels;
-        labelManager?.toggle(showLabels);
-        // labelsNeedUpdate = true; // Handled by LabelManager
-        const btn = document.getElementById('btn-labels');
-        if (btn) btn.setAttribute('aria-pressed', String(showLabels));
-        // allLabels.forEach(label => { label.visible = showLabels; });
-        ToastManager.getInstance().show(`Labels: ${showLabels ? "ON" : "OFF"}`);
-    }
-
-    function toggleBelt(type: string, visible: boolean): void {
-        belts.forEach(belt => {
-            if (belt.userData?.type === type) {
-                belt.visible = visible;
-            }
-        });
-    }
-
-    function toggleOrbits(): void {
-        showOrbits = !showOrbits;
-        const btn = document.getElementById('btn-orbits');
-        if (btn) btn.setAttribute('aria-pressed', String(showOrbits));
-        allTrails.forEach(trail => {
-            if (trail && typeof trail === 'object' && 'visible' in trail) {
-                (trail as THREE.Object3D).visible = showOrbits;
-            }
-        });
-        ToastManager.getInstance().show(`Orbits: ${showOrbits ? "ON" : "OFF"}`);
-    }
-
-    function togglePause(btnElement: HTMLElement | null): void {
-        isPaused = !isPaused;
-        window.isPaused = isPaused;
-        if (btnElement) {
-            if (isPaused) {
-                btnElement.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
-                btnElement.setAttribute('aria-label', "Resume Simulation");
-            } else {
-                btnElement.setAttribute('aria-label', "Pause Simulation");
-            }
-        }
-        ToastManager.getInstance().show(isPaused ? "Simulation Paused" : "Simulation Resumed", { type: isPaused ? 'info' : 'success' });
-
-        const srStatus = document.getElementById('sr-status');
-        if (srStatus) {
-            srStatus.textContent = isPaused ? "Simulation paused" : "Simulation resumed";
-        }
-    }
-
-    function focusPlanet(index: number): void {
-        if (index < 0 || index >= planets.length) return;
-        const planet = planets[index];
-        if (!planet) return;
-        setFocusTarget(planet);
-        handleObjectSelection(planet);
-        interactionHelpers?.updateSelectionUI(planet);
-    }
-
-    function handleObjectSelection(mesh: THREE.Object3D): void {
-        selectedObject = mesh;
-    }
-
-
-
-    // Pre-allocated vectors for animate loop
-    const tempVec = new THREE.Vector3();
-    const sunPos = new THREE.Vector3(0, 0, 0);
-    const _localPos = new THREE.Vector3();
-    const _worldPos = new THREE.Vector3();
-    const _parentPosPhys = new THREE.Vector3();
-    const _parentPosRender = new THREE.Vector3();
-    const _renderPos = new THREE.Vector3();
-
-    function updateLogic(frameCount: number): void {
-        if (playerShip && frameCount % LOGIC_UPDATE_INTERVAL === 0) {
-            let closestDist = Infinity;
-            let closestObj: THREE.Object3D | null = null;
-            const shipPos = playerShip.position;
-
-            const len = planets.length;
-            for (let i = 0; i < len; i++) {
-                const p = planets[i];
-                if (!p) continue;
-                getPositionFromMatrix(p, tempVec);
-                const dist = shipPos.distanceToSquared(tempVec);
-                if (dist < closestDist) {
-                    closestDist = dist;
-                    closestObj = p;
-                }
-            }
-            closestObjectCache = closestObj;
-        }
-        if (closestObjectCache && playerShip) {
-            getPositionFromMatrix(closestObjectCache, tempVec);
-            playerShip.lookAt(tempVec);
-        }
-    }
-
-    // ============================================================================
-    // Animation Loop
-    // ============================================================================
-
-    function updatePhysics(dt: number): void {
-        simulationTime += dt * SIMULATION_SPEED_BASE * timeScale;
-
-        const len = animatedObjects.length;
-        for (let i = 0; i < len; i++) {
-            const obj = animatedObjects[i];
-            if (!obj) continue;
-            const physics = obj.physics;
-            if (physics && physics.a !== undefined) {
-                getOrbitalPosition(physics, simulationTime, _localPos);
-                _worldPos.copy(_localPos);
-
-                if (obj.parent) {
-                    getOrbitalPosition(obj.parent, simulationTime, _parentPosPhys);
-                    _worldPos.add(_parentPosPhys);
-                }
-
-                physicsToRender(_worldPos, _renderPos);
-
-                if (obj.parent) {
-                    physicsToRender(_parentPosPhys, _parentPosRender);
-                    obj.pivot.position.copy(_renderPos).sub(_parentPosRender);
-                } else {
-                    obj.pivot.position.copy(_renderPos);
-                }
-
-                if (obj.mesh) {
-                    obj.mesh.rotation.y += BODY_ROTATION_SPEED * dt * timeScale;
-                }
-            }
-        }
-
-        belts.forEach(belt => belt.update?.(simulationTime));
-        if (starfield) starfield.rotation.y += STARFIELD_ROTATION_SPEED * dt;
-        scene.updateMatrixWorld();
-        instanceRegistry?.update();
-    }
-
-    function updateCamera(): void {
-        if (isShipView && playerShip && controls) {
+        if (playerShip && controls) {
             controls.target.copy(playerShip.position);
             camera.position.set(
                 playerShip.position.x + 5,
                 playerShip.position.y + 3,
                 playerShip.position.z + 5
             );
-        } else if (focusTarget && controls) {
-            // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
-            getPositionFromMatrix(focusTarget, tempVec);
-            controls.target.copy(tempVec);
+        }
+    } else {
+        if (controls) {
+            controls.target.set(0, 0, 0);
+            camera.position.set(0, 60, 100);
         }
     }
+    controls?.update();
+}
 
-    function updateUI(frameCount: number): void {
-        if (selectedObject && frameCount % LOGIC_UPDATE_INTERVAL === 0) {
-            const distEl = document.getElementById('info-dist-sun');
-            if (distEl) {
-                const userData = selectedObject.userData as Record<string, unknown>;
-                const physics = userData.physics as Record<string, unknown> | undefined;
-                if (physics?.a) {
-                    distEl.textContent = `Orbit: ${physics.a} AU`;
-                } else {
-                    // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
-                    getPositionFromMatrix(selectedObject, tempVec);
-                    distEl.textContent = `Render Dist: ${tempVec.distanceTo(sunPos).toFixed(1)}`;
+function resetCamera(): void {
+    isShipView = false;
+    focusTarget = null;
+    const btn = document.getElementById('btn-camera');
+    if (btn) btn.setAttribute('aria-pressed', 'false');
+
+    if (controls) {
+        controls.target.set(0, 0, 0);
+        camera.position.set(0, 60, 100);
+        controls.update();
+    }
+    ToastManager.getInstance().show("View Reset");
+}
+
+function setFocusTarget(mesh: THREE.Object3D): void {
+    focusTarget = mesh;
+    isShipView = false;
+    const name = mesh.userData.name ?? "Object";
+    ToastManager.getInstance().show(`Following ${name}`);
+}
+
+function updateTimeScale(scale: number): void {
+    timeScale = scale;
+}
+
+function toggleTextures(btnElement: HTMLElement | null): void {
+    useTextures = !useTextures;
+    if (btnElement) {
+        btnElement.textContent = useTextures ? "HD" : "LD";
+        btnElement.setAttribute('aria-pressed', String(useTextures));
+    }
+    interactionTargets.forEach(mesh => {
+        const userData = mesh.userData as SolarSimUserData;
+        if (useTextures && userData.texturedMaterial) {
+            (mesh as THREE.Mesh).material = userData.texturedMaterial;
+        } else if (!useTextures && userData.solidMaterial) {
+            (mesh as THREE.Mesh).material = userData.solidMaterial;
+        }
+    });
+    if (instanceRegistry) {
+        instanceRegistry.groups.forEach(group => {
+            if (group.mesh && group.instances.length > 0) {
+                const sampleUserData = group.instances[0]?.pivot.userData as SolarSimUserData;
+                if (useTextures && sampleUserData?.texturedMaterial) {
+                    group.mesh.material = sampleUserData.texturedMaterial;
+                } else if (!useTextures && sampleUserData?.solidMaterial) {
+                    group.mesh.material = sampleUserData.solidMaterial;
                 }
+            }
+        });
+    }
+    ToastManager.getInstance().show(`Textures: ${useTextures ? "ON" : "OFF"}`);
+}
+
+function toggleLabels(): void {
+    showLabels = !showLabels;
+    labelManager?.toggle(showLabels);
+    // labelsNeedUpdate = true; // Handled by LabelManager
+    const btn = document.getElementById('btn-labels');
+    if (btn) btn.setAttribute('aria-pressed', String(showLabels));
+    // allLabels.forEach(label => { label.visible = showLabels; });
+    ToastManager.getInstance().show(`Labels: ${showLabels ? "ON" : "OFF"}`);
+}
+
+function toggleBelt(type: string, visible: boolean): void {
+    belts.forEach(belt => {
+        if (belt.userData?.type === type) {
+            belt.visible = visible;
+        }
+    });
+}
+
+function toggleOrbits(): void {
+    showOrbits = !showOrbits;
+    const btn = document.getElementById('btn-orbits');
+    if (btn) btn.setAttribute('aria-pressed', String(showOrbits));
+    allTrails.forEach(trail => {
+        if (trail && typeof trail === 'object' && 'visible' in trail) {
+            (trail as THREE.Object3D).visible = showOrbits;
+        }
+    });
+    ToastManager.getInstance().show(`Orbits: ${showOrbits ? "ON" : "OFF"}`);
+}
+
+function togglePause(btnElement: HTMLElement | null): void {
+    isPaused = !isPaused;
+    window.isPaused = isPaused;
+    if (btnElement) {
+        if (isPaused) {
+            btnElement.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+            btnElement.setAttribute('aria-label', "Resume Simulation");
+        } else {
+            btnElement.setAttribute('aria-label', "Pause Simulation");
+        }
+    }
+    ToastManager.getInstance().show(isPaused ? "Simulation Paused" : "Simulation Resumed", { type: isPaused ? 'info' : 'success' });
+
+    const srStatus = document.getElementById('sr-status');
+    if (srStatus) {
+        srStatus.textContent = isPaused ? "Simulation paused" : "Simulation resumed";
+    }
+}
+
+function focusPlanet(index: number): void {
+    if (index < 0 || index >= planets.length) return;
+    const planet = planets[index];
+    if (!planet) return;
+    setFocusTarget(planet);
+    handleObjectSelection(planet);
+    interactionHelpers?.updateSelectionUI(planet);
+}
+
+function handleObjectSelection(mesh: THREE.Object3D): void {
+    selectedObject = mesh;
+}
+
+
+
+// Pre-allocated vectors for animate loop
+const tempVec = new THREE.Vector3();
+const sunPos = new THREE.Vector3(0, 0, 0);
+const _localPos = new THREE.Vector3();
+const _worldPos = new THREE.Vector3();
+const _parentPosPhys = new THREE.Vector3();
+const _parentPosRender = new THREE.Vector3();
+const _renderPos = new THREE.Vector3();
+
+function updateLogic(frameCount: number): void {
+    if (playerShip && frameCount % LOGIC_UPDATE_INTERVAL === 0) {
+        let closestDist = Infinity;
+        let closestObj: THREE.Object3D | null = null;
+        const shipPos = playerShip.position;
+
+        const len = planets.length;
+        for (let i = 0; i < len; i++) {
+            const p = planets[i];
+            if (!p) continue;
+            getPositionFromMatrix(p, tempVec);
+            const dist = shipPos.distanceToSquared(tempVec);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestObj = p;
+            }
+        }
+        closestObjectCache = closestObj;
+    }
+    if (closestObjectCache && playerShip) {
+        getPositionFromMatrix(closestObjectCache, tempVec);
+        playerShip.lookAt(tempVec);
+    }
+}
+
+// ============================================================================
+// Animation Loop
+// ============================================================================
+
+function updatePhysics(dt: number): void {
+    simulationTime += dt * SIMULATION_SPEED_BASE * timeScale;
+
+    const len = animatedObjects.length;
+    for (let i = 0; i < len; i++) {
+        const obj = animatedObjects[i];
+        if (!obj) continue;
+        const physics = obj.physics;
+        if (physics && physics.a !== undefined) {
+            getOrbitalPosition(physics, simulationTime, _localPos);
+            _worldPos.copy(_localPos);
+
+            if (obj.parent) {
+                getOrbitalPosition(obj.parent, simulationTime, _parentPosPhys);
+                _worldPos.add(_parentPosPhys);
+            }
+
+            physicsToRender(_worldPos, _renderPos);
+
+            if (obj.parent) {
+                physicsToRender(_parentPosPhys, _parentPosRender);
+                obj.pivot.position.copy(_renderPos).sub(_parentPosRender);
+            } else {
+                obj.pivot.position.copy(_renderPos);
+            }
+
+            if (obj.mesh) {
+                obj.mesh.rotation.y += BODY_ROTATION_SPEED * dt * timeScale;
             }
         }
     }
 
-    function renderLabels(): void {
-        if (labelManager) {
-            labelManager.update(focusTarget, selectedObject);
+    belts.forEach(belt => belt.update?.(simulationTime));
+    if (starfield) starfield.rotation.y += STARFIELD_ROTATION_SPEED * dt;
+    scene.updateMatrixWorld();
+    instanceRegistry?.update();
+}
+
+function updateCamera(): void {
+    if (isShipView && playerShip && controls) {
+        controls.target.copy(playerShip.position);
+        camera.position.set(
+            playerShip.position.x + 5,
+            playerShip.position.y + 3,
+            playerShip.position.z + 5
+        );
+    } else if (focusTarget && controls) {
+        // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
+        getPositionFromMatrix(focusTarget, tempVec);
+        controls.target.copy(tempVec);
+    }
+}
+
+function updateUI(frameCount: number): void {
+    if (selectedObject && frameCount % LOGIC_UPDATE_INTERVAL === 0) {
+        const distEl = document.getElementById('info-dist-sun');
+        if (distEl) {
+            const userData = selectedObject.userData as Record<string, unknown>;
+            const physics = userData.physics as Record<string, unknown> | undefined;
+            if (physics?.a) {
+                distEl.textContent = `Orbit: ${physics.a} AU`;
+            } else {
+                // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
+                getPositionFromMatrix(selectedObject, tempVec);
+                distEl.textContent = `Render Dist: ${tempVec.distanceTo(sunPos).toFixed(1)}`;
+            }
         }
     }
+}
 
-    function renderScene(frameCount: number): void {
-        controls?.update();
-        if (renderer) {
-            renderer.render(scene, camera);
-            renderLabels();
-        }
+function renderLabels(): void {
+    if (labelManager) {
+        labelManager.update(focusTarget, selectedObject);
+    }
+}
 
-        // Trails
-        if (!isPaused && showOrbits && frameCount % 2 === 0 && trailManager && renderer) {
-            trailManager.update(renderer);
-        }
+function renderScene(frameCount: number): void {
+    controls?.update();
+    if (renderer) {
+        renderer.render(scene, camera);
+        renderLabels();
     }
 
-    /**
-     * The main animation loop (RequestAnimationFrame).
-     * Processed in distinct phases:
-     *
-     * Phase 1: Logic Synchronization
-     * - Increments simulation time based on speed factor.
-     * - Updates orbital positions for all tracked planets/moons.
-     * - Checks for camera following constraints.
-     *
-     * Phase 2: Optimization Updates ("Bolt")
-     * - Updates InstancedMesh matrices in InstanceRegistry.
-     * - Appends new vertices to the TrailManager ring buffers.
-     * - Updates uniforms in GPU-based debris systems.
-     *
-     * Phase 3: Rendering
-     * - Executes the Three.js render pass.
-     */
-    function animate(): void {
-        animationFrameId = requestAnimationFrame(animate);
+    // Trails
+    if (!isPaused && showOrbits && frameCount % 2 === 0 && trailManager && renderer) {
+        trailManager.update(renderer);
+    }
+}
 
-        const now = performance.now();
-        const rawDt = (now - lastFrameTime) / 1000;
-        const dt = Math.min(rawDt, 0.1);
-        lastFrameTime = now;
+/**
+ * The main animation loop (RequestAnimationFrame).
+ * Processed in distinct phases:
+ *
+ * Phase 1: Logic Synchronization
+ * - Increments simulation time based on speed factor.
+ * - Updates orbital positions for all tracked planets/moons.
+ * - Checks for camera following constraints.
+ *
+ * Phase 2: Optimization Updates ("Bolt")
+ * - Updates InstancedMesh matrices in InstanceRegistry.
+ * - Appends new vertices to the TrailManager ring buffers.
+ * - Updates uniforms in GPU-based debris systems.
+ *
+ * Phase 3: Rendering
+ * - Executes the Three.js render pass.
+ */
+function animate(): void {
+    animationFrameId = requestAnimationFrame(animate);
 
-        if (!isPaused) {
-            updatePhysics(dt);
-        }
+    const now = performance.now();
+    const rawDt = (now - lastFrameTime) / 1000;
+    const dt = Math.min(rawDt, 0.1);
+    lastFrameTime = now;
 
-        updateCamera();
-        updateLogic(frameCount);
-
-        frameCount++;
-
-        updateUI(frameCount);
-        renderScene(frameCount);
+    if (!isPaused) {
+        updatePhysics(dt);
     }
 
-} // end of init()
+    updateCamera();
+    updateLogic(frameCount);
+
+    frameCount++;
+
+    updateUI(frameCount);
+    renderScene(frameCount);
+}
+
+// Removed stray bracket
 
 function onWindowResize(): void {
     sceneManager?.onResize();

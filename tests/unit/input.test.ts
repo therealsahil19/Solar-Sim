@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
-import { setupInteraction, type InteractionContext, type InteractionCallbacks } from '../../src/input';
+import { setupInteraction, updateNormalizedCoordinates, type InteractionContext, type InteractionCallbacks } from '../../src/input';
 
 // Mock OrbitControls
 vi.mock('three/addons/controls/OrbitControls.js', () => ({
@@ -158,5 +158,26 @@ describe('Interaction System (input.ts)', () => {
         result.dispose();
 
         expect(removeSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
+    });
+});
+
+describe('updateNormalizedCoordinates', () => {
+    it('should correctly convert screen coordinates to normalized device coordinates', () => {
+        const target = new THREE.Vector2();
+
+        // Center
+        updateNormalizedCoordinates(target, 400, 300, 800, 600);
+        expect(target.x).toBeCloseTo(0);
+        expect(target.y).toBeCloseTo(0);
+
+        // Top Left
+        updateNormalizedCoordinates(target, 0, 0, 800, 600);
+        expect(target.x).toBeCloseTo(-1);
+        expect(target.y).toBeCloseTo(1);
+
+        // Bottom Right
+        updateNormalizedCoordinates(target, 800, 600, 800, 600);
+        expect(target.x).toBeCloseTo(1);
+        expect(target.y).toBeCloseTo(-1);
     });
 });
