@@ -27,6 +27,7 @@ Open the browser to http://localhost:5173
 - `src/debris.ts` – GPU-animated asteroid belt via InstancedMesh + vertex shader
 - `src/instancing.ts` – InstanceRegistry for batching objects
 - `src/trails.ts` – TrailManager for unified orbit trail geometry
+- `src/shaders/` – Raw GLSL vertex and fragment shaders
 - `src/components/CommandPalette.ts` – Cmd+K command palette UI
 - `src/managers/ThemeManager.ts` – visual themes, localStorage persistence
 - `src/managers/LabelManager.ts` – Manages 2D labels with spatial grid collision

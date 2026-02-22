@@ -103,7 +103,8 @@ The project is organized into a modular architecture:
 │   ├── debris.ts         # "Generator" - creates GPU-accelerated debris fields
 │   ├── instancing.ts     # "Optimizer" - manages InstancedMesh groups
 │   ├── trails.ts         # "Optimizer" - manages unified orbit trail geometry
-│   ├── shaders.ts        # "Graphics" - GLSL shader strings for trails
+│   ├── shaders/          # "Graphics" - Raw GLSL vertex and fragment shaders
+│   ├── shaders.ts        # "Graphics" - Exports shader strings for consumption
 │   ├── benchmark.ts      # "Bolt" - performance benchmarking tool
 │   ├── style.css         # Design System tokens and styles
 │   ├── components/
@@ -127,7 +128,8 @@ The project is organized into a modular architecture:
 │   │   └── ThreeUtils.ts        # Three.js helper functions
 ├── tests/
 │   ├── e2e/              # Playwright E2E tests (*.spec.js, *.spec.ts)
-│   └── unit/             # Vitest unit tests (*.test.ts)
+│   ├── unit/             # Vitest unit tests (*.test.ts)
+│   └── *.spec.ts         # Additional unit tests
 └── README.md             # This documentation
 ```
 
@@ -223,7 +225,8 @@ The simulation is data-driven. `system.json` defines the hierarchy of celestial 
 | `visual.size` | Number | Relative diameter (compared to Earth = 1.0). |
 | `visual.color` | String | Hex code for the fallback solid color. |
 | `visual.texture`| String | Path to the JPG texture (e.g., `textures/earth.jpg`). |
-| `visual.hasRing`| Bool | (Optional) Whether to render Saturn-like rings. |
+| `visual.hasRing`| Bool | (Optional) Whether to render rings (simple flag, e.g., Uranus). |
+| `visual.ring`   | Object | (Optional) Detailed ring configuration (e.g., Saturn). |
 | `description` | String | Background info shown in the Info Panel. |
 | `moons` | Array | (Optional) Nested list of satellite objects (recursive schema). |
 
@@ -264,12 +267,12 @@ For asteroid belts and other debris fields, the configuration uses a `distributi
 | `distribution.minA/maxA` | Number | Range for Semi-major axis (AU). |
 | `distribution.minE/maxE` | Number | Range for Eccentricity. |
 | `distribution.minI/maxI` | Number | Range for Inclination (degrees). |
-| `distribution.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
 | `visual` | Object | **Visual properties**: |
 | `visual.count` | Number | Number of particles to generate. |
 | `visual.color` | String | Hex color of the particles. |
 | `visual.size` | Number | Size of each particle. |
 | `visual.opacity` | Number | Opacity (0.0 - 1.0). |
+| `visual.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
 
 ## Running the Project
 
