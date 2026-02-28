@@ -72,4 +72,40 @@ describe('LabelManager', () => {
         expect((manager as any).getGridIndex(5, 2)).toBe(25);
         expect((manager as any).getGridIndex(-1, 0)).toBe(-1);
     });
+
+    it('should hide overlapping labels based on z-depth', () => {
+        const createMockLabel = (name: string, x: number, y: number, z: number, opacity: number) => {
+            const div = document.createElement('div');
+            const cssObj = new CSS2DObject(div);
+            cssObj.name = name;
+            cssObj.userData = { _lastOpacity: opacity, _tentativeOpacity: 1 };
+
+            return {
+                label: cssObj,
+                x, y, z,
+                width: 100, // approxLabelWidth
+                height: 20  // approxLabelHeight
+            };
+        };
+
+        const labelFront = createMockLabel('front', 50, 50, 0.5, 1);
+        const labelBack = createMockLabel('back', 60, 55, 0.8, 1); // Overlaps with front
+        const labelFar = createMockLabel('far', 300, 300, 0.5, 1); // No overlap
+
+        (manager as any).visibleLabelsList = [labelBack, labelFront, labelFar];
+
+        // Ensure grid resets
+        (manager as any).labelGridCols = 0;
+
+        // Run collision detection for an 800x600 viewport
+        (manager as any).runCollisionDetection(800, 600);
+
+        // Front label should be fully visible
+        expect(labelFront.label.userData._lastOpacity).toBe(1);
+        // Back label should be hidden (opacity 0) because it overlaps with the front label
+        expect(labelBack.label.userData._lastOpacity).toBe(0);
+        expect(labelBack.label.element.style.opacity).toBe('0');
+        // Far label should be fully visible
+        expect(labelFar.label.userData._lastOpacity).toBe(1);
+    });
 });

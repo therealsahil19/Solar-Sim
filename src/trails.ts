@@ -46,22 +46,21 @@ export class TrailManager implements Disposable {
     private pointsPerTrail: number;
     private segmentsPerTrail: number;
 
-    private geometry: THREE.BufferGeometry;
-    private material: THREE.ShaderMaterial;
+    private geometry!: THREE.BufferGeometry;
+    private material!: THREE.ShaderMaterial;
     public mesh: THREE.LineSegments;
 
     // GPU Data
-    private historyTexture: THREE.DataTexture;
-    private historyData: Float32Array; // The CPU-side backing buffer for the texture
-    private rowTexture: THREE.DataTexture; // Helper texture for single-row updates
+    private historyTexture!: THREE.DataTexture;
+    private historyData!: Float32Array; // The CPU-side backing buffer for the texture
+    private rowTexture!: THREE.DataTexture; // Helper texture for single-row updates
 
     private trails: Trail[];
     private nextTrailIndex: number;
     private globalHead: number; // 0..pointsPerTrail-1
-    private updateRowBuffer: Float32Array; // Buffer for one ROW update (MaxTrails * 4)
+    private updateRowBuffer!: Float32Array; // Buffer for one ROW update (MaxTrails * 4)
 
     // Reuse vector to avoid GC
-    private _tempVec: THREE.Vector3;
     private _tempVec2: THREE.Vector2;
     private _pendingFlush = false;
 
@@ -78,11 +77,31 @@ export class TrailManager implements Disposable {
 
         this.pointsPerTrail = pointsPerTrail;
         this.segmentsPerTrail = pointsPerTrail;
-        this._tempVec = new THREE.Vector3();
         this._tempVec2 = new THREE.Vector2();
 
         // 1. Setup DataTexture (History)
-        // Transposed Layout: Width = MaxTrails, Height = Points
+        this.initHistoryTexture(pointsPerTrail);
+
+        // 2. Setup Geometry
+        this.initGeometry();
+
+        // 3. Setup Material
+        this.initMaterial(pointsPerTrail, maxTrails);
+
+        this.mesh = new THREE.LineSegments(this.geometry, this.material);
+        this.mesh.frustumCulled = false;
+
+        // Initially draw nothing
+        this.geometry.setDrawRange(0, 0);
+
+        scene.add(this.mesh);
+
+        this.trails = [];
+        this.nextTrailIndex = 0;
+        this.globalHead = 0;
+    }
+
+    private initHistoryTexture(pointsPerTrail: number): void {
         const width = this.maxTrails;
         const height = pointsPerTrail;
         const totalPixels = width * height;
@@ -100,10 +119,8 @@ export class TrailManager implements Disposable {
         this.historyTexture.generateMipmaps = false;
         this.historyTexture.needsUpdate = true;
 
-        // Buffer for single row update
         this.updateRowBuffer = new Float32Array(this.maxTrails * 4);
 
-        // Helper texture for updates
         this.rowTexture = new THREE.DataTexture(
             this.updateRowBuffer as BufferSource,
             this.maxTrails,
@@ -114,8 +131,9 @@ export class TrailManager implements Disposable {
         this.rowTexture.minFilter = THREE.NearestFilter;
         this.rowTexture.magFilter = THREE.NearestFilter;
         this.rowTexture.generateMipmaps = false;
+    }
 
-        // 2. Setup Geometry
+    private initGeometry(): void {
         const totalSegments = this.maxTrails * this.segmentsPerTrail;
         const totalVertices = totalSegments * 2;
 
@@ -151,8 +169,9 @@ export class TrailManager implements Disposable {
         this.geometry.setAttribute('aVertexIndex', new THREE.BufferAttribute(vertexIndices, 1));
         this.geometry.setAttribute('aTrailIndex', new THREE.BufferAttribute(trailIndices, 1));
         this.geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    }
 
-        // 3. Setup Material
+    private initMaterial(pointsPerTrail: number, maxTrails: number): void {
         this.material = new THREE.ShaderMaterial({
             vertexShader: TRAIL_VERTEX_SHADER,
             fragmentShader: TRAIL_FRAGMENT_SHADER,
@@ -166,18 +185,6 @@ export class TrailManager implements Disposable {
             depthWrite: false,
             blending: THREE.AdditiveBlending
         });
-
-        this.mesh = new THREE.LineSegments(this.geometry, this.material);
-        this.mesh.frustumCulled = false;
-
-        // Initially draw nothing
-        this.geometry.setDrawRange(0, 0);
-
-        scene.add(this.mesh);
-
-        this.trails = [];
-        this.nextTrailIndex = 0;
-        this.globalHead = 0;
     }
 
     /**
@@ -276,13 +283,12 @@ export class TrailManager implements Disposable {
             // We use matrixWorld directly to avoid object update overhead if already updated
             // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
             const te = trail.target.matrixWorld.elements;
-            this._tempVec.set(te[12]!, te[13]!, te[14]!);
 
             // Write to update buffer at index 'trail.index'
             const offset = trail.index * 4;
-            this.updateRowBuffer[offset] = this._tempVec.x;
-            this.updateRowBuffer[offset + 1] = this._tempVec.y;
-            this.updateRowBuffer[offset + 2] = this._tempVec.z;
+            this.updateRowBuffer[offset] = te[12]!;
+            this.updateRowBuffer[offset + 1] = te[13]!;
+            this.updateRowBuffer[offset + 2] = te[14]!;
             this.updateRowBuffer[offset + 3] = 1.0;
         }
 

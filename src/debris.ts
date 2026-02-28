@@ -227,18 +227,7 @@ class DebrisSystem extends THREE.InstancedMesh implements DebrisMesh {
 /**
  * Factory function to create a GPU-accelerated debris field.
  */
-function createDebrisSystem(config: DebrisConfig): DebrisMesh {
-    const {
-        count = 1000,
-        distribution,
-        material: matConfig
-    } = config;
-
-    // Geometry
-    const size = matConfig.size ?? 0.2;
-    const geometry = new THREE.IcosahedronGeometry(size, 0);
-
-    // Material
+function buildDebrisMaterial(matConfig: DebrisMaterialConfig): THREE.MeshStandardMaterial {
     const material = new THREE.MeshStandardMaterial({
         color: matConfig.color ?? 0x888888,
         roughness: matConfig.roughness ?? 0.8,
@@ -290,13 +279,10 @@ function createDebrisSystem(config: DebrisConfig): DebrisMesh {
         );
     };
 
-    const mesh = new DebrisSystem(geometry, material, count);
-    mesh.userData.type = config.type;
-    mesh.castShadow = !(matConfig.opacity !== undefined && matConfig.opacity < 1.0);
-    mesh.receiveShadow = true;
-    mesh.frustumCulled = false;
+    return material;
+}
 
-    // Allocate Attributes
+function populateDebrisAttributes(mesh: DebrisSystem, count: number, distribution: DebrisDistribution): void {
     const aOrbit = new Float32Array(count * 4);
     const aParams = new Float32Array(count * 3);
     const dummy = new THREE.Object3D();
@@ -334,6 +320,21 @@ function createDebrisSystem(config: DebrisConfig): DebrisMesh {
     mesh.geometry.setAttribute('aOrbit', new THREE.InstancedBufferAttribute(aOrbit, 4));
     mesh.geometry.setAttribute('aParams', new THREE.InstancedBufferAttribute(aParams, 3));
     mesh.instanceMatrix.needsUpdate = true;
+}
+
+function createDebrisSystem(config: DebrisConfig): DebrisMesh {
+    const { count = 1000, distribution, material: matConfig } = config;
+
+    const geometry = new THREE.IcosahedronGeometry(matConfig.size ?? 0.2, 0);
+    const material = buildDebrisMaterial(matConfig);
+    const mesh = new DebrisSystem(geometry, material, count);
+
+    mesh.userData.type = config.type;
+    mesh.castShadow = !(matConfig.opacity !== undefined && matConfig.opacity < 1.0);
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+
+    populateDebrisAttributes(mesh, count, distribution);
 
     return mesh;
 }

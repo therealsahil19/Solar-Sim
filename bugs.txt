@@ -1,363 +1,414 @@
 EASY
 
 Description
-A new THREE.Vector2 is created every frame inside update() for copyTextureToTexture, contributing to GC load.
+Math.pow(a, 1.5) is called every frame for every object to calculate the orbital period if not provided.
 
 Location
-src/trails.ts:293
+src/physics.ts:61
 
 Rationale
-Easy to fix by creating a reused THREE.Vector2 instance as a class member or reusing a temporary vector. This avoids allocation on every frame.
+High impact as it runs per object/frame. Easy fix by pre-calculating period in initialization or caching it.
 
 Code context
-        // Upload texture row using copyTextureToTexture mechanism
-        this.rowTexture.needsUpdate = true;
-        renderer.copyTextureToTexture(new THREE.Vector2(0, this.globalHead), this.rowTexture, this.historyTexture);
-    }
+    // Optimization: Use pre-calculated period if available to avoid expensive Math.pow(a, 1.5)
+    const period = orbit.period ?? Math.pow(a, 1.5);
 
 Description
-new THREE.Frustum() and new THREE.Matrix4() are created inside the update() loop every frame, causing unnecessary garbage collection pressure.
+Intermediate _tempVec.set(...) call is unnecessary; can write directly to buffer.
 
 Location
-src/managers/LabelManager.ts:123
+src/trails.ts:279
 
 Rationale
-Easy to fix by moving frustum and projScreenMatrix to class properties and reusing them. This avoids per-frame allocation.
+Micro-optimization to remove a function call and property access inside a loop.
 
 Code context
-        // 1. Create Frustum for culling
-        const frustum = new THREE.Frustum();
-        const projScreenMatrix = new THREE.Matrix4();
-        projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
-        frustum.setFromProjectionMatrix(projScreenMatrix);
+            // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
+            const te = trail.target.matrixWorld.elements;
+            this._tempVec.set(te[12]!, te[13]!, te[14]!);
 
 Description
-The `download_textures.py` script uses `urllib.request.urlopen` without a timeout, which can cause the script to hang indefinitely if the remote server is unresponsive.
+item.name.toLowerCase() is called for every item during search filtering.
 
 Location
-download_textures.py:63
+src/components/CommandPalette.ts:286
 
 Rationale
-Adding a timeout parameter is a standard practice and a simple, low-risk change to prevent hangs.
+Creates garbage and CPU overhead. Should pre-calculate lowercase strings on item creation.
+
+Code context
+        } else {
+            this.filteredItems = this.items.filter(item =>
+                (item.name?.toLowerCase() ?? '').includes(q) ||
+                (item.type?.toLowerCase() ?? '').includes(q)
+            );
+
+Description
+Math.cos and Math.sin are called every frame on constant orbital elements (Omega, i).
+
+Location
+src/physics.ts:106
+
+Rationale
+Trig functions are expensive. These values are constant for each object and should be pre-calculated.
+
+Code context
+    // Longitude of Ascending Node (Omega) - use value from orbit params
+    const Omega = LAN;
+
+    const cosOm = Math.cos(Omega * DEG_TO_RAD);
+
+Description
+toLowerCase() is called O(N log N) times during sort.
+
+Location
+src/components/CommandPalette.ts:293
+
+Rationale
+Very inefficient for sorting. Pre-calculate lowercase strings.
+
+Code context
+        // Sort: Exact matches first
+        this.filteredItems.sort((a, b) => {
+            const aName = (a.name ?? '').toLowerCase();
+            const bName = (b.name ?? '').toLowerCase();
+
+Description
+The script reads the entire response body into memory without checking the Content-Length header, which could lead to memory exhaustion (DoS) if the remote server serves a very large file.
+
+Location
+download_textures.py:52
+
+Rationale
+The script uses response.read() which loads the full content into RAM. Reading in chunks or checking the size header would mitigate this risk.
 
 Code context
     try:
         # Verify SSL certificates properly using reused context
-        with urllib.request.urlopen(url, context=context) as response:
+        with urllib.request.urlopen(url, context=context, timeout=10) as response:
             content = response.read()
             
             # Verify SHA-256
+            actual_hash = hashlib.sha256(content).hexdigest()
+            if actual_hash != expected_hash:
 
 Description
-The `package.json` file specifies versions for `jsdom` (`^27.4.0`) and `@playwright/test` (`^1.57.0`) that appear to be non-existent or futuristic, potentially indicating a typo or supply chain risk.
+The `clearMaterialCache` function is crucial for preventing memory leaks during scene resets but is currently untested.
 
 Location
-package.json:37
+src/procedural.ts:69
 
 Rationale
-Correcting dependency versions is straightforward and essential for reproducible and secure builds.
-
-Code context
-  "devDependencies": {
-    "@playwright/test": "^1.57.0",
-    "@types/three": "^0.160.0",
-    "jsdom": "^27.4.0",
-    "typescript": "^5.3.0",
-
-Description
-The application exposes the main `THREE.Scene` and other core objects on the `window` object, increasing the attack surface for potential XSS exploits.
-
-Location
-src/main.ts:164
-
-Rationale
-Removing global assignments or wrapping them in a debug flag is a simple change that reduces attack surface.
-
-Code context
-    labelRenderer = sceneManager.labelRenderer; // Ensure labelRenderer is typed in SceneManager
-
-    window.scene = scene;
-
-    // Cancel any existing animation loop
-
-Description
-Physics constants like `AU_SCALE` are hardcoded in `debris.ts` shader strings, duplicating values from `physics.ts`.
-
-Location
-src/debris.ts:100
-
-Rationale
-Can be fixed by importing constants and interpolating them into the shader string or using uniforms.
-
-Code context
-const DEBRIS_SHADER_HEAD = `
-#define AU_SCALE 40.0
-#define LIMIT_1 30.0
-#define LIMIT_2 50.0
-#define VISUAL_LIMIT_1 1200.0
-#define LOG_FACTOR_K 1.5
-#define VISUAL_LIMIT_2 1382.67
-#define LOG_FACTOR_O 4.0
-#ifndef PI
-#define PI 3.14159265359
-#endif
-
-Description
-Usage of `@ts-ignore` to set a non-nullable static property to null for testing purposes.
-
-Location
-src/managers/ToastManager.ts:41
-
-Rationale
-Should be replaced with a type assertion or `any` cast to maintain type safety elsewhere.
-
-Code context
-    /**
-     * Resets the singleton instance.
-     * @internal For testing purposes only.
-     */
-    public static resetInstance(): void {
-        // @ts-ignore
-        ToastManager.instance = null;
-    }
-
-    /**
-
-Description
-GLSL shader code is hardcoded as strings within TypeScript files, making it harder to read and lint.
-
-Location
-src/shaders.ts:1
-
-Rationale
-Moving shaders to separate .glsl files or using a tagged template literal library would improve maintainability.
-
-Code context
-export const TRAIL_VERTEX_SHADER = `
-uniform sampler2D uHistory;
-uniform float uHead; // Current global head index
-uniform float uPointsPerTrail;
-uniform float uMaxTrails;
-
-attribute float aSegmentIndex;
-attribute float aVertexIndex; // 0 = start of segment, 1 = end of segment
-attribute float aTrailIndex;
-attribute vec3 aColor;
-
-Description
-The `index` property in `InstanceData` interface is redundant as it matches the array index in usage.
-
-Location
-src/instancing.ts:16
-
-Rationale
-Can be removed to simplify the data structure without affecting logic.
+Simple to test: populate cache by requesting a material, call clear, and verify disposal and cache emptiness.
 
 Code context
 /**
- * Individual instance data.
+ * Clears the material cache to prevent memory leaks during scene resets.
  */
-interface InstanceData {
-    /** The pivot Object3D that determines position/rotation */
-    pivot: THREE.Object3D;
-    /** Index in the instanced mesh */
-    index: number;
-    /** Whether the instance is dynamic (moves every frame) */
-    dynamic: boolean;
-}
+export function clearMaterialCache(): void {
+    Object.values(materialCache).forEach(mat => mat.dispose());
+    for (const key in materialCache) delete materialCache[key];
+
+    Object.values(textureMaterialCache).forEach(mat => mat.dispose());
 
 Description
-Commented-out code `// window.scene = this.scene;` should be removed.
+The `dispose` method in `InstanceRegistry` is responsible for cleaning up heavy GPU resources but is not tested.
 
 Location
-src/managers/SceneManager.ts:18
+src/instancing.ts:237
 
 Rationale
-Trivial removal.
+Standard resource cleanup test. Add instances, call dispose, verify scene removal and geometry/material disposal.
 
 Code context
-    constructor() {
-        // Setup Three.js Components
-        this.scene = new THREE.Scene();
-        // window.scene = this.scene; // Side effect, maybe avoid or make explicit
-
-        this.scene.matrixWorldAutoUpdate = false;
-
-        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
-        this.camera.position.set(0, 60, 100);
+    /**
+     * Disposes the registry and cleans up resources.
+     */
+    dispose(): void {
+        this.groups.forEach((group) => {
+            if (group.mesh) {
+                this.scene.remove(group.mesh);
+                group.mesh.geometry?.dispose();
 
 Description
-Several blocks of code are commented out in `src/main.ts` and should be removed.
+The orbital position solver uses a fixed iteration count which may lose accuracy for highly elliptical orbits (e > 0.9).
 
 Location
-src/main.ts:287
+src/physics.ts:66
 
 Rationale
-Trivial removal of commented-out logic.
+Pure function with deterministic output. Easy to construct a test case with high eccentricity and verify Kepler equation satisfaction.
 
 Code context
-                interactionTargets.push(...systemNode.interactables);
-                animatedObjects.push(...systemNode.animated);
-                allOrbits.push(...systemNode.orbits);
-                allTrails.push(...systemNode.trails);
-                systemNode.labels.forEach(l => labelManager?.add(l));
-                // allLabels.push(...systemNode.labels);
+    // 2. Solve Kepler's Equation for Eccentric Anomaly (E)
+    // M = E - e * sin(E). Using Newton-Raphson for fast, accurate convergence.
+    let E = M + e * Math.sin(M);
 
-                if (systemNode.animated.length > 0) {
-                    const primary = systemNode.animated[0];
-                    if (primary?.pivot) planets.push(primary.pivot);
+    for (let j = 0; j < 5; j++) {
+        const dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+        E = E - dE;
+        if (Math.abs(dE) < 1e-12) break; // Converged to high precision
+    }
 
-Description
-injectSkeletons does not have explicit tests for edge cases like count <= 0 or empty/null containers.
-
-Location
-src/utils/SkeletonUtils.ts:14
-
-Rationale
-Robust utility functions should handle edge cases gracefully. Adding tests for count=0 or invalid inputs improves reliability.
-
-Code context
-export function injectSkeletons(
-    container: HTMLElement,
-    count: number = 3,
-    styles: Partial<CSSStyleDeclaration> = {},
-    className: string = '',
-    clear: boolean = true
-): void {
-
-Description
-The exported utility `updateNormalizedCoordinates` converts client coordinates to NDC but has no unit test.
-
-Location
-src/input.ts:53
-
-Rationale
-This is a pure function that is critical for raycasting accuracy. Writing a unit test is trivial and ensures correctness.
-
-Code context
-export function updateNormalizedCoordinates(
-    target: THREE.Vector2,
-    clientX: number,
-    clientY: number,
-    width: number,
-    height: number
-): void {
 
 MEDIUM
-Description
-When clicking an instance in an InstancedMesh, the selection logic uses the mesh's userData instead of the specific instance's userData.
-
-Location
-src/input.ts:396
-
-Rationale
-Requires modifying `processHit` to retrieve the correct instance data and pass it to `handleSelection`.
-
-Code context
-    const processHit = (hit: THREE.Intersection) => {
-        if (!hit) return;
-
-        let mesh: THREE.Object3D = hit.object;
-        let userData = mesh.userData;
-
-        // Handle InstancedMesh
-        if ((mesh as THREE.InstancedMesh).isInstancedMesh && context.instanceRegistry) {
-            const data = context.instanceRegistry.getIntersectionData(
-                mesh as THREE.InstancedMesh,
 
 Description
-The `init` function in `main.ts` is overly complex (> 250 lines), mixing initialization, state management, and the animation loop.
+Deeply nested logic (> 5 levels).
 
 Location
-src/main.ts:143
+src/components/NavigationSidebar.ts:319
 
 Rationale
-Requires careful extraction of logic into separate functions or modules to avoid breaking closure dependencies.
+Deep nesting increases cognitive load.
 
 Code context
-const LAZY_LOAD_DELAY = 2000;
+if (parent.classList.contains('nav-sublist')) {
 
+Description
+Deeply nested logic (> 5 levels).
 
-/**
- * Initializes the application.
- */
+Location
+src/managers/LabelManager.ts:284
+
+Rationale
+Deep nesting increases cognitive load.
+
+Code context
+for (const other of cell) {
+
+Description
+Function "runCollisionDetection" is 82 lines long.
+
+Location
+src/managers/LabelManager.ts:242
+
+Rationale
+Long functions are harder to read and maintain.
+
+Code context
+    private runCollisionDetection(viewportWidth: number, viewportHeight: number): void {
+
+Description
+Function "constructor" is 110 lines long.
+
+Location
+src/trails.ts:71
+
+Rationale
+Long functions are harder to read and maintain.
+
+Code context
+    constructor(scene: THREE.Scene, maxTrails: number = 5000, pointsPerTrail: number = 100) {
+
+Description
+Deeply nested logic (> 5 levels).
+
+Location
+src/managers/LabelManager.ts:316
+
+Rationale
+Deep nesting increases cognitive load.
+
+Code context
+if (cell) {
+
+Description
+Deeply nested logic (> 5 levels).
+
+Location
+src/managers/LabelManager.ts:312
+
+Rationale
+Deep nesting increases cognitive load.
+
+Code context
+for (let c = startCol; c <= endCol; c++) {
+
+Description
+Deeply nested logic (> 5 levels).
+
+Location
+src/managers/LabelManager.ts:281
+
+Rationale
+Deep nesting increases cognitive load.
+
+Code context
+if (idx !== -1) {
+
+Description
+Function "bindEvents" is 118 lines long.
+
+Location
+src/components/SettingsPanel.ts:144
+
+Rationale
+Long functions are harder to read and maintain.
+
+Code context
+    private bindEvents(): void {
+
+Description
+Deeply nested logic (> 5 levels).
+
+Location
+src/managers/LabelManager.ts:215
+
+Rationale
+Deep nesting increases cognitive load.
+
+Code context
+if (Math.abs(lastOpacity - opacity) > this.opacityUpdateThreshold) {
+
+Description
+Deeply nested logic (> 5 levels).
+
+Location
+src/managers/LabelManager.ts:292
+
+Rationale
+Deep nesting increases cognitive load.
+
+Code context
+if (isBlocked) break;
+
+Description
+Function "startBenchmark" is 89 lines long.
+
+Location
+src/benchmark.ts:38
+
+Rationale
+Long functions are harder to read and maintain.
+
+Code context
+export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
+
+Description
+Deeply nested logic (> 5 levels).
+
+Location
+src/managers/SettingsManager.ts:100
+
+Rationale
+Deep nesting increases cognitive load.
+
+Code context
+if (typeof parsed[key] === expectedType) {
+
+Description
+Function "init" is 108 lines long.
+
+Location
+src/main.ts:265
+
+Rationale
+Long functions are harder to read and maintain.
+
+Code context
 export async function init(): Promise<void> {
-    // Reset Global State
-    interactionTargets.length = 0;
-    animatedObjects.length = 0;
 
 Description
-The module `benchmark.ts` attaches properties to the global `window` object upon import.
+Deeply nested logic (> 5 levels).
 
 Location
-src/benchmark.ts:131
+src/managers/LabelManager.ts:283
 
 Rationale
-Initialization logic should be encapsulated in an exported function to be called explicitly.
+Deep nesting increases cognitive load.
 
 Code context
-    };
-}
-
-// Auto-expose to window for console access
-if (typeof window !== 'undefined') {
-    window.boltBenchmark = startBenchmark;
-    console.log('%c⚡ Bolt Benchmark loaded. Run boltBenchmark() in console.', 'color: #ffc107;');
-}
+if (cell) {
 
 Description
-SettingsPanel lacks a dedicated unit test suite to verify its logic, event handling, and DOM interactions in isolation.
+Deeply nested logic (> 5 levels).
 
 Location
-src/components/SettingsPanel.ts:44
+src/managers/LabelManager.ts:314
 
 Rationale
-UI components often break. Unit tests are faster and more reliable than E2E for verifying specific logic paths like callbacks and state updates.
+Deep nesting increases cognitive load.
 
 Code context
-export class SettingsPanel implements Disposable {
-    private callbacks: SettingsPanelCallbacks;
-    private settingsManager: SettingsManager;
-    private _isOpen: boolean = false;
-    private dom: SettingsPanelDOM;
-
+if (idx !== -1) {
 
 Description
-The `toggle` method updates the internal state and visibility of all labels. A test should verify that subsequent updates respect this state.
+Deeply nested logic (> 5 levels).
 
 Location
-src/managers/LabelManager.ts:78
+src/components/NavigationSidebar.ts:322
 
 Rationale
-Label visibility logic is complex and relies on correct state management. A targeted test for `toggle` ensures UI controls work as expected.
+Deep nesting increases cognitive load.
 
 Code context
-    public toggle(show: boolean): void {
-        this.showLabels = show;
-        this.needsUpdate = true;
-        this.labels.forEach(label => {
-            label.visible = this.showLabels;
-        });
-    }
+if (parentLi) parentLi.style.display = '';
 
 Description
-The main entry point `init()` and `dispose()` functions orchestrate the application lifecycle but lack unit/integration tests.
+Deeply nested logic (> 5 levels).
 
 Location
-src/main.ts:142
+src/managers/LabelManager.ts:192
 
 Rationale
-This is the application entry point. While complex due to global state, verifying that `init` completes without error and `dispose` cleans up resources is high value.
+Deep nesting increases cognitive load.
 
 Code context
-export async function init(): Promise<void> {
-    // Reset Global State
-    interactionTargets.length = 0;
-    animatedObjects.length = 0;
-    planets.length = 0;
-    allOrbits.length = 0;
-    allTrails.length = 0;
+if (!item) {
 
+Description
+Deeply nested logic (> 5 levels).
 
+Location
+src/managers/LabelManager.ts:285
 
+Rationale
+Deep nesting increases cognitive load.
 
+Code context
+if (this.checkOverlap(item, other)) {
+
+Description
+Deeply nested logic (> 5 levels).
+
+Location
+src/managers/SettingsManager.ts:98
+
+Rationale
+Deep nesting increases cognitive load.
+
+Code context
+if (key in parsed) {
+
+Description
+Function "createDebrisSystem" is 109 lines long.
+
+Location
+src/debris.ts:230
+
+Rationale
+Long functions are harder to read and maintain.
+
+Code context
+function createDebrisSystem(config: DebrisConfig): DebrisMesh {
+
+HARD
+Description
+The spatial hashing collision detection for labels is complex and critical for mobile views but is untested.
+
+Location
+src/managers/LabelManager.ts:239
+
+Rationale
+Logic is private and coupled to viewport size and camera projection, requiring complex mocking or accessing private members.
+
+Code context
+    /**
+     * Resolves label overlaps using a spatial grid.
+     */
+    private runCollisionDetection(viewportWidth: number, viewportHeight: number): void {
+        // Sort by Z-depth (front-to-back: Painter's algorithm in reverse for labels)
+        this.visibleLabelsList.sort((a, b) => a.z - b.z);
+
+        const cellWidth = this.approxLabelWidth;

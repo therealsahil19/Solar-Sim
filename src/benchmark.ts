@@ -62,51 +62,8 @@ export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
             }
 
             // Calculate stats
-            const sorted = [...frameTimes].sort((a, b) => a - b);
-            const avg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
-
-            const p50Index = Math.floor(sorted.length * 0.50);
-            const p95Index = Math.floor(sorted.length * 0.95);
-            const p99Index = Math.floor(sorted.length * 0.99);
-
-            const p50 = sorted[p50Index] ?? 0;
-            const p95 = sorted[p95Index] ?? 0;
-            const p99 = sorted[p99Index] ?? 0;
-            const max = sorted[sorted.length - 1] ?? 0;
-            const min = sorted[0] ?? 0;
-
-            const stdDev = Math.sqrt(
-                frameTimes.reduce((sum, t) => sum + Math.pow(t - avg, 2), 0) / frameTimes.length
-            );
-
-            console.log('%c⚡ Bolt Benchmark Results', 'color: #ffc107; font-weight: bold; font-size: 14px;');
-            console.log(`   Duration: ${(durationMs / 1000).toFixed(1)}s`);
-            console.log(`   Frames:   ${frameTimes.length}`);
-            console.log(`   Avg FPS:  ${(1000 / avg).toFixed(1)}`);
-            console.log('   ─────────────────────────');
-            console.log(`   Avg Frame:  ${avg.toFixed(2)}ms`);
-            console.log(`   P50 Frame:  ${p50.toFixed(2)}ms`);
-            console.log(`   P95 Frame:  ${p95.toFixed(2)}ms`);
-            console.log(`   P99 Frame:  ${p99.toFixed(2)}ms (GC indicator)`);
-            console.log(`   Max Frame:  ${max.toFixed(2)}ms (worst spike)`);
-            console.log(`   Min Frame:  ${min.toFixed(2)}ms`);
-            console.log(`   Std Dev:    ${stdDev.toFixed(2)}ms`);
-            console.log('   ─────────────────────────');
-
-            // Jank detection (frames >16.67ms for 60fps target)
-            const jankFrames = frameTimes.filter(t => t > 16.67).length;
-            const jankPercent = frameTimes.length > 0 ? (jankFrames / frameTimes.length) * 100 : 0;
-            console.log(`   Jank Frames (>16.67ms): ${jankFrames} (${jankPercent.toFixed(1)}%)`);
-
-            const result: BenchmarkResult = {
-                frames: frameTimes.length,
-                avgFps: 1000 / avg,
-                minFps: 1000 / max,
-                maxFps: 1000 / min,
-                p99: p99,
-                stdDev: stdDev,
-                jankPercent: jankPercent
-            };
+            const result = calculateBenchmarkStats(frameTimes);
+            printBenchmarkStats(result, durationMs);
 
             // Resolve the promise with results
             if (resolvePromise) resolvePromise(result);
@@ -127,3 +84,55 @@ export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
 }
 
 // Consumers can import startBenchmark directly if needed
+
+export function calculateBenchmarkStats(frameTimes: number[]): BenchmarkResult & { p50: number, p95: number, max: number, min: number, avg: number } {
+    const sorted = [...frameTimes].sort((a, b) => a - b);
+    const avg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+
+    const p50 = sorted[Math.floor(sorted.length * 0.50)] ?? 0;
+    const p95 = sorted[Math.floor(sorted.length * 0.95)] ?? 0;
+    const p99 = sorted[Math.floor(sorted.length * 0.99)] ?? 0;
+    const max = sorted[sorted.length - 1] ?? 0;
+    const min = sorted[0] ?? 0;
+
+    const stdDev = Math.sqrt(
+        frameTimes.reduce((sum, t) => sum + Math.pow(t - avg, 2), 0) / frameTimes.length
+    );
+
+    const jankFrames = frameTimes.filter(t => t > 16.67).length;
+    const jankPercent = frameTimes.length > 0 ? (jankFrames / frameTimes.length) * 100 : 0;
+
+    return {
+        frames: frameTimes.length,
+        avgFps: 1000 / avg,
+        minFps: 1000 / max,
+        maxFps: 1000 / min,
+        p99: p99,
+        stdDev: stdDev,
+        jankPercent: jankPercent,
+        p50,
+        p95,
+        max,
+        min,
+        avg
+    };
+}
+
+export function printBenchmarkStats(stats: BenchmarkResult & { p50: number, p95: number, max: number, min: number, avg: number }, durationMs: number): void {
+    console.log('%c⚡ Bolt Benchmark Results', 'color: #ffc107; font-weight: bold; font-size: 14px;');
+    console.log(`   Duration: ${(durationMs / 1000).toFixed(1)}s`);
+    console.log(`   Frames:   ${stats.frames}`);
+    console.log(`   Avg FPS:  ${stats.avgFps.toFixed(1)}`);
+    console.log('   ─────────────────────────');
+    console.log(`   Avg Frame:  ${stats.avg.toFixed(2)}ms`);
+    console.log(`   P50 Frame:  ${stats.p50.toFixed(2)}ms`);
+    console.log(`   P95 Frame:  ${stats.p95.toFixed(2)}ms`);
+    console.log(`   P99 Frame:  ${stats.p99.toFixed(2)}ms (GC indicator)`);
+    console.log(`   Max Frame:  ${stats.max.toFixed(2)}ms (worst spike)`);
+    console.log(`   Min Frame:  ${stats.min.toFixed(2)}ms`);
+    console.log(`   Std Dev:    ${stats.stdDev.toFixed(2)}ms`);
+    console.log('   ─────────────────────────');
+
+    const jankFrames = (stats.jankPercent / 100) * stats.frames;
+    console.log(`   Jank Frames (>16.67ms): ${Math.round(jankFrames)} (${stats.jankPercent.toFixed(1)}%)`);
+}

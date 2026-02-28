@@ -272,27 +272,7 @@ export class LabelManager {
             const startRow = Math.max(0, Math.floor(item.y / cellHeight));
             const endRow = Math.min(this.labelGridRows - 1, Math.floor((item.y + item.height) / cellHeight));
 
-            let isBlocked = false;
-
-            // Check grid cells for existing (higher-priority) labels
-            for (let r = startRow; r <= endRow; r++) {
-                for (let c = startCol; c <= endCol; c++) {
-                    const idx = this.getGridIndex(c, r);
-                    if (idx !== -1) {
-                        const cell = this.labelGrid[idx];
-                        if (cell) {
-                            for (const other of cell) {
-                                if (this.checkOverlap(item, other)) {
-                                    isBlocked = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (isBlocked) break;
-                }
-                if (isBlocked) break;
-            }
+            const isBlocked = this.isLabelBlocked(item, startCol, endCol, startRow, endRow);
 
             if (isBlocked) {
                 // Only update opacity if it changed significantly
@@ -308,16 +288,37 @@ export class LabelManager {
                 }
 
                 // Add to grid cells that this label occupies
-                for (let r = startRow; r <= endRow; r++) {
-                    for (let c = startCol; c <= endCol; c++) {
-                        const idx = this.getGridIndex(c, r);
-                        if (idx !== -1) {
-                            const cell = this.labelGrid[idx];
-                            if (cell) {
-                                cell.push(item);
-                            }
-                        }
+                this.addLabelToGrid(item, startCol, endCol, startRow, endRow);
+            }
+        }
+    }
+
+    private isLabelBlocked(item: LabelCollisionData, startCol: number, endCol: number, startRow: number, endRow: number): boolean {
+        for (let r = startRow; r <= endRow; r++) {
+            for (let c = startCol; c <= endCol; c++) {
+                const idx = this.getGridIndex(c, r);
+                if (idx === -1) continue;
+
+                const cell = this.labelGrid[idx];
+                if (!cell) continue;
+
+                for (const other of cell) {
+                    if (this.checkOverlap(item, other)) {
+                        return true;
                     }
+                }
+            }
+        }
+        return false;
+    }
+
+    private addLabelToGrid(item: LabelCollisionData, startCol: number, endCol: number, startRow: number, endRow: number): void {
+        for (let r = startRow; r <= endRow; r++) {
+            for (let c = startCol; c <= endCol; c++) {
+                const idx = this.getGridIndex(c, r);
+                if (idx !== -1) {
+                    const cell = this.labelGrid[idx];
+                    if (cell) cell.push(item);
                 }
             }
         }

@@ -58,7 +58,10 @@ export function getOrbitalPosition(
     // 1. Calculate Mean Anomaly (M)
     // Kepler's 3rd Law: T^2 = a^3 -> T = a^1.5 (for mass of Sun = 1)
     // Optimization: Use pre-calculated period if available to avoid expensive Math.pow(a, 1.5)
-    const period = orbit.period ?? Math.pow(a, 1.5);
+    if (orbit.period === undefined) {
+        orbit.period = Math.pow(a, 1.5);
+    }
+    const period = orbit.period;
 
     // wrapTime: ensures simulation time stays within one orbital period (0 to T).
     // This prevents precision loss in subsequent calculations that occur when
@@ -103,10 +106,17 @@ export function getOrbitalPosition(
     // Longitude of Ascending Node (Omega) - use value from orbit params
     const Omega = LAN;
 
-    const cosOm = Math.cos(Omega * DEG_TO_RAD);
-    const sinOm = Math.sin(Omega * DEG_TO_RAD);
-    const cosI = Math.cos(i * DEG_TO_RAD);
-    const sinI = Math.sin(i * DEG_TO_RAD);
+    if (orbit._cosOm === undefined) {
+        orbit._cosOm = Math.cos(Omega * DEG_TO_RAD);
+        orbit._sinOm = Math.sin(Omega * DEG_TO_RAD);
+        orbit._cosI = Math.cos(i * DEG_TO_RAD);
+        orbit._sinI = Math.sin(i * DEG_TO_RAD);
+    }
+
+    const cosOm = orbit._cosOm;
+    const sinOm = orbit._sinOm;
+    const cosI = orbit._cosI;
+    const sinI = orbit._sinI;
 
     // Simplified rotation matrix application
     // Argument of Latitude u = omega + nu

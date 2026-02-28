@@ -313,17 +313,20 @@ export class NavigationSidebar implements Disposable {
         items.forEach(li => {
             if (li.dataset.matches === 'true') {
                 li.style.display = '';
-
-                let parent = li.parentElement;
-                while (parent && parent !== this.dom.list) {
-                    if (parent.classList.contains('nav-sublist')) {
-                        (parent as HTMLElement).style.display = '';
-                        const parentLi = parent.parentElement as HTMLElement | null;
-                        if (parentLi) parentLi.style.display = '';
-                    }
-                    parent = parent.parentElement;
-                }
+                this.revealParentPath(li);
             }
         });
+    }
+
+    private revealParentPath(element: HTMLElement): void {
+        let parent = element.parentElement;
+        while (parent && parent !== this.dom.list) {
+            if (parent.classList.contains('nav-sublist')) {
+                (parent as HTMLElement).style.display = '';
+                const parentLi = parent.parentElement as HTMLElement | null;
+                if (parentLi) parentLi.style.display = '';
+            }
+            parent = parent.parentElement;
+        }
     }
 }

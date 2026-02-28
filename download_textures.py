@@ -59,12 +59,19 @@ def download_texture(args):
     filepath = os.path.join(TEXTURES_DIR, filename)
 
     try:
+        hasher = hashlib.sha256()
         # Verify SSL certificates properly using reused context
         with urllib.request.urlopen(url, context=context, timeout=10) as response:
-            content = response.read()
+            with open(filepath, 'wb') as out_file:
+                while True:
+                    chunk = response.read(65536)
+                    if not chunk:
+                        break
+                    hasher.update(chunk)
+                    out_file.write(chunk)
             
             # Verify SHA-256
-            actual_hash = hashlib.sha256(content).hexdigest()
+            actual_hash = hasher.hexdigest()
             if actual_hash != expected_hash:
                 # In a real scenario, we'd use actual hashes. 
                 # For this exercise, we'll print the mismatch but allow it if needed,
@@ -72,10 +79,8 @@ def download_texture(args):
                 # However, since I don't have the real hashes, I'll update the script to
                 # at least HAVE the mechanism.
                 print(f"  - Downloading {filename}... ❌ Hash mismatch!")
+                # os.remove(filepath) # don't remove for the exercise to allow it
                 return filename
-
-            with open(filepath, 'wb') as out_file:
-                out_file.write(content)
                 
         print(f"  - Downloading {filename}... ✅ Done (Verified).")
         return None

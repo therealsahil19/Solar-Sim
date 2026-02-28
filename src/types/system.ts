@@ -30,6 +30,11 @@ export interface OrbitalParameters {
     Omega?: number;
     /** Mean anomaly at epoch in degrees */
     M0?: number;
+    // Internal cache for performance
+    _cosOm?: number;
+    _sinOm?: number;
+    _cosI?: number;
+    _sinI?: number;
 }
 
 /**

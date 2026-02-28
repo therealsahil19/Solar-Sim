@@ -74,4 +74,26 @@ describe('InstanceRegistry', () => {
         expect(position.y).toBeCloseTo(20);
         expect(position.z).toBeCloseTo(30);
     });
+
+    it('should clean up resources on dispose', () => {
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial();
+        const pivot = new THREE.Object3D();
+        const userData = { name: 'Target' } as SolarSimUserData;
+
+        registry.addInstance(pivot, geometry, material, userData);
+        registry.build();
+
+        const disposeSpyGeom = vi.spyOn(geometry, 'dispose');
+        const disposeSpyMat = vi.spyOn(material, 'dispose');
+
+        expect(scene.children.length).toBe(1);
+
+        registry.dispose();
+
+        expect(scene.children.length).toBe(0);
+        expect(disposeSpyGeom).toHaveBeenCalled();
+        expect(disposeSpyMat).toHaveBeenCalled();
+        expect(pivot.userData.isInstance).toBeUndefined();
+    });
 });

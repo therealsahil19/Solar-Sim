@@ -145,15 +145,20 @@ export class SettingsPanel implements Disposable {
         this._abortController = new AbortController();
         const signal = this._abortController.signal;
 
-        // Panel open/close
+        this.bindPanelEvents(signal);
+        this.bindKeyboardEvents(signal);
+        this.bindToggleEvents(signal);
+        this.bindThemeEvents(signal);
+        this.bindSpeedEvents(signal);
+    }
+
+    private bindPanelEvents(signal: AbortSignal): void {
         if (this.dom.btnOpen) {
             this.dom.btnOpen.addEventListener('click', () => this.toggle(), { signal });
         }
         if (this.dom.btnClose) {
             this.dom.btnClose.addEventListener('click', () => this.close(), { signal });
         }
-
-        // Close on click outside
         if (this.dom.panel) {
             this.dom.panel.addEventListener('click', (e) => {
                 if (e.target === this.dom.panel) {
@@ -161,8 +166,9 @@ export class SettingsPanel implements Disposable {
                 }
             }, { signal });
         }
+    }
 
-        // Keyboard shortcuts
+    private bindKeyboardEvents(signal: AbortSignal): void {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this._isOpen) {
                 e.preventDefault();
@@ -176,68 +182,43 @@ export class SettingsPanel implements Disposable {
                 }
             }
         }, { signal });
+    }
 
-        // Toggle: Textures
-        if (this.dom.toggleTextures) {
-            this.dom.toggleTextures.addEventListener('change', (e) => {
-                const target = e.target as HTMLInputElement;
-                const value = target.checked;
-                this.settingsManager.set('textures', value);
-                this.callbacks.onToggleTextures?.(value);
-            }, { signal });
-        }
+    private bindToggleEvents(signal: AbortSignal): void {
+        const toggleConfig = [
+            { el: this.dom.toggleTextures, key: 'textures', cb: this.callbacks.onToggleTextures },
+            { el: this.dom.toggleLabels, key: 'labels', cb: this.callbacks.onToggleLabels },
+            { el: this.dom.toggleOrbits, key: 'orbits', cb: this.callbacks.onToggleOrbits }
+        ];
 
-        // Toggle: Labels
-        if (this.dom.toggleLabels) {
-            this.dom.toggleLabels.addEventListener('change', (e) => {
-                const target = e.target as HTMLInputElement;
-                const value = target.checked;
-                this.settingsManager.set('labels', value);
-                this.callbacks.onToggleLabels?.(value);
-            }, { signal });
-        }
+        toggleConfig.forEach(({ el, key, cb }) => {
+            if (el) {
+                el.addEventListener('change', (e) => {
+                    const value = (e.target as HTMLInputElement).checked;
+                    this.settingsManager.set(key as keyof Settings, value);
+                    cb?.(value);
+                }, { signal });
+            }
+        });
 
-        // Toggle: Orbits
-        if (this.dom.toggleOrbits) {
-            this.dom.toggleOrbits.addEventListener('change', (e) => {
-                const target = e.target as HTMLInputElement;
-                const value = target.checked;
-                this.settingsManager.set('orbits', value);
-                this.callbacks.onToggleOrbits?.(value);
-            }, { signal });
-        }
+        const beltConfig = [
+            { el: this.dom.toggleAsteroidBelt, key: 'asteroidBelt', type: 'asteroid_belt' },
+            { el: this.dom.toggleKuiperBelt, key: 'kuiperBelt', type: 'kuiper_belt' },
+            { el: this.dom.toggleOortCloud, key: 'oortCloud', type: 'oort_cloud' }
+        ];
 
-        // Toggle: Asteroid Belt
-        if (this.dom.toggleAsteroidBelt) {
-            this.dom.toggleAsteroidBelt.addEventListener('change', (e) => {
-                const target = e.target as HTMLInputElement;
-                const value = target.checked;
-                this.settingsManager.set('asteroidBelt', value);
-                this.callbacks.onToggleBelt?.('asteroid_belt', value);
-            }, { signal });
-        }
+        beltConfig.forEach(({ el, key, type }) => {
+            if (el) {
+                el.addEventListener('change', (e) => {
+                    const value = (e.target as HTMLInputElement).checked;
+                    this.settingsManager.set(key as keyof Settings, value);
+                    this.callbacks.onToggleBelt?.(type, value);
+                }, { signal });
+            }
+        });
+    }
 
-        // Toggle: Kuiper Belt
-        if (this.dom.toggleKuiperBelt) {
-            this.dom.toggleKuiperBelt.addEventListener('change', (e) => {
-                const target = e.target as HTMLInputElement;
-                const value = target.checked;
-                this.settingsManager.set('kuiperBelt', value);
-                this.callbacks.onToggleBelt?.('kuiper_belt', value);
-            }, { signal });
-        }
-
-        // Toggle: Oort Cloud
-        if (this.dom.toggleOortCloud) {
-            this.dom.toggleOortCloud.addEventListener('change', (e) => {
-                const target = e.target as HTMLInputElement;
-                const value = target.checked;
-                this.settingsManager.set('oortCloud', value);
-                this.callbacks.onToggleBelt?.('oort_cloud', value);
-            }, { signal });
-        }
-
-        // Theme buttons
+    private bindThemeEvents(signal: AbortSignal): void {
         this.dom.themeButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 const theme = btn.dataset.theme as ThemeName;
@@ -246,8 +227,9 @@ export class SettingsPanel implements Disposable {
                 this.callbacks.onChangeTheme?.(theme);
             }, { signal });
         });
+    }
 
-        // Speed slider
+    private bindSpeedEvents(signal: AbortSignal): void {
         if (this.dom.sliderSpeed) {
             this.dom.sliderSpeed.addEventListener('input', (e) => {
                 const target = e.target as HTMLInputElement;

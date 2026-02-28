@@ -92,22 +92,26 @@ export class SettingsManager {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
                 const parsed = JSON.parse(stored) as Record<string, unknown>;
-                // Validation: Only merge known keys with correct types
-                const validated: Record<string, unknown> = {};
-                for (const key of Object.keys(DEFAULT_SETTINGS) as SettingKey[]) {
-                    if (key in parsed) {
-                        const expectedType = typeof DEFAULT_SETTINGS[key];
-                        if (typeof parsed[key] === expectedType) {
-                            validated[key] = parsed[key];
-                        }
-                    }
-                }
-                this.settings = { ...DEFAULT_SETTINGS, ...(validated as Partial<Settings>) };
+                const validated = this.validateSettings(parsed);
+                this.settings = { ...DEFAULT_SETTINGS, ...validated };
             }
         } catch (e) {
             console.warn('SettingsManager: Unable to load preferences.', e);
             this.settings = { ...DEFAULT_SETTINGS };
         }
+    }
+
+    /**
+     * Validates parsed settings against the default schema types.
+     */
+    private validateSettings(parsed: Record<string, unknown>): Partial<Settings> {
+        const validated: Record<string, unknown> = {};
+        for (const key of Object.keys(DEFAULT_SETTINGS) as SettingKey[]) {
+            if (key in parsed && typeof parsed[key] === typeof DEFAULT_SETTINGS[key]) {
+                validated[key] = parsed[key];
+            }
+        }
+        return validated as Partial<Settings>;
     }
 
     /**

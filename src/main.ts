@@ -310,6 +310,26 @@ export async function init(): Promise<void> {
         throw error;
     }
 
+    setupInteractionsAndUI(planetData);
+
+    if (textureLoader.lazyLoadQueue && textureLoader.lazyLoadQueue.length > 0) {
+        setTimeout(() => {
+            if (initFailed || !textureLoader.lazyLoadQueue) return;
+            textureLoader.lazyLoadQueue.forEach(item => {
+                const tex = textureLoader.load(item.url);
+                item.material.map = tex;
+                item.material.color.setHex(0xffffff);
+                item.material.needsUpdate = true;
+            });
+            textureLoader.lazyLoadQueue = [];
+        }, LAZY_LOAD_DELAY);
+    }
+
+    window.addEventListener('resize', onWindowResize);
+    lastFrameTime = performance.now();
+}
+
+function setupInteractionsAndUI(planetData: CelestialBody[] | undefined) {
     controls = setupControls(camera, renderer!.domElement);
     window.controls = controls;
 
@@ -318,7 +338,7 @@ export async function init(): Promise<void> {
         rendererDomElement: renderer!.domElement,
         interactionTargets,
         instanceRegistry: instanceRegistry!,
-        planetData: planetData ?? undefined
+        ...(planetData ? { planetData } : {})
     };
 
     const callbacks = {
@@ -354,22 +374,6 @@ export async function init(): Promise<void> {
         toggleBelt('kuiper_belt', savedSettings.kuiperBelt !== false);
         toggleBelt('oort_cloud', savedSettings.oortCloud !== false);
     }
-
-    if (textureLoader.lazyLoadQueue && textureLoader.lazyLoadQueue.length > 0) {
-        setTimeout(() => {
-            if (initFailed || !textureLoader.lazyLoadQueue) return;
-            textureLoader.lazyLoadQueue.forEach(item => {
-                const tex = textureLoader.load(item.url);
-                item.material.map = tex;
-                item.material.color.setHex(0xffffff);
-                item.material.needsUpdate = true;
-            });
-            textureLoader.lazyLoadQueue = [];
-        }, LAZY_LOAD_DELAY);
-    }
-
-    window.addEventListener('resize', onWindowResize);
-    lastFrameTime = performance.now();
 }
 
 // ============================================================================

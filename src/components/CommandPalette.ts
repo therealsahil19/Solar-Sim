@@ -14,6 +14,8 @@ interface PaletteItem {
     type: string;
     category: string;
     handler: () => void;
+    searchName: string;
+    searchType: string;
 }
 
 /**
@@ -58,7 +60,11 @@ export class CommandPalette implements Disposable {
         this.items = [
             ...this.flattenData(planetData),
             ...this.getStaticCommands()
-        ];
+        ].map(item => ({
+            ...item,
+            searchName: item.name.toLowerCase(),
+            searchType: item.type.toLowerCase()
+        }));
 
         this.initDOM();
         this.bindEvents();
@@ -80,7 +86,14 @@ export class CommandPalette implements Disposable {
                             node.type === 'star' ? 'Star' :
                                 node.type === 'dwarf_planet' ? 'Dwarf Planet' : node.type,
                     category: 'Navigation',
-                    handler: () => this.callbacks.onSelectByName(node.name)
+                    handler: () => this.callbacks.onSelectByName(node.name),
+                    searchName: node.name.toLowerCase(),
+                    searchType: (
+                        node.type === 'planet' ? 'Planet' :
+                            node.type === 'moon' ? 'Moon' :
+                                node.type === 'star' ? 'Star' :
+                                    node.type === 'dwarf_planet' ? 'Dwarf Planet' : node.type
+                    ).toLowerCase()
                 });
                 if (node.moons) traverse(node.moons);
             });
@@ -90,7 +103,8 @@ export class CommandPalette implements Disposable {
         if (!data.find(n => n.name === 'Sun')) {
             items.push({
                 name: 'Sun', type: 'Star', category: 'Navigation',
-                handler: () => this.callbacks.onSelectByName('Sun')
+                handler: () => this.callbacks.onSelectByName('Sun'),
+                searchName: 'sun', searchType: 'star'
             });
         }
         traverse(data);
@@ -102,14 +116,14 @@ export class CommandPalette implements Disposable {
      */
     private getStaticCommands(): PaletteItem[] {
         return [
-            { name: 'Switch Theme', type: 'Command', category: 'Appearance', handler: () => this.callbacks.onToggleTheme() },
-            { name: 'Toggle Orbits', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleOrbits() },
-            { name: 'Toggle Labels', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleLabels() },
-            { name: 'Toggle Textures (HD/LD)', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleTexture(null) },
-            { name: 'Toggle Camera Mode', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleCamera() },
-            { name: 'Reset View', type: 'Command', category: 'Actions', handler: () => this.callbacks.onResetCamera() },
-            { name: 'Pause / Resume', type: 'Command', category: 'Actions', handler: () => this.callbacks.onTogglePause(null) },
-            { name: 'Help / Controls', type: 'Command', category: 'Actions', handler: () => this.callbacks.openModal() },
+            { name: 'Switch Theme', type: 'Command', category: 'Appearance', handler: () => this.callbacks.onToggleTheme(), searchName: '', searchType: '' },
+            { name: 'Toggle Orbits', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleOrbits(), searchName: '', searchType: '' },
+            { name: 'Toggle Labels', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleLabels(), searchName: '', searchType: '' },
+            { name: 'Toggle Textures (HD/LD)', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleTexture(null), searchName: '', searchType: '' },
+            { name: 'Toggle Camera Mode', type: 'Command', category: 'Actions', handler: () => this.callbacks.onToggleCamera(), searchName: '', searchType: '' },
+            { name: 'Reset View', type: 'Command', category: 'Actions', handler: () => this.callbacks.onResetCamera(), searchName: '', searchType: '' },
+            { name: 'Pause / Resume', type: 'Command', category: 'Actions', handler: () => this.callbacks.onTogglePause(null), searchName: '', searchType: '' },
+            { name: 'Help / Controls', type: 'Command', category: 'Actions', handler: () => this.callbacks.openModal(), searchName: '', searchType: '' },
         ];
     }
 
@@ -283,15 +297,15 @@ export class CommandPalette implements Disposable {
             this.filteredItems = this.items;
         } else {
             this.filteredItems = this.items.filter(item =>
-                (item.name?.toLowerCase() ?? '').includes(q) ||
-                (item.type?.toLowerCase() ?? '').includes(q)
+                item.searchName.includes(q) ||
+                item.searchType.includes(q)
             );
         }
 
         // Sort: Exact matches first
         this.filteredItems.sort((a, b) => {
-            const aName = (a.name ?? '').toLowerCase();
-            const bName = (b.name ?? '').toLowerCase();
+            const aName = a.searchName;
+            const bName = b.searchName;
             const aStarts = aName.startsWith(q);
             const bStarts = bName.startsWith(q);
             if (aStarts && !bStarts) return -1;

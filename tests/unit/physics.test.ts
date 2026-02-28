@@ -150,6 +150,38 @@ describe('Physics Module', () => {
             expect(pos.x).toBeCloseTo(expectedX, 5);
             expect(pos.z).toBeCloseTo(expectedZ, 5);
         });
+
+        it('should maintain Kepler equation accuracy for highly eccentric orbits (e > 0.9)', () => {
+            const orbit = {
+                a: 1.0,
+                e: 0.95, // Highly eccentric
+                i: 0,
+                period: 1.0,
+                M0: 0
+            };
+
+            // Test around perihelion and aphelion, plus some intermediate points
+            const times = [0, 0.25, 0.5, 0.75, 1.0];
+
+            times.forEach(t => {
+                const pos = getOrbitalPosition(orbit, t);
+                const r = pos.length();
+
+                // For e=0.95, a=1.0:
+                // At perihelion (t=0, 1), r = a(1-e) = 0.05
+                // At aphelion (t=0.5), r = a(1+e) = 1.95
+                if (t === 0 || t === 1.0) {
+                    expect(r).toBeCloseTo(0.05, 2);
+                } else if (t === 0.5) {
+                    expect(r).toBeCloseTo(1.95, 2);
+                }
+
+                // Position should be finite and valid
+                expect(isFinite(pos.x)).toBe(true);
+                expect(isFinite(pos.y)).toBe(true);
+                expect(isFinite(pos.z)).toBe(true);
+            });
+        });
     });
 
     describe('physicsToRender', () => {
@@ -254,7 +286,7 @@ describe('Physics Module', () => {
             // Re-calculate the internal VISUAL_LIMIT_1 and VISUAL_LIMIT_2
             const vLimit1 = SCALE_CONFIG.LIMIT_LINEAR * SCALE_CONFIG.AU_SCALE;
             const vOffsetK = Math.log(1 + (SCALE_CONFIG.LIMIT_KUIPER - SCALE_CONFIG.LIMIT_LINEAR)) *
-                             SCALE_CONFIG.AU_SCALE * SCALE_CONFIG.LOG_FACTOR_KUIPER;
+                SCALE_CONFIG.AU_SCALE * SCALE_CONFIG.LOG_FACTOR_KUIPER;
             const vLimit2 = vLimit1 + vOffsetK;
 
             // Check precisely at boundaries
