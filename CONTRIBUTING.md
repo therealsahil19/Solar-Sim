@@ -74,11 +74,11 @@ The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D 
 
 | Component | Responsibility | Communication |
 | :--- | :--- | :--- |
-| **NavigationSidebar** | Renders the recursive planet tree. | Calls `onSelect(name)` when a planet is clicked. |
+| **NavigationSidebar** | Renders the recursive planet tree. | Implements `NavigationSidebarCallbacks` interface; calls `onSelect(name)` when clicked. |
 | **InfoPanel** | Displays details of the selected object. | Updates via `update(mesh)` method. No internal state. |
 | **CommandPalette** | "Cmd+K" power menu. | Executes callbacks for global actions (e.g., `onToggleOrbits`). |
 | **Modal** | Accessible `<dialog>` wrapper. | Manages focus trapping and lifecycle (`open`/`close`). |
-| **SettingsPanel** | Slide-out preferences menu. | Subscribes to `SettingsManager` and triggers callbacks. |
+| **SettingsPanel** | Slide-out preferences menu. | Subscribes to `SettingsManager` state changes and triggers updates via callbacks. |
 | **ToastManager** | Notification system. | Singleton that provides `show(msg, options)` for feedback. |
 | **LabelManager** | Manages 2D labels. | Uses grid collision for visibility; decoupled from Scene. |
 | **SceneManager** | Wraps Three.js boilerplates. | Exposes Scene, Camera, and Renderer. |
@@ -219,6 +219,7 @@ Tests are organized by type:
 
 ### 3. Running Tests
 - **E2E**: `npm run test` (runs all Playwright tests).
+  - *Note: Playwright E2E tests are prone to timeout or connection errors (`ERR_CONNECTION_REFUSED`) under high concurrency due to sandbox resource limits. It is recommended to manually start the Vite dev server (`npm run dev`) and limit concurrency (e.g., `npx playwright test --workers=2`) during execution.*
 - **Headed**: `npm run test:headed` (runs tests in a visible browser).
 - **Unit**: `npm run test:unit` (runs Vitest).
 - **Debug**: `npm run test:ui` (opens Playwright UI).

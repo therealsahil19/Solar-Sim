@@ -13,14 +13,18 @@ This document defines the domain-specific terminology, architectural patterns, a
 *   **Data Textures:** Storing orbit history in GPU textures to render thousands of trail points with 0 CPU geometry overhead.
 *   **Pre/Post-Render Split:** separating physics updates from trail rendering to prevent CPU stalls.
 *   **Chunked Initialization:** Processing heavy scene graph generation asynchronously using `requestAnimationFrame`, preventing main-thread locks and enabling immediate skeleton UI.
+*   **Caching:** Using `WeakMap` for per-frame orbital position caches and pre-calculating orbital parameters (e.g., `period`, `semiMinorAxis`).
+*   **Matrix Bypassing:** Skipping expensive `setFromMatrixPosition` calls by directly accessing matrix elements (`elements[12]`, etc.).
+*   **Object Pooling:** Reusing objects (like `THREE.Vector2` in `TrailManager`) to minimize garbage collection pauses.
 
 ### Sentinel 🛡️
 **Definition:** The project's security framework.
 **Context:** Focuses on preventing XSS and enforcing Content Security Policy (CSP).
 **Examples:**
-*   **CSP:** Strict `meta` tags in `index.html`.
+*   **CSP:** Strict `meta` tags in `index.html` (e.g., `object-src 'none'`, `base-uri 'self'`, `upgrade-insecure-requests`).
 *   **SRI:** Integrity hashes on external scripts.
 *   **Safe DOM:** Using `textContent` instead of `innerHTML` for user data.
+*   **Configuration Validation:** Validating configuration URLs to ensure they are same-origin, use HTTP/HTTPS, end in `.json`, and contain no path traversal sequences.
 
 ### Scribe ✍️
 **Definition:** The documentation standard and persona.

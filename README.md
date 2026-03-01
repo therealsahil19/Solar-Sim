@@ -60,7 +60,7 @@ This project implements several optimization strategies (internally referred to 
 5.  **GPU Animation & Instancing**:
     -   **InstancedMesh (`InstanceRegistry`)**: Manages thousands of instances (like moons or asteroids) with O(1) draw calls per geometry.
     -   **Debris Systems**: Asteroid Belt, Kuiper Belt, and Oort Cloud use `THREE.InstancedMesh` with custom Vertex Shaders to animate Keplerian orbits entirely on the GPU.
-    -   **Trails (`TrailManager`)**: Renders thousands of orbit trails using a single `THREE.LineSegments` geometry, massively reducing draw calls.
+    -   **Trails (`TrailManager`)**: Renders thousands of orbit trails using a single `THREE.LineSegments` geometry, massively reducing draw calls. Object pooling for `THREE.Vector2` is used here to minimize garbage collection.
 
 6.  **Benchmarking**:
     -   **Bolt Benchmark (`benchmark.ts`)**: A performance suite that measures frame timing statistics, P95/P99 latency, and jank percentage. Exposed globally to `window.boltBenchmark` for ease of use via the browser console.
@@ -69,7 +69,7 @@ This project implements several optimization strategies (internally referred to 
     -   **LabelManager**: Uses a spatial grid to efficiently manage 2D label collisions and occlusion, ensuring readable text without overlapping.
 
 8.  **Scene Management**:
-    -   **SceneManager**: Explicitly disables `matrixWorldAutoUpdate` to prevent redundant world matrix calculations by the renderer.
+    -   **SceneManager**: Explicitly disables `scene.matrixWorldAutoUpdate = false` to prevent redundant world matrix calculations by the renderer. Position extraction skips `setFromMatrixPosition` for direct matrix element access (`elements[12]`, `elements[13]`, `elements[14]`).
 
 9.  **Lazy Loading**:
     -   **Texture Loading**: Textures are lazily loaded after the initial scene render to reduce time-to-interactive.
@@ -77,12 +77,17 @@ This project implements several optimization strategies (internally referred to 
 10. **Chunked Initialization**:
     -   System data parsing and scene graph generation are split into asynchronous chunks (`requestAnimationFrame`), yielding to the main thread. This allows the Skeleton UI to render immediately and prevents browser freezing.
 
+11. **Orbital Caching**:
+    -   **Orbital Parameters Cache**: Orbital `period` and `semiMinorAxis` are cached to prevent repeated recalculations.
+    -   **Position WeakMap Cache**: `getCachedOrbitalPosition` uses a `WeakMap` (`orbitalPositionCache`) to reuse calculated orbital positions within the same frame.
+
 ## Security ("Sentinel")
 
 The application enforces strict security measures:
 
--   **Content Security Policy (CSP)**: A strict CSP in `index.html` restricts script sources to `self` and trusted CDNs (unpkg), blocking inline scripts and unauthorized connections.
+-   **Content Security Policy (CSP)**: A strict CSP in `index.html` restricts script sources to `self` and trusted CDNs (unpkg), blocking inline scripts and unauthorized connections. It includes `object-src 'none'`, `base-uri 'self'`, `upgrade-insecure-requests`, `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Permissions-Policy`, and `Strict-Transport-Security`.
 -   **Subresource Integrity (SRI)**: All external Three.js scripts loaded from CDNs use `integrity` hashes to ensure the code hasn't been tampered with.
+-   **Configuration Validation**: Configuration parameters undergo rigorous security validation; ensuring same-origin URLs, no path traversal sequences (`..`), and enforcing the `.json` extension (preventing exposure of `package.json`, etc).
 
 ## Project Structure
 
@@ -122,14 +127,16 @@ The project is organized into a modular architecture:
 │   ├── types/
 │   │   ├── index.ts             # Shared type definitions
 │   │   ├── system.ts            # System configuration types
+│   │   ├── glsl.d.ts            # TypeScript support for raw GLSL imports
 │   │   └── three-extensions.d.ts # Three.js augmentation types
 │   ├── utils/
-│   │   ├── SkeletonUtils.ts     # Skeleton loading UI helper
+│   │   ├── SkeletonUtils.ts     # Skeleton loading UI helper, utilizes DocumentFragment
 │   │   └── ThreeUtils.ts        # Three.js helper functions
 ├── tests/
 │   ├── e2e/              # Playwright E2E tests (*.spec.js, *.spec.ts)
 │   └── unit/             # Vitest unit tests (*.test.ts)
-└── README.md             # This documentation
+├── README.md             # This documentation
+└── tests.md              # Test execution status and performance tracker
 ```
 
 ### Architecture
@@ -265,12 +272,12 @@ For asteroid belts and other debris fields, the configuration uses a `distributi
 | `distribution.minA/maxA` | Number | Range for Semi-major axis (AU). |
 | `distribution.minE/maxE` | Number | Range for Eccentricity. |
 | `distribution.minI/maxI` | Number | Range for Inclination (degrees). |
-| `distribution.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
 | `visual` | Object | **Visual properties**: |
 | `visual.count` | Number | Number of particles to generate. |
 | `visual.color` | String | Hex color of the particles. |
 | `visual.size` | Number | Size of each particle. |
 | `visual.opacity` | Number | Opacity (0.0 - 1.0). |
+| `visual.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
 
 ## Running the Project
 
@@ -309,12 +316,18 @@ The output will be in the `dist/` directory.
 The project uses **Playwright** for E2E testing and **Vitest** for unit testing.
 
 ### 1. End-to-End Tests (Playwright)
+
+> **Note**: Playwright E2E tests are prone to timeout or connection errors (`ERR_CONNECTION_REFUSED`) under high concurrency. It is highly recommended to manually start the Vite dev server (`npm run dev`) and limit concurrency (e.g., `npx playwright test --workers=2`) during execution.
+
 ```bash
 # Install browsers first
 npx playwright install
 
-# Run all E2E tests
-npm run test
+# Start Vite dev server in the background
+npm run dev &
+
+# Run all E2E tests with limited workers
+npx playwright test --workers=2
 
 # Run tests with UI for debugging
 npm run test:ui
