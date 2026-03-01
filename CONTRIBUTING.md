@@ -56,7 +56,8 @@ We follow a modular architecture using TypeScript and Vite.
 - **`src/managers/`**: State managers (e.g., `ThemeManager.ts`, `ToastManager.ts`).
 - **`src/types/`**: Shared type definitions and system configuration.
 - **`src/utils/`**: Helper functions and utilities.
-- **`src/benchmark.ts`**: Performance benchmarking utility.
+- **`src/benchmark.ts`**: Performance benchmarking utility (exposed to `window.boltBenchmark`).
+- **`src/shaders/`**: Contains raw GLSL shader files imported via Vite's `?raw`.
 - **`tests/`**: Contains E2E tests (`e2e/`) and Unit tests (`unit/`).
 - **`system.json`**: The data source for the solar system hierarchy.
 
@@ -200,6 +201,8 @@ Tests are organized by type:
   - `navigation-sidebar.spec.js`: Tests for the planet tree and search.
   - `settings-panel.spec.js`: Tests for toggles, themes, and persistence.
   - `keyboard-shortcuts.spec.js`: Verifies all global hotkeys.
+  - `command-palette.spec.ts`: Tests for power-user interface.
+  - `performance.spec.js`: Tests for frame rates and performance thresholds.
 - **Unit Tests (`tests/unit/`)**: Vitest tests for individual functions and classes.
   - `physics.test.ts`: Verifies orbital calculations and scaling logic.
   - `ToastManager.test.ts`: Tests notification state management.

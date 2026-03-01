@@ -63,7 +63,7 @@ This project implements several optimization strategies (internally referred to 
     -   **Trails (`TrailManager`)**: Renders thousands of orbit trails using a single `THREE.LineSegments` geometry, massively reducing draw calls.
 
 6.  **Benchmarking**:
-    -   **Bolt Benchmark (`benchmark.ts`)**: A performance suite that measures frame timing statistics, P95/P99 latency, and jank percentage. Designed for modular import to avoid global scope pollution.
+    -   **Bolt Benchmark (`benchmark.ts`)**: A performance suite that measures frame timing statistics, P95/P99 latency, and jank percentage. Exposed globally to `window.boltBenchmark` for ease of use via the browser console.
 
 7.  **Spatial Grid**:
     -   **LabelManager**: Uses a spatial grid to efficiently manage 2D label collisions and occlusion, ensuring readable text without overlapping.
@@ -103,7 +103,8 @@ The project is organized into a modular architecture:
 │   ├── debris.ts         # "Generator" - creates GPU-accelerated debris fields
 │   ├── instancing.ts     # "Optimizer" - manages InstancedMesh groups
 │   ├── trails.ts         # "Optimizer" - manages unified orbit trail geometry
-│   ├── shaders.ts        # "Graphics" - GLSL shader strings for trails
+│   ├── shaders/          # "Graphics" - GLSL source files (trail.vert.glsl, etc)
+│   ├── shaders.ts        # "Graphics" - GLSL shader exports
 │   ├── benchmark.ts      # "Bolt" - performance benchmarking tool
 │   ├── style.css         # Design System tokens and styles
 │   ├── components/
@@ -199,8 +200,8 @@ The simulation is built on a decoupled, event-driven architecture designed for h
     -   **Feedback**: Decoupled from core logic, triggered by UI events or status changes.
 
 13. **`src/benchmark.ts`**:
-    -   **Tooling**: Provides the `startBenchmark` function for performance auditing (must be explicitly imported).
-    -   **Metrics**: Calculates average FPS, jank percentage, and P99 frame times.
+    -   **Tooling**: Provides the `startBenchmark` function for performance auditing. It is also exposed globally to `window.boltBenchmark` for easy console access.
+    -   **Metrics**: Calculates average FPS, jank percentage, and P95/P99 frame times.
 
 ## Configuration (`system.json`)
 
