@@ -113,10 +113,10 @@ export function getOrbitalPosition(
         orbit._sinI = Math.sin(i * DEG_TO_RAD);
     }
 
-    const cosOm = orbit._cosOm;
-    const sinOm = orbit._sinOm;
-    const cosI = orbit._cosI;
-    const sinI = orbit._sinI;
+    const cosOm = orbit._cosOm!;
+    const sinOm = orbit._sinOm!;
+    const cosI = orbit._cosI!;
+    const sinI = orbit._sinI!;
 
     // Simplified rotation matrix application
     // Argument of Latitude u = omega + nu

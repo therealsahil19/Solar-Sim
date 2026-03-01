@@ -106,6 +106,7 @@ export class NavigationSidebar implements Disposable {
         }
         this.renderTree();
         this.bindEvents();
+        window.addEventListener('keydown', this.handleKeyDown, true); // use capture phase
     }
 
     /**
@@ -239,6 +240,7 @@ export class NavigationSidebar implements Disposable {
         if (this.dom.search && this._handleSearchInput) {
             this.dom.search.removeEventListener('input', this._handleSearchInput);
         }
+        window.removeEventListener('keydown', this.handleKeyDown, true);
     }
 
     /**
@@ -284,6 +286,17 @@ export class NavigationSidebar implements Disposable {
     isOpen(): boolean {
         return this._isOpen;
     }
+
+    /**
+     * Handles keyboard events for the sidebar.
+     */
+    private handleKeyDown = (e: KeyboardEvent): void => {
+        if (this._isOpen && e.key === 'Escape') {
+            this.close();
+            // Prevent other escape handlers if the sidebar was open and we handled it
+            e.stopPropagation();
+        }
+    };
 
     /**
      * Filters the navigation tree based on a search term.

@@ -97,6 +97,12 @@ export class Modal implements Disposable {
 
         if (!this.element.open) {
             this.element.showModal();
+            // Ensure focus is shifted into the modal by making the modal or its content focusable
+            const content = this.element.querySelector('.modal-content') as HTMLElement;
+            if (content) {
+                content.tabIndex = -1;
+                content.focus();
+            }
             if (this.options.onOpen) this.options.onOpen();
             document.documentElement.classList.add('modal-open');
         }

@@ -13,12 +13,7 @@
 
 import type { BenchmarkResult } from './types';
 
-// Extend Window interface for global benchmark access
-declare global {
-    interface Window {
-        boltBenchmark: typeof startBenchmark;
-    }
-}
+// Extend Window interface for global benchmark access handled in types/index.ts
 
 /**
  * Result of starting a benchmark.
@@ -81,6 +76,11 @@ export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
             if (resolvePromise) resolvePromise(null);
         }
     };
+}
+
+// Expose to window for tests/console immediately
+if (typeof window !== 'undefined') {
+    window.boltBenchmark = startBenchmark;
 }
 
 // Consumers can import startBenchmark directly if needed

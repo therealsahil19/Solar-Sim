@@ -133,6 +133,24 @@ export interface UserSettings {
     };
 }
 
+declare global {
+    interface Window {
+        trailManager: any; // Using any for simplicity in global scope for tests
+        boltBenchmark?: {
+            (durationMs?: number): {
+                promise: Promise<BenchmarkResult | null>,
+                cancel: () => void
+            }
+        };
+        isPaused?: boolean;
+        playerShip?: import('three').Group | null;
+        controls?: import('three/addons/controls/OrbitControls.js').OrbitControls | null;
+        __SKIP_INIT__?: boolean;
+        scene?: import('three').Scene;
+        THREE?: any;
+    }
+}
+
 /**
  * Available theme names.
  */

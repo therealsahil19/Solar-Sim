@@ -35,19 +35,6 @@ import './benchmark'; // Auto-load performance benchmark
 // Window Extensions
 // ============================================================================
 
-declare global {
-    interface Window {
-        playerShip: THREE.Group | null;
-        controls: OrbitControls | null;
-        isPaused: boolean;
-        __SKIP_INIT__?: boolean;
-        trailManager: TrailManager | null;
-        THREE: typeof THREE;
-    }
-}
-
-
-
 // ============================================================================
 // State & Globals
 // ============================================================================
@@ -177,6 +164,8 @@ function initManagers(manager: THREE.LoadingManager): ExtendedTextureLoader {
     instanceRegistry = new InstanceRegistry(scene);
     trailManager = new TrailManager(scene, MAX_TRAILS, TRAIL_POINTS);
     window.trailManager = trailManager;
+    window.scene = scene;
+    window.THREE = THREE;
 
     textureLoader.instanceRegistry = instanceRegistry;
     textureLoader.trailManager = trailManager;
@@ -496,6 +485,7 @@ function togglePause(btnElement: HTMLElement | null): void {
             btnElement.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
             btnElement.setAttribute('aria-label', "Resume Simulation");
         } else {
+            btnElement.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
             btnElement.setAttribute('aria-label', "Pause Simulation");
         }
     }

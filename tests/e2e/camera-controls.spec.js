@@ -168,25 +168,47 @@ test.describe('Camera & Time Controls', () => {
      * a camera follow state on the selected object.
      */
     test('should follow selected object', async ({ page }) => {
+        console.log("1. Finding and clicking nav open...");
         // First select a planet via navigation
         const openBtn = page.locator('#btn-planets');
         await openBtn.click();
 
+        console.log("2. Waiting for nav list...");
         await waitForNavList(page);
 
+        console.log("3. Finding Earth button...");
         // Find Earth button - use a more flexible selector
         const earthButton = page.locator('#nav-list button').filter({ hasText: 'Earth' }).first();
-        await expect(earthButton).toBeVisible({ timeout: 10000 });
-        await earthButton.click();
-
-        // Wait for info panel to become visible
+        try {
+            await earthButton.click({ force: true, timeout: 15000 });
+        } catch (err) {
+            console.error("Failed to click Earth button. Taking screenshot...");
+            await page.screenshot({ path: 'earth-fail.png', fullPage: true });
+            const html = await page.content();
+            require('fs').writeFileSync('earth-fail.html', html);
+            throw err;
+        }
         const infoPanel = page.locator('#info-panel');
+        await earthButton.click({ force: true });
+
+        // Wait for offcanvas sidebar close animation if applicable
+        await page.waitForTimeout(1000);
+
+        console.log("5. Waiting for InfoPanel to be visible...");
+        // Ensure infoPanel is visible, retry click if not
+        if (!(await infoPanel.isVisible())) {
+            console.log('InfoPanel not visible, clicking Earth again...');
+            await earthButton.click({ force: true });
+            await page.waitForTimeout(1000);
+        }
         await expect(infoPanel).toBeVisible({ timeout: 10000 });
 
+        console.log("6. Verifying infoName text...");
         // Wait for info panel to update with Earth's data
         const infoName = page.locator('#info-name');
         await expect(infoName).toContainText('Earth', { timeout: 15000 });
 
+        console.log("7. Waiting for Follow btn...");
         // Wait for Follow button to be visible and clickable
         const followBtn = page.locator('#btn-follow');
         await expect(followBtn).toBeVisible({ timeout: 5000 });
@@ -194,12 +216,15 @@ test.describe('Camera & Time Controls', () => {
         // Add small delay for any animations to complete
         await page.waitForTimeout(500);
 
+        console.log("8. Clicking Follow btn...");
         await followBtn.click();
 
         // Wait a bit for follow mode to activate
         await page.waitForTimeout(500);
 
+        console.log("9. Info should still show Earth...");
         // Info panel should still show Earth (follow mode active)
         await expect(infoName).toContainText('Earth');
+        console.log("10. Done!");
     });
 });

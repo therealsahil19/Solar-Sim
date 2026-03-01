@@ -1,0 +1,17 @@
+
+=== camera-controls.spec.js ===
+  - should pause and resume simulation: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveAttribute[2m([22m[32mexpected[39m[2m)[22m failed
+  - should follow selected object: [31mTest timeout of 30000ms exceeded.[39m
+
+=== help-modal.spec.js ===
+  - should have focusable elements within modal: Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+=== keyboard-shortcuts.spec.js ===
+  - should close sidebar with Escape key: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveAttribute[2m([22m[32mexpected[39m[2m)[22m failed
+
+=== performance.spec.js ===
+  - should maintain acceptable FPS during simulation: Error: page.evaluate: Error: boltBenchmark not available on window
+  - should have resource hints in place: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveCount[2m([22m[32mexpected[39m[2m)[22m failed
+
+=== stress_trails.spec.ts ===
+  - Trails Performance Benchmark: TypeError: Cannot read properties of undefined (reading 'toFixed')
