@@ -61,6 +61,7 @@ export class NavigationSidebar implements Disposable {
     private callbacks: NavigationSidebarCallbacks;
     private _isOpen: boolean = false;
     private dom: NavigationSidebarDOM;
+    private _navItemsCache: { li: HTMLElement; text: string }[] = [];
 
     // Event handler references
     private _handleCloseClick: (() => void) | null = null;
@@ -125,6 +126,27 @@ export class NavigationSidebar implements Disposable {
             const items = this.data.map(body => this.mapToNavItem(body));
             this.buildLevel(this.dom.list, items);
         }
+
+        this.updateCache();
+    }
+
+    /**
+     * Caches navigation items and their text content for faster searching.
+     */
+    private updateCache(): void {
+        if (!this.dom.list) {
+            this._navItemsCache = [];
+            return;
+        }
+
+        const items = this.dom.list.querySelectorAll<HTMLElement>('.nav-li');
+        this._navItemsCache = Array.from(items).map(li => {
+            const btn = li.querySelector('.nav-btn');
+            return {
+                li,
+                text: btn?.textContent?.toLowerCase() ?? ''
+            };
+        });
     }
 
     /**
@@ -305,28 +327,24 @@ export class NavigationSidebar implements Disposable {
         if (!this.dom.list) return;
 
         term = term.toLowerCase().trim();
-        const items = this.dom.list.querySelectorAll<HTMLElement>('.nav-li');
 
         if (!term) {
-            items.forEach(li => { li.style.display = ''; });
+            this._navItemsCache.forEach(item => { item.li.style.display = ''; });
             return;
         }
 
         // Phase 1: Reset all and mark direct matches
-        items.forEach(li => {
-            const btn = li.querySelector('.nav-btn');
-            const text = btn?.textContent?.toLowerCase() ?? '';
-            const isMatch = text.includes(term);
-
-            li.dataset.matches = isMatch ? 'true' : 'false';
-            li.style.display = 'none';
+        this._navItemsCache.forEach(item => {
+            const isMatch = item.text.includes(term);
+            item.li.dataset.matches = isMatch ? 'true' : 'false';
+            item.li.style.display = 'none';
         });
 
         // Phase 2: Walk up the tree to reveal matching paths
-        items.forEach(li => {
-            if (li.dataset.matches === 'true') {
-                li.style.display = '';
-                this.revealParentPath(li);
+        this._navItemsCache.forEach(item => {
+            if (item.li.dataset.matches === 'true') {
+                item.li.style.display = '';
+                this.revealParentPath(item.li);
             }
         });
     }
