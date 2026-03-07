@@ -5,7 +5,7 @@ vi.mock('../../src/managers/SceneManager', () => {
     return {
         SceneManager: vi.fn().mockImplementation(() => {
             return {
-                scene: { add: vi.fn(), remove: vi.fn() },
+                scene: { add: vi.fn(), remove: vi.fn(), updateMatrixWorld: vi.fn() },
                 camera: { position: { set: vi.fn() } },
                 renderer: { domElement: document.createElement('canvas') },
                 labelRenderer: { domElement: document.createElement('div') },
@@ -41,7 +41,7 @@ vi.mock('three', async (importOriginal) => {
 
 describe('main.ts', () => {
     beforeEach(() => {
-        global.fetch = vi.fn().mockResolvedValue({
+        globalThis.fetch = vi.fn().mockResolvedValue({
             ok: true,
             json: async () => []
         });

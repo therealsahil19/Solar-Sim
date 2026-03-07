@@ -5,6 +5,7 @@ Welcome to the Solar-Sim project! 🚀
 First off, thank you for considering contributing. It's people like you that make things happen. This guide will help you get started with the codebase and our development workflow.
 
 ## Table of Contents
+
 1. [Getting Started](#getting-started)
 2. [Project Structure](#project-structure)
 3. [Coding Standards](#coding-standards)
@@ -19,27 +20,34 @@ First off, thank you for considering contributing. It's people like you that mak
 The project uses **Vite** for building and serving the application.
 
 ### Prerequisites
+
 - **Node.js** (v18+)
 - **npm**
 
 ### Setup
+
 1. **Fork and Clone** the repository.
 2. **Install Dependencies**:
+
    ```bash
    npm install
    ```
+
 3. **Download Textures** (Required for first run):
+
    ```bash
    python3 download_textures.py
    ```
+
    This script fetches high-res planet textures into the `textures/` directory.
 
-3. **Start Development Server**:
+4. **Start Development Server**:
+
    ```bash
    npm run dev
    ```
 
-4. **Open in Browser**:
+5. **Open in Browser**:
    Navigate to `http://localhost:5173`.
 
 ---
@@ -66,9 +74,10 @@ We follow a modular architecture using TypeScript and Vite.
 The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D scene (Three.js) remains performant and independent of the DOM.
 
 **Separation of Concerns:**
-1.  **Scene (`main.ts`)**: The "Conductor". It knows nothing about the UI. It exposes methods to manipulate the camera or focus on objects.
-2.  **Input (`input.ts`)**: The "Controller". It bridges the gap. It listens for user actions (clicks, keys) and updates the UI or the Scene accordingly.
-3.  **Components (`src/components/`)**: Pure UI classes. They do not import Three.js directly (mostly). They receive data and callbacks via their constructors.
+
+1. **Scene (`main.ts`)**: The "Conductor". It knows nothing about the UI. It exposes methods to manipulate the camera or focus on objects.
+2. **Input (`input.ts`)**: The "Controller". It bridges the gap. It listens for user actions (clicks, keys) and updates the UI or the Scene accordingly.
+3. **Components (`src/components/`)**: Pure UI classes. They do not import Three.js directly (mostly). They receive data and callbacks via their constructors.
 
 **Core Components:**
 
@@ -135,18 +144,19 @@ We avoid global state objects. Instead, we use dedicated **Managers** (`src/mana
 
 Understanding how `system.json` turns into a 3D orbit:
 
-1.  **Loading**: `main.ts` fetches `system.json`.
-2.  **Factory**: `procedural.ts` (`createSystem`) iterates through the data.
-3.  **Physics**: For each body, the `physics` elements are stored in `mesh.userData.orbit`.
-4.  **Integration**: In the `animate` loop (in `main.ts`), `physics.getOrbitalPosition(orbit, time)` calculates the AU position.
-5.  **Scaling**: `physics.physicsToRender(auVector)` applies Multi-Zone Scaling to transform AU into Three.js units.
-6.  **Rendering**: The mesh position is updated, and `trails.ts` adds a vertex to the trail.
+1. **Loading**: `main.ts` fetches `system.json`.
+2. **Factory**: `procedural.ts` (`createSystem`) iterates through the data.
+3. **Physics**: For each body, the `physics` elements are stored in `mesh.userData.orbit`.
+4. **Integration**: In the `animate` loop (in `main.ts`), `physics.getOrbitalPosition(orbit, time)` calculates the AU position.
+5. **Scaling**: `physics.physicsToRender(auVector)` applies Multi-Zone Scaling to transform AU into Three.js units.
+6. **Rendering**: The mesh position is updated, and `trails.ts` adds a vertex to the trail.
 
 ---
 
 ## Coding Standards
 
 ### 1. TypeScript
+
 - Use **TypeScript** for all logic. Prefer interfaces over inline types.
 - Strict mode is enabled: avoid `any` whenever possible.
 - Use ES Modules (`import`/`export`).
@@ -154,13 +164,17 @@ Understanding how `system.json` turns into a 3D orbit:
 - Prefer `async/await` over raw Promises.
 
 ### 2. Three.js Patterns
-- **Memory Management**: Always dispose of Geometries and Materials if you remove them.
+
+- **Memory Management**: Always dispose of Geometries and Materials if you remove them. Avoid using `for...in` loops with `delete` to remove properties (it breaks V8 optimizations), preferring object re-assignment or `Map`.
 - **Performance ("Bolt")**:
-    - Use `instancing.ts` for repeated objects (moons, asteroids).
-    - Use `trails.ts` for orbit lines.
-    - Throttle expensive operations in the render loop (use `frameCount`).
+  - Use `instancing.ts` for repeated objects (moons, asteroids).
+  - Use `trails.ts` for orbit lines.
+  - Throttle expensive operations in the render loop (use `frameCount`).
+  - Use `Map` for O(1) performance instead of array `.find()` for frequent lookups.
+  - Use `DocumentFragment` when appending multiple elements to the DOM to prevent layout thrashing.
 
 ### 3. CSS & Design
+
 - Use **CSS Variables** defined in `src/style.css`.
 - Follow the "Glassmorphism" design tokens.
 - Ensure all interactive elements have focus states and `aria-labels`.
@@ -172,6 +186,7 @@ Understanding how `system.json` turns into a 3D orbit:
 We believe that **"If it isn't documented, it doesn't exist."**
 
 ### JSDoc / TSDoc
+
 All functions and classes must be documented using JSDoc/TSDoc. Include parameter types and return values where applicable.
 
 ```typescript
@@ -185,6 +200,7 @@ function getDistance(objA: THREE.Object3D, objB: THREE.Object3D): number { ... }
 ```
 
 ### Key Principles
+
 - **Why > What**: Explain *why* a complex logic block exists.
 - **No Magic Numbers**: If you use a number like `0.004`, explain it (e.g., `// Approximation of orbital speed`).
 - **Update the README**: If you add a feature, list it in `README.md`.
@@ -198,7 +214,9 @@ We use **Playwright** for End-to-End (E2E) testing and **Vitest** for Unit testi
 > **Important:** Check the `tests.md` file whenever a new test is made. This file documents which tests are passing/failing, test efficiency, and what currently requires more testing.
 
 ### 1. Structure
+
 Tests are organized by type:
+
 - **E2E Tests (`tests/e2e/`)**: Playwright tests for user flows and UI interactions.
   - `navigation-sidebar.spec.js`: Tests for the planet tree and search.
   - `settings-panel.spec.js`: Tests for toggles, themes, and persistence.
@@ -212,14 +230,18 @@ Tests are organized by type:
   - `main.test.ts`: Asserts safe scene initialization and teardown memory handling.
 
 ### 2. Best Practices
+
 - **Isolation**: Each `test()` block should ideally be independent.
 - **Wait for Loading**: Always wait for the `#loading-screen` to be hidden before interacting with the simulation.
+
   ```typescript
   await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 60000 });
   ```
+
 - **A11y Checks**: When possible, use ARIA roles for selectors (`page.getByRole('button', { name: 'Close' })`).
 
 ### 3. Running Tests
+
 - **E2E**: `npm run test` (runs all Playwright tests).
 - **Headed**: `npm run test:headed` (runs tests in a visible browser).
 - **Unit**: `npm run test:unit` (runs Vitest).

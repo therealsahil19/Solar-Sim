@@ -78,6 +78,8 @@ describe('Redundant Scene Update Optimization', () => {
         vi.resetModules();
         document.body.innerHTML = '<div id="nav-list"></div><div id="loading-screen"></div><div id="info-panel"></div><div id="settings-panel"></div><div id="nav-sidebar"></div><dialog id="welcome-modal"></dialog>';
 
+        HTMLCanvasElement.prototype.getContext = vi.fn() as any;
+
         // Mock RAF
         window.requestAnimationFrame = vi.fn((cb) => {
             if (cb.name === 'animate') {
@@ -91,7 +93,7 @@ describe('Redundant Scene Update Optimization', () => {
 
         sceneUpdateSpy = vi.spyOn(THREE.Scene.prototype, 'updateMatrixWorld');
 
-        global.fetch = vi.fn(() => Promise.resolve({
+        globalThis.fetch = vi.fn(() => Promise.resolve({
             ok: true,
             json: () => Promise.resolve([])
         } as Response));
