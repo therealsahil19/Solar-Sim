@@ -355,6 +355,8 @@ export class CommandPalette implements Disposable {
             }
         }
 
+        const fragment = document.createDocumentFragment();
+
         this.filteredItems.forEach((item, index) => {
             let li = this.list.children[index] as HTMLLIElement;
 
@@ -379,7 +381,7 @@ export class CommandPalette implements Disposable {
                     this.selectIndex(index, false);
                 });
 
-                this.list.appendChild(li);
+                fragment.appendChild(li);
             }
 
             // Update dynamic content
@@ -399,6 +401,10 @@ export class CommandPalette implements Disposable {
             if (textSpan.textContent !== item.name) textSpan.textContent = item.name;
             if (metaSpan.textContent !== item.type) metaSpan.textContent = item.type;
         });
+
+        if (fragment.children.length > 0) {
+            this.list.appendChild(fragment);
+        }
     }
 
     /**
@@ -438,7 +444,7 @@ export class CommandPalette implements Disposable {
             if (typeof item.handler === 'function') {
                 item.handler();
             } else {
-                console.warn(`CommandPalette: Item "${item.name}" has no valid handler.`);
+                throw new Error(`CommandPalette: Item "${item.name}" has no valid handler.`);
             }
         }
     }

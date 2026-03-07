@@ -22,13 +22,13 @@ import type { InstanceRegistry } from './instancing';
 
 // --- Shared Resources ---
 const baseSphereGeometry = new THREE.SphereGeometry(1, 64, 64);
-const ringGeometryCache: Record<string, THREE.RingGeometry> = {};
+let ringGeometryCache: Record<string, THREE.RingGeometry> = {};
 
 // Material Cache
-const materialCache: Record<string, THREE.MeshStandardMaterial> = {};
+let materialCache: Record<string, THREE.MeshStandardMaterial> = {};
 // ⚡ Bolt Optimization: Cache materials by texture URL to enable instancing
-const textureMaterialCache: Record<string, THREE.MeshStandardMaterial> = {};
-const ringMaterialCache: Record<string, THREE.MeshStandardMaterial> = {};
+let textureMaterialCache: Record<string, THREE.MeshStandardMaterial> = {};
+let ringMaterialCache: Record<string, THREE.MeshStandardMaterial> = {};
 let cachedGlowTexture: THREE.CanvasTexture | null = null;
 
 /**
@@ -71,13 +71,13 @@ export interface AnimatedBody {
  */
 export function clearMaterialCache(): void {
     Object.values(materialCache).forEach(mat => mat.dispose());
-    for (const key in materialCache) delete materialCache[key];
+    materialCache = {};
 
     Object.values(textureMaterialCache).forEach(mat => mat.dispose());
-    for (const key in textureMaterialCache) delete textureMaterialCache[key];
+    textureMaterialCache = {};
 
     Object.values(ringMaterialCache).forEach(mat => mat.dispose());
-    for (const key in ringMaterialCache) delete ringMaterialCache[key];
+    ringMaterialCache = {};
 
     if (cachedGlowTexture) {
         cachedGlowTexture.dispose();
@@ -85,7 +85,7 @@ export function clearMaterialCache(): void {
     }
 
     Object.values(ringGeometryCache).forEach(geo => geo.dispose());
-    for (const key in ringGeometryCache) delete ringGeometryCache[key];
+    ringGeometryCache = {};
 }
 
 /**

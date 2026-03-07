@@ -46,6 +46,8 @@ describe('main.ts', () => {
             json: async () => []
         });
 
+        document.body.innerHTML = '<div id="nav-list"></div><div id="loading-screen"></div><div id="info-panel"></div><div id="settings-panel"></div><div id="nav-sidebar"></div><dialog id="welcome-modal"></dialog>';
+
         // Suppress console warnings for tests
         vi.spyOn(console, 'warn').mockImplementation(() => { });
         vi.spyOn(console, 'error').mockImplementation(() => { });

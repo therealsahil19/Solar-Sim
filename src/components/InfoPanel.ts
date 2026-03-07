@@ -70,7 +70,7 @@ export class InfoPanel implements Disposable {
         };
 
         if (!this.dom.panel) {
-            console.error('InfoPanel: #info-panel not found in DOM.');
+            throw new Error('InfoPanel: #info-panel not found in DOM.');
         }
 
         this.bindEvents();

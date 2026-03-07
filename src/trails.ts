@@ -71,9 +71,6 @@ export class TrailManager implements Disposable {
         this.scene = scene;
         // Clamp maxTrails to 4096 to ensure compatibility with most devices
         this.maxTrails = Math.min(maxTrails, 4096);
-        if (maxTrails > 4096) {
-            console.warn(`TrailManager: Clamping maxTrails from ${maxTrails} to ${this.maxTrails} for texture compatibility.`);
-        }
 
         this.pointsPerTrail = pointsPerTrail;
         this.segmentsPerTrail = pointsPerTrail;

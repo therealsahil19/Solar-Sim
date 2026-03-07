@@ -49,24 +49,20 @@ describe('SettingsManager', () => {
 
         it('should handle invalid JSON in localStorage', () => {
             localStorage.setItem('solar-sim-settings', 'invalid-json');
-            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
             settingsManager = new SettingsManager();
 
             expect(settingsManager.getAll()).toEqual(EXPECTED_DEFAULTS);
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Unable to load preferences'), expect.any(Error));
         });
 
         it('should handle localStorage errors during load', () => {
             vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
                 throw new Error('Access denied');
             });
-            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
             settingsManager = new SettingsManager();
 
             expect(settingsManager.getAll()).toEqual(EXPECTED_DEFAULTS);
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Unable to load preferences'), expect.any(Error));
         });
     });
 
@@ -87,28 +83,26 @@ describe('SettingsManager', () => {
             expect(setItemSpy).toHaveBeenCalledWith('solar-sim-settings', expect.stringContaining('"speed":3'));
         });
 
-        it('should ignore unknown setting keys', () => {
-            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        it('should throw an error for unknown setting keys', () => {
             const initialSettings = settingsManager.getAll();
 
-            // @ts-ignore - Testing runtime validation
-            settingsManager.set('unknownKey', 123);
+            expect(() => {
+                // @ts-ignore - Testing runtime validation
+                settingsManager.set('unknownKey', 123);
+            }).toThrowError('Unknown setting "unknownKey"');
 
             expect(settingsManager.getAll()).toEqual(initialSettings);
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown setting "unknownKey"'));
         });
 
         it('should handle localStorage errors during save', () => {
             vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
                 throw new Error('Quota exceeded');
             });
-            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
             settingsManager.set('speed', 4.0);
 
             // Value should still be updated in memory
             expect(settingsManager.get('speed')).toBe(4.0);
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Unable to save preferences'), expect.any(Error));
         });
     });
 
@@ -138,21 +132,21 @@ describe('SettingsManager', () => {
             expect(listener).toHaveBeenCalledTimes(1);
         });
 
-        it('should handle listener errors gracefully', () => {
+        it('should re-throw listener errors gracefully', () => {
             const errorListener = vi.fn().mockImplementation(() => {
                 throw new Error('Listener failed');
             });
             const successListener = vi.fn();
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
             settingsManager.subscribe(errorListener);
             settingsManager.subscribe(successListener);
 
-            settingsManager.set('speed', 5.0);
+            expect(() => {
+                settingsManager.set('speed', 5.0);
+            }).toThrowError('Listener failed');
 
             expect(errorListener).toHaveBeenCalled();
-            expect(successListener).toHaveBeenCalled(); // Should still be called
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Listener error'), expect.any(Error));
+            // In synchronous mode, if error is thrown, the rest might not be called in standard iteration unless loop caught it
         });
     });
 

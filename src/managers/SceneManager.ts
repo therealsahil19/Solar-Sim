@@ -15,6 +15,7 @@ export class SceneManager {
     constructor() {
         // Setup Three.js Components
         this.scene = new THREE.Scene();
+        this.scene.matrixWorldAutoUpdate = false;
 
         this.scene.matrixWorldAutoUpdate = false;
 

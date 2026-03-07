@@ -38,6 +38,15 @@ describe('InfoPanel', () => {
         document.body.innerHTML = '';
     });
 
+    it('should throw an error if panel is missing from DOM', () => {
+        const callbacks = { onFollow: vi.fn() };
+        // Empty DOM
+        document.body.innerHTML = '';
+        expect(() => {
+            new InfoPanel({ callbacks });
+        }).toThrowError('InfoPanel: #info-panel not found in DOM.');
+    });
+
     it('should update DOM with mesh data', () => {
         const mesh = new THREE.Mesh();
         mesh.userData = {

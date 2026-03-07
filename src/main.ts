@@ -195,12 +195,10 @@ async function fetchSystemData(): Promise<CelestialBody[]> {
         const isTrustedProtocol = parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
 
         if (!isLocal || !isTrustedProtocol) {
-            console.warn('Blocked external/untrusted config URL:', configUrl);
             configUrl = 'system.json';
             ToastManager.getInstance().show("External config blocked. Loaded default system.", { type: 'error' });
         }
     } catch (e) {
-        console.warn('Invalid config URL:', configUrl);
         configUrl = 'system.json';
     }
 
@@ -294,7 +292,6 @@ export async function init(): Promise<void> {
             if (group.mesh) interactionTargets.push(group.mesh);
         });
     } catch (error) {
-        console.error("Failed to load system data:", error);
         initFailed = true;
         throw error;
     }
@@ -450,10 +447,8 @@ function toggleTextures(btnElement: HTMLElement | null): void {
 function toggleLabels(): void {
     showLabels = !showLabels;
     labelManager?.toggle(showLabels);
-    // labelsNeedUpdate = true; // Handled by LabelManager
     const btn = document.getElementById('btn-labels');
     if (btn) btn.setAttribute('aria-pressed', String(showLabels));
-    // allLabels.forEach(label => { label.visible = showLabels; });
     ToastManager.getInstance().show(`Labels: ${showLabels ? "ON" : "OFF"}`);
 }
 
@@ -713,7 +708,6 @@ export function dispose(): void {
 // Auto-initialize unless skipped (for testing)
 if (!window.__SKIP_INIT__) {
     init().catch((err: Error) => {
-        console.error("Initialization failed:", err);
         // Show error toast even if init fails
         ToastManager.getInstance().show(`Initialization Error: ${err.message}`, { type: 'error', duration: 10000 });
 

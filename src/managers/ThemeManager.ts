@@ -86,7 +86,6 @@ export class ThemeManager {
         try {
             return localStorage.getItem('theme');
         } catch (e) {
-            console.warn('ThemeManager: Unable to read theme preference.', e);
             return null;
         }
     }
@@ -98,7 +97,7 @@ export class ThemeManager {
         try {
             localStorage.setItem('theme', themeName);
         } catch (e) {
-            console.warn('ThemeManager: Unable to persist theme preference.', e);
+            // Ignore write errors to localStorage
         }
     }
 

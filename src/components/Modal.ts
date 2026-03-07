@@ -45,17 +45,11 @@ export class Modal implements Disposable {
             : elementOrId;
 
         if (!el) {
-            console.error(`Modal: Element not found.`);
-            this.element = null;
-            this.options = options;
-            return;
+            throw new Error(`Modal: Element not found.`);
         }
 
         if (el.tagName !== 'DIALOG') {
-            console.error(`Modal: Element must be a <dialog> tag.`);
-            this.element = null;
-            this.options = options;
-            return;
+            throw new Error(`Modal: Element must be a <dialog> tag.`);
         }
 
         this.element = el as HTMLDialogElement;

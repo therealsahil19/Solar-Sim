@@ -84,8 +84,7 @@ export class SettingsPanel implements Disposable {
         };
 
         if (!this.dom.panel) {
-            console.error('SettingsPanel: #settings-panel not found in DOM.');
-            return;
+            throw new Error('SettingsPanel: #settings-panel not found in DOM.');
         }
 
         this.initializeFromSettings();

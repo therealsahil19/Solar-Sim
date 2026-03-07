@@ -96,7 +96,6 @@ export class SettingsManager {
                 this.settings = { ...DEFAULT_SETTINGS, ...validated };
             }
         } catch (e) {
-            console.warn('SettingsManager: Unable to load preferences.', e);
             this.settings = { ...DEFAULT_SETTINGS };
         }
     }
@@ -121,7 +120,7 @@ export class SettingsManager {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
         } catch (e) {
-            console.warn('SettingsManager: Unable to save preferences.', e);
+            // Ignore write errors
         }
     }
 
@@ -150,8 +149,7 @@ export class SettingsManager {
      */
     set<K extends SettingKey>(key: K, value: Settings[K]): void {
         if (!(key in DEFAULT_SETTINGS)) {
-            console.warn(`SettingsManager: Unknown setting "${key}"`);
-            return;
+            throw new Error(`SettingsManager: Unknown setting "${key}"`);
         }
 
         this.settings[key] = value;
@@ -182,7 +180,7 @@ export class SettingsManager {
             try {
                 listener(key, value);
             } catch (e) {
-                console.error('SettingsManager: Listener error', e);
+                throw e;
             }
         }
     }

@@ -196,6 +196,18 @@ function createSelectionHelpers(
     infoPanel: InfoPanel
 ) {
     const { interactionTargets } = context;
+    const meshNameMap = new Map<string, THREE.Object3D>();
+    let lastKnownLength = -1;
+
+    function buildCache() {
+        meshNameMap.clear();
+        for (const obj of interactionTargets) {
+            if (obj.userData && obj.userData.name) {
+                meshNameMap.set(obj.userData.name, obj);
+            }
+        }
+        lastKnownLength = interactionTargets.length;
+    }
 
     /**
      * Updates the Side Panel and Toast with details about the selected object.
@@ -224,7 +236,11 @@ function createSelectionHelpers(
     }
 
     function findMeshByName(name: string): THREE.Object3D | null {
-        const found = interactionTargets.find(obj => obj.userData.name === name);
+        if (lastKnownLength !== interactionTargets.length) {
+            buildCache();
+        }
+
+        const found = meshNameMap.get(name);
         if (found) return found;
 
         if (context.instanceRegistry) {
@@ -239,8 +255,6 @@ function createSelectionHelpers(
             callbacks.onSetFocus(mesh);
             callbacks.onObjectSelected(mesh);
             updateSelectionUI(mesh);
-        } else {
-            console.warn(`Mesh not found for: ${name}`);
         }
     }
 
