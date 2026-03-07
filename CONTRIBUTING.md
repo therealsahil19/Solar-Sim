@@ -195,6 +195,8 @@ function getDistance(objA: THREE.Object3D, objB: THREE.Object3D): number { ... }
 
 We use **Playwright** for End-to-End (E2E) testing and **Vitest** for Unit testing.
 
+> **Important:** Check the `tests.md` file whenever a new test is made. This file documents which tests are passing/failing, test efficiency, and what currently requires more testing.
+
 ### 1. Structure
 Tests are organized by type:
 - **E2E Tests (`tests/e2e/`)**: Playwright tests for user flows and UI interactions.

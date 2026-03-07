@@ -308,6 +308,8 @@ The output will be in the `dist/` directory.
 
 The project uses **Playwright** for E2E testing and **Vitest** for unit testing.
 
+> **Note:** For a comprehensive overview of test execution status, test efficiency, and areas lacking coverage, please refer to the `tests.md` file in the root directory. You must review and update `tests.md` each time a new test is made.
+
 ### 1. End-to-End Tests (Playwright)
 ```bash
 # Install browsers first
