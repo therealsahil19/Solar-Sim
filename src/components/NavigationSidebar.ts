@@ -84,15 +84,6 @@ export class NavigationSidebar implements Disposable {
             btnOpen: document.getElementById('btn-planets') as HTMLButtonElement | null,
         };
 
-        if (!this.dom.sidebar) {
-            console.error('NavigationSidebar: #nav-sidebar not found in DOM.');
-            return;
-        }
-
-        if (!this.dom.list) {
-            console.warn('NavigationSidebar: #nav-list not found in DOM.');
-        }
-
         this.init();
     }
 
@@ -211,12 +202,8 @@ export class NavigationSidebar implements Disposable {
         this._handleCloseClick = (): void => this.close();
         this._handleOpenClick = (): void => this.open();
 
-        if (this.dom.btnClose) {
-            this.dom.btnClose.addEventListener('click', this._handleCloseClick);
-        }
-        if (this.dom.btnOpen) {
-            this.dom.btnOpen.addEventListener('click', this._handleOpenClick);
-        }
+        this.dom.btnClose?.addEventListener('click', this._handleCloseClick);
+        this.dom.btnOpen?.addEventListener('click', this._handleOpenClick);
 
         if (this.dom.search) {
             this._handleSearchInput = (e: Event): void => {
@@ -231,14 +218,14 @@ export class NavigationSidebar implements Disposable {
      * Cleans up event listeners and references.
      */
     dispose(): void {
-        if (this.dom.btnClose && this._handleCloseClick) {
-            this.dom.btnClose.removeEventListener('click', this._handleCloseClick);
+        if (this._handleCloseClick) {
+            this.dom.btnClose?.removeEventListener('click', this._handleCloseClick);
         }
-        if (this.dom.btnOpen && this._handleOpenClick) {
-            this.dom.btnOpen.removeEventListener('click', this._handleOpenClick);
+        if (this._handleOpenClick) {
+            this.dom.btnOpen?.removeEventListener('click', this._handleOpenClick);
         }
-        if (this.dom.search && this._handleSearchInput) {
-            this.dom.search.removeEventListener('input', this._handleSearchInput);
+        if (this._handleSearchInput) {
+            this.dom.search?.removeEventListener('input', this._handleSearchInput);
         }
         window.removeEventListener('keydown', this.handleKeyDown, true);
     }
@@ -247,37 +234,31 @@ export class NavigationSidebar implements Disposable {
      * Opens the sidebar.
      */
     open(): void {
-        if (!this.dom.sidebar) return;
-
         this._isOpen = true;
-        this.dom.sidebar.setAttribute('aria-hidden', 'false');
-        this.dom.sidebar.classList.remove('animate-out');
-        this.dom.sidebar.classList.add('animate-in');
+        this.dom.sidebar?.setAttribute('aria-hidden', 'false');
+        this.dom.sidebar?.classList.remove('animate-out');
+        this.dom.sidebar?.classList.add('animate-in');
 
-        if (this.dom.search) {
-            setTimeout(() => this.dom.search?.focus(), 50);
-        }
+        setTimeout(() => this.dom.search?.focus(), 50);
     }
 
     /**
      * Closes the sidebar.
      */
     close(): void {
-        if (!this.dom.sidebar) return;
-
         this._isOpen = false;
-        this.dom.sidebar.classList.remove('animate-in');
-        this.dom.sidebar.classList.add('animate-out');
+        this.dom.sidebar?.classList.remove('animate-in');
+        this.dom.sidebar?.classList.add('animate-out');
 
         setTimeout(() => {
-            if (!this._isOpen && this.dom.sidebar) {
-                this.dom.sidebar.setAttribute('aria-hidden', 'true');
-                this.dom.sidebar.classList.remove('animate-out');
+            if (!this._isOpen) {
+                this.dom.sidebar?.setAttribute('aria-hidden', 'true');
+                this.dom.sidebar?.classList.remove('animate-out');
             }
         }, 400);
 
-        if (this.dom.btnOpen) this.dom.btnOpen.focus();
-        if (this.callbacks.onClose) this.callbacks.onClose();
+        this.dom.btnOpen?.focus();
+        this.callbacks.onClose?.();
     }
 
     /**
