@@ -1,414 +1,595 @@
-EASY
+easy
 
 Description
-Math.pow(a, 1.5) is called every frame for every object to calculate the orbital period if not provided.
+The createStarfield function is exported but has no corresponding unit tests.
 
 Location
-src/physics.ts:61
+src/procedural.ts:126
 
 Rationale
-High impact as it runs per object/frame. Easy fix by pre-calculating period in initialization or caching it.
+The function simply creates and returns a THREE.Points object, which is easy to verify without complex setup.
 
 Code context
-    // Optimization: Use pre-calculated period if available to avoid expensive Math.pow(a, 1.5)
-    const period = orbit.period ?? Math.pow(a, 1.5);
+    return Math.pow(a, 1.5);
+}
 
-Description
-Intermediate _tempVec.set(...) call is unnecessary; can write directly to buffer.
-
-Location
-src/trails.ts:279
-
-Rationale
-Micro-optimization to remove a function call and property access inside a loop.
-
-Code context
-            // Direct matrix access (approx 1.8x faster than setFromMatrixPosition)
-            const te = trail.target.matrixWorld.elements;
-            this._tempVec.set(te[12]!, te[13]!, te[14]!);
-
-Description
-item.name.toLowerCase() is called for every item during search filtering.
-
-Location
-src/components/CommandPalette.ts:286
-
-Rationale
-Creates garbage and CPU overhead. Should pre-calculate lowercase strings on item creation.
-
-Code context
-        } else {
-            this.filteredItems = this.items.filter(item =>
-                (item.name?.toLowerCase() ?? '').includes(q) ||
-                (item.type?.toLowerCase() ?? '').includes(q)
-            );
-
-Description
-Math.cos and Math.sin are called every frame on constant orbital elements (Omega, i).
-
-Location
-src/physics.ts:106
-
-Rationale
-Trig functions are expensive. These values are constant for each object and should be pre-calculated.
-
-Code context
-    // Longitude of Ascending Node (Omega) - use value from orbit params
-    const Omega = LAN;
-
-    const cosOm = Math.cos(Omega * DEG_TO_RAD);
-
-Description
-toLowerCase() is called O(N log N) times during sort.
-
-Location
-src/components/CommandPalette.ts:293
-
-Rationale
-Very inefficient for sorting. Pre-calculate lowercase strings.
-
-Code context
-        // Sort: Exact matches first
-        this.filteredItems.sort((a, b) => {
-            const aName = (a.name ?? '').toLowerCase();
-            const bName = (b.name ?? '').toLowerCase();
-
-Description
-The script reads the entire response body into memory without checking the Content-Length header, which could lead to memory exhaustion (DoS) if the remote server serves a very large file.
-
-Location
-download_textures.py:52
-
-Rationale
-The script uses response.read() which loads the full content into RAM. Reading in chunks or checking the size header would mitigate this risk.
-
-Code context
-    try:
-        # Verify SSL certificates properly using reused context
-        with urllib.request.urlopen(url, context=context, timeout=10) as response:
-            content = response.read()
-            
-            # Verify SHA-256
-            actual_hash = hashlib.sha256(content).hexdigest()
-            if actual_hash != expected_hash:
-
-Description
-The `clearMaterialCache` function is crucial for preventing memory leaks during scene resets but is currently untested.
-
-Location
-src/procedural.ts:69
-
-Rationale
-Simple to test: populate cache by requesting a material, call clear, and verify disposal and cache emptiness.
-
-Code context
 /**
- * Clears the material cache to prevent memory leaks during scene resets.
+ * Creates the background starfield.
  */
+export function createStarfield(): THREE.Points {
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsMaterial = new THREE.PointsMaterial({
+
+Description
+Remove console.warn on localStorage read failure in SettingsManager.
+
+Location
+src/managers/SettingsManager.ts:99
+
+Rationale
+Clear fix (< 20 lines). Reduces console noise.
+
+Code context
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored) as Record<string, unknown>;
+                const validated = this.validateSettings(parsed);
+                this.settings = { ...DEFAULT_SETTINGS, ...validated };
+            }
+        } catch (e) {
+            console.warn('SettingsManager: Unable to load preferences.', e);
+            this.settings = { ...DEFAULT_SETTINGS };
+        }
+    }
+
+Description
+Either throw an Error or ignore invalid keys quietly instead of using console.warn.
+
+Location
+src/managers/SettingsManager.ts:153
+
+Rationale
+Clear fix (< 20 lines). Throwing an error provides better development feedback.
+
+Code context
+     * @example settings.set('speed', 2.0);
+     */
+    set<K extends SettingKey>(key: K, value: Settings[K]): void {
+        if (!(key in DEFAULT_SETTINGS)) {
+            console.warn(`SettingsManager: Unknown setting "${key}"`);
+            return;
+        }
+
+        this.settings[key] = value;
+        this.save();
+        this.notifyListeners(key, value);
+
+Description
+The error is logged via console.error and immediately thrown. The console.error is redundant.
+
+Location
+src/main.ts:297
+
+Rationale
+Clear fix (< 20 lines). Reduces log duplication.
+
+Code context
+        instanceRegistry!.groups.forEach(group => {
+            if (group.mesh) interactionTargets.push(group.mesh);
+        });
+    } catch (error) {
+        console.error("Failed to load system data:", error);
+        initFailed = true;
+        throw error;
+    }
+
+    setupInteractionsAndUI(planetData);
+
+Description
+Remove the commented out `allLabels.forEach(...)` as labels are now handled by LabelManager.
+
+Location
+src/main.ts:456
+
+Rationale
+Clear fix (< 20 lines). Removes confusing historical code.
+
+Code context
+    labelManager?.toggle(showLabels);
+    // labelsNeedUpdate = true; // Handled by LabelManager
+    const btn = document.getElementById('btn-labels');
+    if (btn) btn.setAttribute('aria-pressed', String(showLabels));
+    // allLabels.forEach(label => { label.visible = showLabels; });
+    ToastManager.getInstance().show(`Labels: ${showLabels ? "ON" : "OFF"}`);
+}
+
+function toggleBelt(type: string, visible: boolean): void {
+    belts.forEach(belt => {
+
+Description
+Silently clamp or expose configuration to handle maxTrails limits without spamming console.
+
+Location
+src/trails.ts:75
+
+Rationale
+Clear fix (< 20 lines). Cleans up expected runtime limits logging.
+
+Code context
+    constructor(scene: THREE.Scene, maxTrails: number = 5000, pointsPerTrail: number = 100) {
+        this.scene = scene;
+        // Clamp maxTrails to 4096 to ensure compatibility with most devices
+        this.maxTrails = Math.min(maxTrails, 4096);
+        if (maxTrails > 4096) {
+            console.warn(`TrailManager: Clamping maxTrails from ${maxTrails} to ${this.maxTrails} for texture compatibility.`);
+        }
+
+        this.pointsPerTrail = pointsPerTrail;
+        this.segmentsPerTrail = pointsPerTrail;
+
+Description
+Initialization failures in SettingsPanel should throw an Error to be caught by the application instead of using console.error.
+
+Location
+src/components/SettingsPanel.ts:87
+
+Rationale
+Clear fix (< 20 lines). Throwing an Error is a more robust way to handle missing required UI elements.
+
+Code context
+            toggleOortCloud: document.getElementById('setting-oort-cloud') as HTMLInputElement | null,
+            themeButtons: document.querySelectorAll<HTMLButtonElement>('.theme-btn'),
+            sliderSpeed: document.getElementById('setting-speed') as HTMLInputElement | null,
+            speedValue: document.getElementById('setting-speed-value'),
+        };
+
+        if (!this.dom.panel) {
+            console.error('SettingsPanel: #settings-panel not found in DOM.');
+            return;
+        }
+
+        this.initializeFromSettings();
+
+Description
+If a Modal element is not a DIALOG tag, throw an Error instead of using console.error.
+
+Location
+src/components/Modal.ts:55
+
+Rationale
+Clear fix (< 20 lines). Validates preconditions explicitly by throwing.
+
+Code context
+            this.element = null;
+            this.options = options;
+            return;
+        }
+
+        if (el.tagName !== 'DIALOG') {
+            console.error(`Modal: Element must be a <dialog> tag.`);
+            this.element = null;
+            this.options = options;
+            return;
+        }
+
+        this.element = el as HTMLDialogElement;
+
+Description
+Consider catching and re-throwing errors or passing them to a global error handler instead of suppressing with console.error.
+
+Location
+src/managers/SettingsManager.ts:185
+
+Rationale
+Clear fix (< 20 lines). Helps surface listener errors directly to the application.
+
+Code context
+    private notifyListeners(key: SettingKey, value: SettingValue): void {
+        for (const listener of this.listeners) {
+            try {
+                listener(key, value);
+            } catch (e) {
+                console.error('SettingsManager: Listener error', e);
+            }
+        }
+    }
+
+    /**
+
+Description
+Warn users gracefully via the UI or throw an error rather than logging to console when a CommandPalette item lacks a valid handler.
+
+Location
+src/components/CommandPalette.ts:441
+
+Rationale
+Clear fix (< 20 lines). Prevents silent failures in the command palette UI from the user's perspective.
+
+Code context
+    private executeCurrent(): void {
+        const item = this.filteredItems[this.selectedIndex];
+        if (item) {
+            this.close();
+            if (typeof item.handler === 'function') {
+                item.handler();
+            } else {
+                console.warn(`CommandPalette: Item "${item.name}" has no valid handler.`);
+            }
+        }
+    }
+}
+
+Description
+Remove console.warn on localStorage write failure, as it is expected behavior in some privacy modes.
+
+Location
+src/managers/ThemeManager.ts:101
+
+Rationale
+Clear fix (< 20 lines). Reduces console noise.
+
+Code context
+    private setStoredTheme(themeName: string): void {
+        try {
+            localStorage.setItem('theme', themeName);
+        } catch (e) {
+            console.warn('ThemeManager: Unable to persist theme preference.', e);
+        }
+    }
+
+    /**
+     * Type guard to check if a string is a valid theme name.
+
+Description
+Remove console.warn on localStorage write failure in SettingsManager.
+
+Location
+src/managers/SettingsManager.ts:124
+
+Rationale
+Clear fix (< 20 lines). Reduces console noise.
+
+Code context
+    private save(): void {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
+        } catch (e) {
+            console.warn('SettingsManager: Unable to save preferences.', e);
+        }
+    }
+
+    /**
+     * Retrieves the current value for a specific setting key.
+
+Description
+Invalid config URLs are gracefully handled; the console.warn can be removed or replaced with an application-level toast.
+
+Location
+src/main.ts:203
+
+Rationale
+Clear fix (< 20 lines). Removes unnecessary developer logs from production.
+
+Code context
+            configUrl = 'system.json';
+            ToastManager.getInstance().show("External config blocked. Loaded default system.", { type: 'error' });
+        }
+    } catch (e) {
+        console.warn('Invalid config URL:', configUrl);
+        configUrl = 'system.json';
+    }
+
+    const response = await fetch(configUrl);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+Description
+Remove the commented out `labelsNeedUpdate = true` code to clean up the source.
+
+Location
+src/main.ts:453
+
+Rationale
+Clear fix (< 20 lines). Cleans up obsolete code comments.
+
+Code context
+function toggleLabels(): void {
+    showLabels = !showLabels;
+    labelManager?.toggle(showLabels);
+    // labelsNeedUpdate = true; // Handled by LabelManager
+    const btn = document.getElementById('btn-labels');
+    if (btn) btn.setAttribute('aria-pressed', String(showLabels));
+    // allLabels.forEach(label => { label.visible = showLabels; });
+    ToastManager.getInstance().show(`Labels: ${showLabels ? "ON" : "OFF"}`);
+}
+
+function toggleBelt(type: string, visible: boolean): void {
+
+Description
+The error is already being rendered into the DOM overlay. The console.error is unnecessary.
+
+Location
+src/main.ts:716
+
+Rationale
+Clear fix (< 20 lines). Consolidates error presentation logic.
+
+Code context
+    instanceRegistry = null;
+    interactionHelpers?.dispose();
+}
+
+// Auto-initialize unless skipped (for testing)
+if (!window.__SKIP_INIT__) {
+    init().catch((err: Error) => {
+        console.error("Initialization failed:", err);
+        // Show error toast even if init fails
+        ToastManager.getInstance().show(`Initialization Error: ${err.message}`, { type: 'error', duration: 10000 });
+
+        // Fallback visual
+
+Description
+If a mesh is not found in input interaction, silently ignore or handle it instead of throwing warnings.
+
+Location
+src/input.ts:243
+
+Rationale
+Clear fix (< 20 lines). Users shouldn't see developer warnings for failed raycasts or missing items.
+
+Code context
+    function selectByName(name: string): void {
+        const mesh = findMeshByName(name);
+        if (mesh) {
+            callbacks.onSetFocus(mesh);
+            callbacks.onObjectSelected(mesh);
+            updateSelectionUI(mesh);
+        } else {
+            console.warn(`Mesh not found for: ${name}`);
+        }
+    }
+
+    return { updateSelectionUI, selectByName };
+
+Description
+Initialization failures in NavigationSidebar should throw an Error or be handled by an Error Boundary instead of silently logging to console.
+
+Location
+src/components/NavigationSidebar.ts:88
+
+Rationale
+Clear fix (< 20 lines). Throwing an Error allows the top-level application to catch and display a meaningful error state to the user.
+
+Code context
+        this.dom = {
+            sidebar: document.getElementById('nav-sidebar'),
+            list: document.getElementById('nav-list'),
+            search: document.getElementById('nav-search') as HTMLInputElement | null,
+            btnClose: document.getElementById('btn-close-nav') as HTMLButtonElement | null,
+            btnOpen: document.getElementById('btn-planets') as HTMLButtonElement | null,
+        };
+
+        if (!this.dom.sidebar) {
+            console.error('NavigationSidebar: #nav-sidebar not found in DOM.');
+            return;
+        }
+
+        if (!this.dom.list) {
+            console.warn('NavigationSidebar: #nav-list not found in DOM.');
+
+Description
+If a Modal element is not found, throw an Error instead of using console.error and returning silently.
+
+Location
+src/components/Modal.ts:48
+
+Rationale
+Clear fix (< 20 lines). Allows calling code to properly handle the failure.
+
+Code context
+        const el = typeof elementOrId === 'string'
+            ? document.getElementById(elementOrId)
+            : elementOrId;
+
+        if (!el) {
+            console.error(`Modal: Element not found.`);
+            this.element = null;
+            this.options = options;
+            return;
+        }
+
+        if (el.tagName !== 'DIALOG') {
+
+Description
+Initialization failures in InfoPanel should throw an Error to be caught by the application instead of using console.error.
+
+Location
+src/components/InfoPanel.ts:73
+
+Rationale
+Clear fix (< 20 lines). Consistent error handling strategy across UI components.
+
+Code context
+            desc: document.getElementById('info-desc'),
+            radius: document.getElementById('info-radius'),
+            distance: document.getElementById('info-distance'),
+            distSun: document.getElementById('info-dist-sun'),
+            btnFollow: document.getElementById('btn-follow') as HTMLButtonElement | null,
+        };
+
+        if (!this.dom.panel) {
+            console.error('InfoPanel: #info-panel not found in DOM.');
+        }
+
+        this.bindEvents();
+    }
+
+Description
+Remove console.warn on localStorage read failure, as it is expected behavior in some privacy modes (e.g. Safari Private).
+
+Location
+src/managers/ThemeManager.ts:89
+
+Rationale
+Clear fix (< 20 lines). Reduces console noise in standard environments that restrict localStorage.
+
+Code context
+    private getStoredTheme(): string | null {
+        try {
+            return localStorage.getItem('theme');
+        } catch (e) {
+            console.warn('ThemeManager: Unable to read theme preference.', e);
+            return null;
+        }
+    }
+
+    /**
+
+Description
+In CommandPalette and NavigationSidebar, DOM elements are appended one by one in a loop, triggering layout thrashing.
+
+Location
+src/components/CommandPalette.ts:382
+
+Rationale
+Using a DocumentFragment allows appending all list items to the DOM in a single operation, which prevents multiple reflows/repaints.
+
+Code context
+                li.addEventListener('mouseenter', () => {
+                    this.selectIndex(index, false);
+                });
+
+                this.list.appendChild(li);
+            }
+
+            // Update dynamic content
+            li.id = `cmd-item-${index}`;
+
+Description
+The findMeshByName function iterates over the entire interactionTargets array to find a mesh by its name, which scales linearly O(N).
+
+Location
+src/input.ts:227
+
+Rationale
+For frequently accessed lookups, replacing the array `.find()` with a Map<string, THREE.Object3D> lookup changes the time complexity from O(N) to O(1).
+
+Code context
+    function findMeshByName(name: string): THREE.Object3D | null {
+        const found = interactionTargets.find(obj => obj.userData.name === name);
+        if (found) return found;
+
+        if (context.instanceRegistry) {
+            return context.instanceRegistry.findInstanceByName(name);
+        }
+        return null;
+    }
+
+Description
+Using 'for...in' loops to delete properties from an object is generally slower than assigning a new empty object or using 'Map' if frequent clearing is needed.
+
+Location
+src/procedural.ts:74
+
+Rationale
+Deleting properties one-by-one is slow in V8 because it deoptimizes the object structure. While re-assigning requires changing to a 'let' variable, it's safer and faster. However, if 'delete' must be used, a Map is preferable.
+
+Code context
 export function clearMaterialCache(): void {
     Object.values(materialCache).forEach(mat => mat.dispose());
     for (const key in materialCache) delete materialCache[key];
 
     Object.values(textureMaterialCache).forEach(mat => mat.dispose());
+    for (const key in textureMaterialCache) delete textureMaterialCache[key];
+
+    Object.values(ringMaterialCache).forEach(mat => mat.dispose());
+    for (const key in ringMaterialCache) delete ringMaterialCache[key];
 
 Description
-The `dispose` method in `InstanceRegistry` is responsible for cleaning up heavy GPU resources but is not tested.
+2 calls (manual + renderer)
 
 Location
-src/instancing.ts:237
+tests/unit/redundant_update.test.ts:142
 
 Rationale
-Standard resource cleanup test. Add instances, call dispose, verify scene removal and geometry/material disposal.
+Matched regex for TODO/FIXME/etc in comments, but seems like test documentation rather than an actionable task.
 
 Code context
-    /**
-     * Disposes the registry and cleans up resources.
-     */
-    dispose(): void {
-        this.groups.forEach((group) => {
-            if (group.mesh) {
-                this.scene.remove(group.mesh);
-                group.mesh.geometry?.dispose();
+        expect(scene.matrixWorldAutoUpdate).toBe(false);
+    });
+
+    it('should call updateMatrixWorld only once per frame', async () => {
+        await mainModule.init();
+
+        if (animateCallback) {
+            sceneUpdateSpy.mockClear();
+            animateCallback(performance.now());
+
+            // Without fix: 2 calls (manual + renderer)
+            // With fix: 1 call (manual)
+            expect(sceneUpdateSpy).toHaveBeenCalledTimes(1);
+        } else {
+            throw new Error("animate callback was not registered");
+        }
+    });
+});
 
 Description
-The orbital position solver uses a fixed iteration count which may lose accuracy for highly elliptical orbits (e > 0.9).
+1 call (manual)
 
 Location
-src/physics.ts:66
+tests/unit/redundant_update.test.ts:143
 
 Rationale
-Pure function with deterministic output. Easy to construct a test case with high eccentricity and verify Kepler equation satisfaction.
+Matched regex for TODO/FIXME/etc in comments, but seems like test documentation rather than an actionable task.
 
 Code context
-    // 2. Solve Kepler's Equation for Eccentric Anomaly (E)
-    // M = E - e * sin(E). Using Newton-Raphson for fast, accurate convergence.
-    let E = M + e * Math.sin(M);
+    });
 
-    for (let j = 0; j < 5; j++) {
-        const dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
-        E = E - dE;
-        if (Math.abs(dE) < 1e-12) break; // Converged to high precision
-    }
+    it('should call updateMatrixWorld only once per frame', async () => {
+        await mainModule.init();
 
+        if (animateCallback) {
+            sceneUpdateSpy.mockClear();
+            animateCallback(performance.now());
 
-MEDIUM
+            // Without fix: 2 calls (manual + renderer)
+            // With fix: 1 call (manual)
+            expect(sceneUpdateSpy).toHaveBeenCalledTimes(1);
+        } else {
+            throw new Error("animate callback was not registered");
+        }
+    });
+});
 
 Description
-Deeply nested logic (> 5 levels).
+Needs fix
 
 Location
-src/components/NavigationSidebar.ts:319
+tests/unit/redundant_update.test.ts:131
 
 Rationale
-Deep nesting increases cognitive load.
+Matched regex for TODO/FIXME/etc in comments, but seems like test documentation rather than an actionable task.
 
 Code context
-if (parent.classList.contains('nav-sublist')) {
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+        mainModule?.dispose();
+    });
+
+    it('should have scene.matrixWorldAutoUpdate disabled', async () => {
+        await mainModule.init();
+        const scene = mainModule.scene;
+        // Should be false after fix
+        expect(scene.matrixWorldAutoUpdate).toBe(false);
+    });
+
+    it('should call updateMatrixWorld only once per frame', async () => {
+        await mainModule.init();
+
+        if (animateCallback) {
+            sceneUpdateSpy.mockClear();
+            animateCallback(performance.now());
 
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/LabelManager.ts:284
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-for (const other of cell) {
-
-Description
-Function "runCollisionDetection" is 82 lines long.
-
-Location
-src/managers/LabelManager.ts:242
-
-Rationale
-Long functions are harder to read and maintain.
-
-Code context
-    private runCollisionDetection(viewportWidth: number, viewportHeight: number): void {
-
-Description
-Function "constructor" is 110 lines long.
-
-Location
-src/trails.ts:71
-
-Rationale
-Long functions are harder to read and maintain.
-
-Code context
-    constructor(scene: THREE.Scene, maxTrails: number = 5000, pointsPerTrail: number = 100) {
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/LabelManager.ts:316
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-if (cell) {
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/LabelManager.ts:312
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-for (let c = startCol; c <= endCol; c++) {
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/LabelManager.ts:281
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-if (idx !== -1) {
-
-Description
-Function "bindEvents" is 118 lines long.
-
-Location
-src/components/SettingsPanel.ts:144
-
-Rationale
-Long functions are harder to read and maintain.
-
-Code context
-    private bindEvents(): void {
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/LabelManager.ts:215
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-if (Math.abs(lastOpacity - opacity) > this.opacityUpdateThreshold) {
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/LabelManager.ts:292
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-if (isBlocked) break;
-
-Description
-Function "startBenchmark" is 89 lines long.
-
-Location
-src/benchmark.ts:38
-
-Rationale
-Long functions are harder to read and maintain.
-
-Code context
-export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/SettingsManager.ts:100
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-if (typeof parsed[key] === expectedType) {
-
-Description
-Function "init" is 108 lines long.
-
-Location
-src/main.ts:265
-
-Rationale
-Long functions are harder to read and maintain.
-
-Code context
-export async function init(): Promise<void> {
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/LabelManager.ts:283
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-if (cell) {
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/LabelManager.ts:314
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-if (idx !== -1) {
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/components/NavigationSidebar.ts:322
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-if (parentLi) parentLi.style.display = '';
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/LabelManager.ts:192
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-if (!item) {
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/LabelManager.ts:285
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-if (this.checkOverlap(item, other)) {
-
-Description
-Deeply nested logic (> 5 levels).
-
-Location
-src/managers/SettingsManager.ts:98
-
-Rationale
-Deep nesting increases cognitive load.
-
-Code context
-if (key in parsed) {
-
-Description
-Function "createDebrisSystem" is 109 lines long.
-
-Location
-src/debris.ts:230
-
-Rationale
-Long functions are harder to read and maintain.
-
-Code context
-function createDebrisSystem(config: DebrisConfig): DebrisMesh {
-
-HARD
-Description
-The spatial hashing collision detection for labels is complex and critical for mobile views but is untested.
-
-Location
-src/managers/LabelManager.ts:239
-
-Rationale
-Logic is private and coupled to viewport size and camera projection, requiring complex mocking or accessing private members.
-
-Code context
-    /**
-     * Resolves label overlaps using a spatial grid.
-     */
-    private runCollisionDetection(viewportWidth: number, viewportHeight: number): void {
-        // Sort by Z-depth (front-to-back: Painter's algorithm in reverse for labels)
-        this.visibleLabelsList.sort((a, b) => a.z - b.z);
-
-        const cellWidth = this.approxLabelWidth;
