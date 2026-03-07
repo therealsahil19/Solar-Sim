@@ -431,11 +431,9 @@ function createBodyRing(
 
     const pos = ringGeo.attributes.position as THREE.BufferAttribute;
     const uv = ringGeo.attributes.uv as THREE.BufferAttribute;
-    const v3 = new THREE.Vector3();
     if (pos && uv) {
         for (let i = 0; i < pos.count; i++) {
-            v3.fromBufferAttribute(pos, i);
-            uv.setXY(i, (v3.x / (outer * 2)) + 0.5, (v3.y / (outer * 2)) + 0.5);
+            uv.setXY(i, (pos.getX(i) / (outer * 2)) + 0.5, (pos.getY(i) / (outer * 2)) + 0.5);
         }
     }
 
