@@ -66,7 +66,7 @@ We follow a modular architecture using TypeScript and Vite.
 - **`src/utils/`**: Helper functions and utilities.
 - **`src/benchmark.ts`**: Performance benchmarking utility (exposed to `window.boltBenchmark`).
 - **`src/shaders/`**: Contains raw GLSL shader files imported via Vite's `?raw`.
-- **`tests/`**: Contains E2E tests (`e2e/`) and Unit tests (`unit/`).
+- **`tests/`**: Contains E2E tests (`e2e/`) and Unit tests (`unit/`). Note that files directly in the `tests/` root directory are ignored by testing configurations.
 - **`system.json`**: The data source for the solar system hierarchy.
 
 ### Component Architecture

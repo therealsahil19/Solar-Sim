@@ -134,6 +134,7 @@ The project is organized into a modular architecture:
 ├── tests/
 │   ├── e2e/              # Playwright E2E tests (*.spec.js, *.spec.ts)
 │   └── unit/             # Vitest unit tests (*.test.ts)
+│   # Note: Files directly in tests/ (e.g., tests/InstanceRegistry.spec.ts, tests/test_download_textures.py) are ignored by test configurations.
 └── README.md             # This documentation
 ```
 

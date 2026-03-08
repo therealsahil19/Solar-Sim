@@ -39,7 +39,7 @@ The existing testing suite is extremely detailed, especially regarding performan
 2. **Three.js Mocking:** The unhandled error regarding `scene.updateMatrixWorld` suggests that `main.test.ts` could benefit from better stubs or mocks for `THREE.Scene` elements so that testing the conductor does not crash in a Node/JSDOM context.
 3. **WebGL Error Handling:** Ensure the application correctly identifies missing WebGL support and renders a fallback or a warning.
 4. **Mobile Touch Simulation:** Playwright tests are comprehensive for desktop workflows, but testing touch inputs (drag/pinch-to-zoom) specifically for `OrbitControls` on mobile devices should be considered.
-5. **Python Script tests:** Currently there is a python script `download_textures.py`. Running `python3 -m unittest discover tests` reported 0 tests executed. Even though the README notes a test suite exists, there are no python files containing unit tests for this downloader. Consider adding a python test to assert connection timeouts are gracefully handled.
+5. **Python Script tests:** Currently there is a python script `download_textures.py`. A test suite exists (`tests/test_download_textures.py`). Running `python3 -m unittest discover tests` successfully executes the test and asserts connection timeouts are gracefully handled.
 
 ## Test Efficiency
 
