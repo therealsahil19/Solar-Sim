@@ -95,6 +95,7 @@ This document defines the domain-specific terminology, architectural patterns, a
 2. **Kuiper Log (30-50 AU):** Mild logarithmic compression for the Kuiper belt.
 3. **Oort Log (>50 AU):** Aggressive compression for far objects like the Oort Cloud.
 **Why:** Maintains visibility of distant objects (Pluto, Oort Cloud) without making the inner system too small to see.
+**Inverse Mapping:** The function `renderToPhysicsEstimate` provides a high-precision inverse mapping to convert visual coordinates back to AU (e.g., for Raycasting).
 
 ---
 

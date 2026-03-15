@@ -49,6 +49,8 @@ This project implements several optimization strategies (internally referred to 
 2. **Caching**:
     - **Material Cache**: Solid color materials are cached by color key to reduce the number of shader programs and draw calls.
     - **Matrix Caching**: The render loop uses `matrixWorld` from the previous frame for position calculations instead of forcing synchronous `updateWorldMatrix()` calls.
+    - **Position Caching**: A `WeakMap` caches orbital positions to reuse calculated values within the same frame, eliminating redundant calculations for parent bodies.
+    - **Orbital Parameters**: Orbital period and semi-minor axis are cached during initialization to avoid repeated heavy math operations (`Math.pow`, `Math.sqrt`) in the loop.
 
 3. **Memory Management**:
     - **Shared Geometry**: All orbit lines share a single unit-circle geometry, scaled per instance. The same applies to spheres.
@@ -66,6 +68,8 @@ This project implements several optimization strategies (internally referred to 
     - Using ES6 `Map` for constant-time complexity O(1) lookups to avoid array loops (`.find()`).
     - Employing `DocumentFragment` for batched DOM insertion avoiding layout thrashing.
     - Avoiding `delete` within `for...in` loops, leveraging standard reassignments/Maps to safeguard JS engine (V8) optimizations.
+    - **DOM Caching**: UI components like `NavigationSidebar` cache elements and search terms to eliminate redundant DOM queries during high-frequency events.
+    - **Direct Matrix Access**: Direct element access (e.g., `elements[12]`) on `matrixWorld` bypasses the overhead of Three.js `setFromMatrixPosition` methods.
 
 7. **Benchmarking**:
     - **Bolt Benchmark (`benchmark.ts`)**: A performance suite that measures frame timing statistics, P95/P99 latency, and jank percentage. Exposed globally to `window.boltBenchmark` for ease of use via the browser console.
@@ -88,6 +92,7 @@ The application enforces strict security measures:
 
 - **Content Security Policy (CSP)**: A strict CSP in `index.html` restricts script sources to `self` and trusted CDNs (unpkg), blocking inline scripts and unauthorized connections.
 - **Subresource Integrity (SRI)**: All external Three.js scripts loaded from CDNs use `integrity` hashes to ensure the code hasn't been tampered with.
+- **Configuration Validation**: The `config` URL parameter is strictly validated to ensure it is same-origin, uses safe protocols (`http`/`https`), ends with `.json`, and prevents path traversal (`..`).
 
 ## Project Structure
 
@@ -114,6 +119,7 @@ The project is organized into a modular architecture:
 │   ├── style.css         # Design System tokens and styles
 │   ├── components/
 │   │   ├── CommandPalette.ts    # Searchable command menu (Cmd+K)
+│   │   ├── ErrorScreen.ts       # Fatal error UI overlay manager
 │   │   ├── InfoPanel.ts         # Object details overlay panel
 │   │   ├── Modal.ts             # Reusable accessible <dialog> wrapper
 │   │   ├── NavigationSidebar.ts # Hierarchical planet navigation tree
@@ -133,7 +139,8 @@ The project is organized into a modular architecture:
 │   │   └── ThreeUtils.ts        # Three.js helper functions
 ├── tests/
 │   ├── e2e/              # Playwright E2E tests (*.spec.js, *.spec.ts)
-│   └── unit/             # Vitest unit tests (*.test.ts)
+│   ├── unit/             # Vitest unit tests (*.test.ts)
+│   └── test_download_textures.py # Python script test suite
 └── README.md             # This documentation
 ```
 
@@ -271,12 +278,12 @@ For asteroid belts and other debris fields, the configuration uses a `distributi
 | `distribution.minA/maxA` | Number | Range for Semi-major axis (AU). |
 | `distribution.minE/maxE` | Number | Range for Eccentricity. |
 | `distribution.minI/maxI` | Number | Range for Inclination (degrees). |
-| `distribution.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
 | `visual` | Object | **Visual properties**: |
 | `visual.count` | Number | Number of particles to generate. |
 | `visual.color` | String | Hex color of the particles. |
 | `visual.size` | Number | Size of each particle. |
 | `visual.opacity` | Number | Opacity (0.0 - 1.0). |
+| `visual.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
 
 ## Running the Project
 
@@ -327,6 +334,8 @@ The project uses **Playwright** for E2E testing and **Vitest** for unit testing.
 
 ### 1. End-to-End Tests (Playwright)
 
+> **Note:** If you experience `ERR_CONNECTION_REFUSED` or timeout errors under high concurrency, ensure you have run `npx playwright install`, verify your Vite dev server is running (`npm run dev`), and consider limiting concurrency (e.g., `npx playwright test --workers=2`).
+
 ```bash
 # Install browsers first
 npx playwright install
@@ -346,6 +355,13 @@ npm run test:headed
 ```bash
 # Run unit tests
 npm run test:unit
+```
+
+### 3. Python Tests
+
+```bash
+# Run python tests for the texture downloader
+python3 -m unittest discover tests
 ```
 
 ## Environment Variables

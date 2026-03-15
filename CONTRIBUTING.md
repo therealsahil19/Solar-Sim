@@ -83,11 +83,12 @@ The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D 
 
 | Component | Responsibility | Communication |
 | :--- | :--- | :--- |
-| **NavigationSidebar** | Renders the recursive planet tree. | Calls `onSelect(name)` when a planet is clicked. |
+| **NavigationSidebar** | Renders the recursive planet tree. | Communicates via `NavigationSidebarCallbacks` (`onSelect`, etc.). |
 | **InfoPanel** | Displays details of the selected object. | Updates via `update(mesh)` method. No internal state. |
-| **CommandPalette** | "Cmd+K" power menu. | Executes callbacks for global actions (e.g., `onToggleOrbits`). |
+| **CommandPalette** | "Cmd+K" power menu. | Executes callbacks via `CommandPaletteCallbacks` for global actions. |
 | **Modal** | Accessible `<dialog>` wrapper. | Manages focus trapping and lifecycle (`open`/`close`). |
 | **SettingsPanel** | Slide-out preferences menu. | Subscribes to `SettingsManager` and triggers callbacks. |
+| **ErrorScreen** | Fatal error UI overlay. | Exposes a static `show(overlay, message)` method. |
 | **ToastManager** | Notification system. | Singleton that provides `show(msg, options)` for feedback. |
 | **LabelManager** | Manages 2D labels. | Uses grid collision for visibility; decoupled from Scene. |
 | **SceneManager** | Wraps Three.js boilerplates. | Exposes Scene, Camera, and Renderer. |
@@ -159,6 +160,7 @@ Understanding how `system.json` turns into a 3D orbit:
 
 - Use **TypeScript** for all logic. Prefer interfaces over inline types.
 - Strict mode is enabled: avoid `any` whenever possible.
+- The project enforces `"noUncheckedIndexedAccess": true`. All array index accesses must handle potential `undefined` results.
 - Use ES Modules (`import`/`export`).
 - Use `const` and `let` (avoid `var`).
 - Prefer `async/await` over raw Promises.
@@ -172,12 +174,15 @@ Understanding how `system.json` turns into a 3D orbit:
   - Throttle expensive operations in the render loop (use `frameCount`).
   - Use `Map` for O(1) performance instead of array `.find()` for frequent lookups.
   - Use `DocumentFragment` when appending multiple elements to the DOM to prevent layout thrashing.
+  - Use object pooling (e.g., `_tempVec2`, `_tempVec3`) to prevent per-frame garbage collection allocations.
+  - When reading `BufferAttribute` data, use built-in methods like `.getX(i)` rather than allocating intermediate `Vector3` objects.
 
-### 3. CSS & Design
+### 3. CSS & UI Components
 
 - Use **CSS Variables** defined in `src/style.css`.
 - Follow the "Glassmorphism" design tokens.
 - Ensure all interactive elements have focus states and `aria-labels`.
+- **Graceful Degradation**: UI components (e.g., `NavigationSidebar`, `CommandPalette`) must cache DOM elements in their constructors using optional chaining (`?.`). Do not throw fatal errors or return early if an element is missing; allow the component to safely no-op to support testing and decoupled usage.
 
 ---
 
@@ -212,6 +217,8 @@ function getDistance(objA: THREE.Object3D, objB: THREE.Object3D): number { ... }
 We use **Playwright** for End-to-End (E2E) testing and **Vitest** for Unit testing.
 
 > **Important:** Check the `tests.md` file whenever a new test is made. This file documents which tests are passing/failing, test efficiency, and what currently requires more testing.
+>
+> **Note:** Files located directly in the root `tests/` directory are currently ignored by both the Vitest (`tests/unit/`) and Playwright (`tests/e2e/`) test execution configurations. Ensure your test files are placed in the appropriate subdirectories.
 
 ### 1. Structure
 
