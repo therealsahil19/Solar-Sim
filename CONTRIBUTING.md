@@ -228,6 +228,7 @@ Tests are organized by type:
   - `ToastManager.test.ts`: Tests notification state management.
   - `SettingsPanel.test.ts`: Tests UI state toggling and preference callbacks.
   - `main.test.ts`: Asserts safe scene initialization and teardown memory handling.
+- **Python Tests (`tests/`)**: Unit tests for python scripts like `test_download_textures.py`.
 
 ### 2. Best Practices
 
@@ -245,6 +246,7 @@ Tests are organized by type:
 - **E2E**: `npm run test` (runs all Playwright tests).
 - **Headed**: `npm run test:headed` (runs tests in a visible browser).
 - **Unit**: `npm run test:unit` (runs Vitest).
+- **Python**: `python3 -m unittest discover tests` (runs Python tests).
 - **Debug**: `npm run test:ui` (opens Playwright UI).
 - Use the **Playwright Report** (`npx playwright show-report`) to analyze failures.
 

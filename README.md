@@ -348,6 +348,13 @@ npm run test:headed
 npm run test:unit
 ```
 
+### 3. Python Tests
+
+```bash
+# Run python tests for scripts like download_textures.py
+python3 -m unittest discover tests
+```
+
 ## Environment Variables
 
 While the project currently relies on static assets and a simple HTTP server (Port 5173 for local dev), you can configure the following environment variables if deploying to a formal environment (e.g., Vercel, Netlify):
