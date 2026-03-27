@@ -57,15 +57,15 @@ export class ToastManager {
         // Icon based on type
         const icon = this.getIcon(type);
 
-        toast.innerHTML = `
-            <span class="toast-icon">${icon}</span>
-            <span class="toast-message"></span>
-        `;
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'toast-icon';
+        iconSpan.textContent = icon;
+        toast.appendChild(iconSpan);
 
-        const messageSpan = toast.querySelector('.toast-message');
-        if (messageSpan) {
-            messageSpan.textContent = message;
-        }
+        const messageSpan = document.createElement('span');
+        messageSpan.className = 'toast-message';
+        messageSpan.textContent = message;
+        toast.appendChild(messageSpan);
 
         // Prepend to stack (so newest is top/bottom depending on CSS)
         // Let's append so they stack downwards or upwards. 
