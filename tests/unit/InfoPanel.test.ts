@@ -40,11 +40,34 @@ describe('InfoPanel', () => {
 
     it('should throw an error if panel is missing from DOM', () => {
         const callbacks = { onFollow: vi.fn() };
-        // Empty DOM
-        document.body.innerHTML = '';
+        document.body.innerHTML = `
+            <div id="info-name"></div>
+            <div id="info-type"></div>
+            <div id="info-desc"></div>
+            <div id="info-radius"></div>
+            <div id="info-distance"></div>
+            <div id="info-dist-sun"></div>
+            <button id="btn-follow"></button>
+        `;
         expect(() => {
             new InfoPanel({ callbacks });
         }).toThrowError('InfoPanel: #info-panel not found in DOM.');
+    });
+
+    it('should throw an error if name is missing from DOM', () => {
+        const callbacks = { onFollow: vi.fn() };
+        document.body.innerHTML = `
+            <div id="info-panel"></div>
+            <div id="info-type"></div>
+            <div id="info-desc"></div>
+            <div id="info-radius"></div>
+            <div id="info-distance"></div>
+            <div id="info-dist-sun"></div>
+            <button id="btn-follow"></button>
+        `;
+        expect(() => {
+            new InfoPanel({ callbacks });
+        }).toThrowError('InfoPanel: #info-name not found in DOM.');
     });
 
     it('should update DOM with mesh data', () => {

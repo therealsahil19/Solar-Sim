@@ -17,11 +17,11 @@ import { removeSkeletons } from '../utils/SkeletonUtils';
  * DOM element cache for NavigationSidebar.
  */
 interface NavigationSidebarDOM {
-    sidebar: HTMLElement | null;
-    list: HTMLElement | null;
-    search: HTMLInputElement | null;
-    btnClose: HTMLButtonElement | null;
-    btnOpen: HTMLButtonElement | null;
+    sidebar: HTMLElement;
+    list: HTMLElement;
+    search: HTMLInputElement;
+    btnClose: HTMLButtonElement;
+    btnOpen: HTMLButtonElement;
 }
 
 /**
@@ -77,12 +77,24 @@ export class NavigationSidebar implements Disposable {
         this.callbacks = callbacks;
 
         // Cache DOM elements
+        const sidebar = document.getElementById('nav-sidebar');
+        const list = document.getElementById('nav-list');
+        const search = document.getElementById('nav-search') as HTMLInputElement | null;
+        const btnClose = document.getElementById('btn-close-nav') as HTMLButtonElement | null;
+        const btnOpen = document.getElementById('btn-planets') as HTMLButtonElement | null;
+
+        if (!sidebar) throw new Error('NavigationSidebar: #nav-sidebar not found in DOM.');
+        if (!list) throw new Error('NavigationSidebar: #nav-list not found in DOM.');
+        if (!search) throw new Error('NavigationSidebar: #nav-search not found in DOM.');
+        if (!btnClose) throw new Error('NavigationSidebar: #btn-close-nav not found in DOM.');
+        if (!btnOpen) throw new Error('NavigationSidebar: #btn-planets not found in DOM.');
+
         this.dom = {
-            sidebar: document.getElementById('nav-sidebar'),
-            list: document.getElementById('nav-list'),
-            search: document.getElementById('nav-search') as HTMLInputElement | null,
-            btnClose: document.getElementById('btn-close-nav') as HTMLButtonElement | null,
-            btnOpen: document.getElementById('btn-planets') as HTMLButtonElement | null,
+            sidebar,
+            list,
+            search,
+            btnClose,
+            btnOpen
         };
 
         this.init();
@@ -93,9 +105,7 @@ export class NavigationSidebar implements Disposable {
      */
     private init(): void {
         // Clear skeletons before rendering
-        if (this.dom.list) {
-            removeSkeletons(this.dom.list);
-        }
+        removeSkeletons(this.dom.list);
         this.renderTree();
         this.bindEvents();
         window.addEventListener('keydown', this.handleKeyDown, true); // use capture phase
@@ -105,7 +115,6 @@ export class NavigationSidebar implements Disposable {
      * Renders the navigation tree into the sidebar.
      */
     private renderTree(): void {
-        if (!this.dom.list) return;
         this.dom.list.innerHTML = '';
 
         // Add Sun manually
@@ -125,11 +134,6 @@ export class NavigationSidebar implements Disposable {
      * Caches navigation items and their text content for faster searching.
      */
     private updateCache(): void {
-        if (!this.dom.list) {
-            this._navItemsCache = [];
-            return;
-        }
-
         const items = this.dom.list.querySelectorAll<HTMLElement>('.nav-li');
         this._navItemsCache = Array.from(items).map(li => {
             const btn = li.querySelector('.nav-btn');
@@ -224,16 +228,14 @@ export class NavigationSidebar implements Disposable {
         this._handleCloseClick = (): void => this.close();
         this._handleOpenClick = (): void => this.open();
 
-        this.dom.btnClose?.addEventListener('click', this._handleCloseClick);
-        this.dom.btnOpen?.addEventListener('click', this._handleOpenClick);
+        this.dom.btnClose.addEventListener('click', this._handleCloseClick);
+        this.dom.btnOpen.addEventListener('click', this._handleOpenClick);
 
-        if (this.dom.search) {
-            this._handleSearchInput = (e: Event): void => {
-                const target = e.target as HTMLInputElement;
-                this.handleSearch(target.value);
-            };
-            this.dom.search.addEventListener('input', this._handleSearchInput);
-        }
+        this._handleSearchInput = (e: Event): void => {
+            const target = e.target as HTMLInputElement;
+            this.handleSearch(target.value);
+        };
+        this.dom.search.addEventListener('input', this._handleSearchInput);
     }
 
     /**
@@ -241,13 +243,13 @@ export class NavigationSidebar implements Disposable {
      */
     dispose(): void {
         if (this._handleCloseClick) {
-            this.dom.btnClose?.removeEventListener('click', this._handleCloseClick);
+            this.dom.btnClose.removeEventListener('click', this._handleCloseClick);
         }
         if (this._handleOpenClick) {
-            this.dom.btnOpen?.removeEventListener('click', this._handleOpenClick);
+            this.dom.btnOpen.removeEventListener('click', this._handleOpenClick);
         }
         if (this._handleSearchInput) {
-            this.dom.search?.removeEventListener('input', this._handleSearchInput);
+            this.dom.search.removeEventListener('input', this._handleSearchInput);
         }
         window.removeEventListener('keydown', this.handleKeyDown, true);
     }
@@ -257,11 +259,11 @@ export class NavigationSidebar implements Disposable {
      */
     open(): void {
         this._isOpen = true;
-        this.dom.sidebar?.setAttribute('aria-hidden', 'false');
-        this.dom.sidebar?.classList.remove('animate-out');
-        this.dom.sidebar?.classList.add('animate-in');
+        this.dom.sidebar.setAttribute('aria-hidden', 'false');
+        this.dom.sidebar.classList.remove('animate-out');
+        this.dom.sidebar.classList.add('animate-in');
 
-        setTimeout(() => this.dom.search?.focus(), 50);
+        setTimeout(() => this.dom.search.focus(), 50);
     }
 
     /**
@@ -269,17 +271,17 @@ export class NavigationSidebar implements Disposable {
      */
     close(): void {
         this._isOpen = false;
-        this.dom.sidebar?.classList.remove('animate-in');
-        this.dom.sidebar?.classList.add('animate-out');
+        this.dom.sidebar.classList.remove('animate-in');
+        this.dom.sidebar.classList.add('animate-out');
 
         setTimeout(() => {
             if (!this._isOpen) {
-                this.dom.sidebar?.setAttribute('aria-hidden', 'true');
-                this.dom.sidebar?.classList.remove('animate-out');
+                this.dom.sidebar.setAttribute('aria-hidden', 'true');
+                this.dom.sidebar.classList.remove('animate-out');
             }
         }, 400);
 
-        this.dom.btnOpen?.focus();
+        this.dom.btnOpen.focus();
         this.callbacks.onClose?.();
     }
 
@@ -305,8 +307,6 @@ export class NavigationSidebar implements Disposable {
      * Filters the navigation tree based on a search term.
      */
     private handleSearch(term: string): void {
-        if (!this.dom.list) return;
-
         term = term.toLowerCase().trim();
 
         if (!term) {

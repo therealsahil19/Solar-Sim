@@ -52,8 +52,24 @@ describe('NavigationSidebar', () => {
     });
 
     afterEach(() => {
-        sidebar.dispose();
+        if (sidebar) {
+            sidebar.dispose();
+        }
         document.body.innerHTML = '';
+    });
+
+    it('should throw error if sidebar is missing', () => {
+        document.body.innerHTML = '';
+        expect(() => {
+            new NavigationSidebar({ planetData, callbacks });
+        }).toThrowError('NavigationSidebar: #nav-sidebar not found in DOM.');
+    });
+
+    it('should throw error if list is missing', () => {
+        document.body.innerHTML = '<div id="nav-sidebar"></div>';
+        expect(() => {
+            new NavigationSidebar({ planetData, callbacks });
+        }).toThrowError('NavigationSidebar: #nav-list not found in DOM.');
     });
 
     it('should initialize and render the tree', () => {

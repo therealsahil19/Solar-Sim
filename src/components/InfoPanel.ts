@@ -16,14 +16,14 @@ import type { Disposable, SolarSimUserData } from '../types';
  * DOM element cache for InfoPanel.
  */
 interface InfoPanelDOM {
-    panel: HTMLElement | null;
-    name: HTMLElement | null;
-    type: HTMLElement | null;
-    desc: HTMLElement | null;
-    radius: HTMLElement | null;
-    distance: HTMLElement | null;
-    distSun: HTMLElement | null;
-    btnFollow: HTMLButtonElement | null;
+    panel: HTMLElement;
+    name: HTMLElement;
+    type: HTMLElement;
+    desc: HTMLElement;
+    radius: HTMLElement;
+    distance: HTMLElement;
+    distSun: HTMLElement;
+    btnFollow: HTMLButtonElement;
 }
 
 /**
@@ -58,20 +58,34 @@ export class InfoPanel implements Disposable {
         this.callbacks = callbacks;
 
         // Cache DOM elements
-        this.dom = {
-            panel: document.getElementById('info-panel'),
-            name: document.getElementById('info-name'),
-            type: document.getElementById('info-type'),
-            desc: document.getElementById('info-desc'),
-            radius: document.getElementById('info-radius'),
-            distance: document.getElementById('info-distance'),
-            distSun: document.getElementById('info-dist-sun'),
-            btnFollow: document.getElementById('btn-follow') as HTMLButtonElement | null,
-        };
+        const panel = document.getElementById('info-panel');
+        const name = document.getElementById('info-name');
+        const type = document.getElementById('info-type');
+        const desc = document.getElementById('info-desc');
+        const radius = document.getElementById('info-radius');
+        const distance = document.getElementById('info-distance');
+        const distSun = document.getElementById('info-dist-sun');
+        const btnFollow = document.getElementById('btn-follow') as HTMLButtonElement | null;
 
-        if (!this.dom.panel) {
-            throw new Error('InfoPanel: #info-panel not found in DOM.');
-        }
+        if (!panel) throw new Error('InfoPanel: #info-panel not found in DOM.');
+        if (!name) throw new Error('InfoPanel: #info-name not found in DOM.');
+        if (!type) throw new Error('InfoPanel: #info-type not found in DOM.');
+        if (!desc) throw new Error('InfoPanel: #info-desc not found in DOM.');
+        if (!radius) throw new Error('InfoPanel: #info-radius not found in DOM.');
+        if (!distance) throw new Error('InfoPanel: #info-distance not found in DOM.');
+        if (!distSun) throw new Error('InfoPanel: #info-dist-sun not found in DOM.');
+        if (!btnFollow) throw new Error('InfoPanel: #btn-follow not found in DOM.');
+
+        this.dom = {
+            panel,
+            name,
+            type,
+            desc,
+            radius,
+            distance,
+            distSun,
+            btnFollow
+        };
 
         this.bindEvents();
     }
@@ -80,22 +94,20 @@ export class InfoPanel implements Disposable {
      * Binds internal event listeners.
      */
     private bindEvents(): void {
-        if (this.dom.btnFollow) {
-            this._handleFollowClick = (e: MouseEvent): void => {
-                e.stopPropagation();
-                if (this.currentMesh && this.callbacks.onFollow) {
-                    this.callbacks.onFollow(this.currentMesh);
-                }
-            };
-            this.dom.btnFollow.addEventListener('click', this._handleFollowClick);
-        }
+        this._handleFollowClick = (e: MouseEvent): void => {
+            e.stopPropagation();
+            if (this.currentMesh && this.callbacks.onFollow) {
+                this.callbacks.onFollow(this.currentMesh);
+            }
+        };
+        this.dom.btnFollow.addEventListener('click', this._handleFollowClick);
     }
 
     /**
      * Cleans up event listeners.
      */
     dispose(): void {
-        if (this.dom.btnFollow && this._handleFollowClick) {
+        if (this._handleFollowClick) {
             this.dom.btnFollow.removeEventListener('click', this._handleFollowClick);
         }
     }
@@ -111,33 +123,27 @@ export class InfoPanel implements Disposable {
 
         this.currentMesh = mesh;
 
-        // Safe text updates
-        if (this.dom.name) this.dom.name.textContent = d.name ?? 'Unknown';
-        if (this.dom.type) this.dom.type.textContent = d.type ?? 'Unknown Type';
-        if (this.dom.desc) this.dom.desc.textContent = d.description ?? 'No description available.';
+        // Text updates
+        this.dom.name.textContent = d.name ?? 'Unknown';
+        this.dom.type.textContent = d.type ?? 'Unknown Type';
+        this.dom.desc.textContent = d.description ?? 'No description available.';
 
         // Format numeric values
-        if (this.dom.radius) {
-            const size = d.size;
-            this.dom.radius.textContent = size
-                ? `Radius: ${size.toFixed(2)} x Earth`
-                : 'Radius: -';
-        }
+        const size = d.size;
+        this.dom.radius.textContent = size
+            ? `Radius: ${size.toFixed(2)} x Earth`
+            : 'Radius: -';
 
-        if (this.dom.distance) {
-            const distance = d.distance;
-            this.dom.distance.textContent = distance
-                ? `Orbit Radius: ${distance} units`
-                : 'Orbit Radius: 0';
-        }
+        const distance = d.distance;
+        this.dom.distance.textContent = distance
+            ? `Orbit Radius: ${distance} units`
+            : 'Orbit Radius: 0';
 
         // Show the panel
-        if (this.dom.panel) {
-            this.dom.panel.classList.add('visible');
-            this.dom.panel.classList.remove('animate-out');
-            this.dom.panel.classList.add('animate-in');
-            this.dom.panel.setAttribute('aria-hidden', 'false');
-        }
+        this.dom.panel.classList.add('visible');
+        this.dom.panel.classList.remove('animate-out');
+        this.dom.panel.classList.add('animate-in');
+        this.dom.panel.setAttribute('aria-hidden', 'false');
     }
 
     /**
@@ -145,15 +151,15 @@ export class InfoPanel implements Disposable {
      * Clears `currentMesh` reference.
      */
     hide(): void {
-        if (this.dom.panel?.classList.contains('visible')) {
+        if (this.dom.panel.classList.contains('visible')) {
             this.dom.panel.classList.remove('visible');
             this.dom.panel.classList.remove('animate-in');
             this.dom.panel.classList.add('animate-out');
             this.dom.panel.setAttribute('aria-hidden', 'true');
 
             setTimeout(() => {
-                if (!this.dom.panel?.classList.contains('visible')) {
-                    this.dom.panel?.classList.remove('animate-out');
+                if (!this.dom.panel.classList.contains('visible')) {
+                    this.dom.panel.classList.remove('animate-out');
                 }
             }, 350);
         }
