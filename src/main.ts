@@ -534,10 +534,11 @@ function updateLogic(frameCount: number): void {
             }
         }
         closestObjectCache = closestObj;
-    }
-    if (closestObjectCache && playerShip) {
-        getPositionFromMatrix(closestObjectCache, tempVec);
-        playerShip.lookAt(tempVec);
+
+        if (closestObjectCache) {
+            getPositionFromMatrix(closestObjectCache, tempVec);
+            playerShip.lookAt(tempVec);
+        }
     }
 }
 
