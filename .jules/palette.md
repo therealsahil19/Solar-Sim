@@ -1,0 +1,3 @@
+## 2024-05-17 - A11y input connections and unlabelled elements
+**Learning:** Found that custom toggle elements and range sliders might not be announced efficiently by screen readers if `<label>` tags lack `for` attributes or standard components lack `aria-label`. Especially range inputs used for numeric settings (like `Speed`) without linked explicit labels or `aria-label` suffer in accessibility.
+**Action:** Always ensure that form controls and inputs like `<input type="range">` or `<input type="checkbox">` have an explicit connection to their `<label>` using the `for` and `id` tags, or utilize `aria-label` when a visible label isn't fully linked or doesn't exist.
