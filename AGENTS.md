@@ -18,8 +18,8 @@ Solar-Sim is a 3D solar system simulation built with TypeScript and Three.js. It
 Install dependencies and start the dev server:
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Open the browser to <http://localhost:5173>
@@ -49,6 +49,8 @@ For high-frequency DOM insertions, we use `DocumentFragment`. For fast lookups (
 Initialization errors throw explicit `Error` objects instead of using silent `console.error` logs, enabling proper error boundaries.
 
 ## Jules-specific preferences
+
+**IMPORTANT:** Do NOT use `npm` or `yarn`. Only `pnpm` must be used for package management, script execution, and building in this repository.
 
 Prefer editing `system.json` over changing TS for things like colors, distances, labels.
 Avoid touching `textures/` or `download_textures.py` unless a task explicitly requires it.
