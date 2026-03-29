@@ -39,7 +39,7 @@ The existing testing suite is extremely detailed, especially regarding performan
 2. **Three.js Mocking:** The unhandled error regarding `scene.updateMatrixWorld` suggests that `main.test.ts` could benefit from better stubs or mocks for `THREE.Scene` elements so that testing the conductor does not crash in a Node/JSDOM context.
 3. **WebGL Error Handling:** Ensure the application correctly identifies missing WebGL support and renders a fallback or a warning.
 4. **Mobile Touch Simulation:** Playwright tests are comprehensive for desktop workflows, but testing touch inputs (drag/pinch-to-zoom) specifically for `OrbitControls` on mobile devices should be considered.
-5. **Python Script tests:** Currently there is a python script `download_textures.py`. Running `python3 -m unittest discover tests` reported 0 tests executed. Even though the README notes a test suite exists, there are no python files containing unit tests for this downloader. Consider adding a python test to assert connection timeouts are gracefully handled.
+5. **Python Script tests:** Currently there is a python script `download_textures.py`. The test suite at `tests/test_download_textures.py` DOES exist, and properly verifies connection timeouts, SHA-256 hash mismatches, and automatic cleanup of partial/corrupted files. Ensure they are run manually with `python3 -m unittest discover tests` as they are ignored by standard runners.
 
 ## Test Efficiency
 
@@ -50,6 +50,11 @@ The existing testing suite is extremely detailed, especially regarding performan
 - **Parallelization:** Playwright executes in parallel, saving overall CI run time.
 
 However, a minor inefficiency is how Playwright tests sometimes rely on fixed time delays (`waitForTimeout`). These can lead to flakes (as seen in `camera-controls.spec.js`). **Recommendation:** Favor deterministic waiting (e.g., waiting for specific class changes or ARIA attributes) instead of fixed timeouts.
+
+### Known Limitations
+
+- **Concurrency Issues**: Playwright E2E tests are prone to timeout or connection errors (`ERR_CONNECTION_REFUSED`) under high concurrency. If encountering errors, manually start the Vite dev server (`pnpm run dev`), limit concurrency (e.g., `npx playwright test --workers=2`), and ensure browsers are installed (`npx playwright install`).
+- **Ignored Test Files**: Files located directly in the root `tests/` directory (e.g., `InstanceRegistry.spec.ts`, `Modal.spec.ts`) are currently ignored by the testing tools because they are not properly placed in `tests/unit/` or `tests/e2e/`. These should be relocated or the configuration updated to include them.
 
 ---
 *Note: Always refer to `CONTRIBUTING.md` for specific command usage to run the tests locally.*
