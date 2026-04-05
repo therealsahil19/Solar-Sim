@@ -30,7 +30,7 @@ The project uses **Vite** for building and serving the application.
 2. **Install Dependencies**:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Download Textures** (Required for first run):
@@ -44,7 +44,7 @@ The project uses **Vite** for building and serving the application.
 4. **Start Development Server**:
 
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
 5. **Open in Browser**:
@@ -78,12 +78,13 @@ The Solar-Sim UI is built on a **Decoupled Architecture** to ensure that the 3D 
 1. **Scene (`main.ts`)**: The "Conductor". It knows nothing about the UI. It exposes methods to manipulate the camera or focus on objects.
 2. **Input (`input.ts`)**: The "Controller". It bridges the gap. It listens for user actions (clicks, keys) and updates the UI or the Scene accordingly.
 3. **Components (`src/components/`)**: Pure UI classes. They do not import Three.js directly (mostly). They receive data and callbacks via their constructors.
+   - **Strict Error Handling**: Constructors must verify the existence of all required DOM elements and throw descriptive `Error`s if missing. This eliminates redundant null checks in component methods.
 
 **Core Components:**
 
 | Component | Responsibility | Communication |
 | :--- | :--- | :--- |
-| **NavigationSidebar** | Renders the recursive planet tree. | Calls `onSelect(name)` when a planet is clicked. |
+| **NavigationSidebar** | Renders the recursive planet tree. Implements two-phase caching for search logic to eliminate redundant DOM queries. | Calls `onSelect(name)` when a planet is clicked. |
 | **InfoPanel** | Displays details of the selected object. | Updates via `update(mesh)` method. No internal state. |
 | **CommandPalette** | "Cmd+K" power menu. | Executes callbacks for global actions (e.g., `onToggleOrbits`). |
 | **Modal** | Accessible `<dialog>` wrapper. | Manages focus trapping and lifecycle (`open`/`close`). |
@@ -158,7 +159,7 @@ Understanding how `system.json` turns into a 3D orbit:
 ### 1. TypeScript
 
 - Use **TypeScript** for all logic. Prefer interfaces over inline types.
-- Strict mode is enabled: avoid `any` whenever possible.
+- Strict mode is enabled: avoid `any` whenever possible. The project enables `"noUncheckedIndexedAccess": true`, meaning all array access must handle `undefined` (e.g. `array[i] ?? fallback`).
 - Use ES Modules (`import`/`export`).
 - Use `const` and `let` (avoid `var`).
 - Prefer `async/await` over raw Promises.
@@ -172,12 +173,14 @@ Understanding how `system.json` turns into a 3D orbit:
   - Throttle expensive operations in the render loop (use `frameCount`).
   - Use `Map` for O(1) performance instead of array `.find()` for frequent lookups.
   - Use `DocumentFragment` when appending multiple elements to the DOM to prevent layout thrashing.
+  - Read `THREE.BufferAttribute` data directly using `.getX(i)`, `.getY(i)`, and `.getZ(i)` instead of allocating intermediate `THREE.Vector3` objects.
 
 ### 3. CSS & Design
 
 - Use **CSS Variables** defined in `src/style.css`.
 - Follow the "Glassmorphism" design tokens.
 - Ensure all interactive elements have focus states and `aria-labels`.
+- Connect custom toggle elements, checkboxes, and range sliders to their `<label>` tags using the `for` attribute.
 
 ---
 
@@ -215,7 +218,7 @@ We use **Playwright** for End-to-End (E2E) testing and **Vitest** for Unit testi
 
 ### 1. Structure
 
-Tests are organized by type:
+Tests are organized strictly by directory:
 
 - **E2E Tests (`tests/e2e/`)**: Playwright tests for user flows and UI interactions.
   - `navigation-sidebar.spec.js`: Tests for the planet tree and search.
@@ -224,10 +227,12 @@ Tests are organized by type:
   - `command-palette.spec.ts`: Tests for power-user interface.
   - `performance.spec.js`: Tests for frame rates and performance thresholds.
 - **Unit Tests (`tests/unit/`)**: Vitest tests for individual functions and classes.
+  - Note: Vitest specifically targets `tests/unit/` and ignores tests located in the root `tests/` directory (like Python tests).
   - `physics.test.ts`: Verifies orbital calculations and scaling logic.
   - `ToastManager.test.ts`: Tests notification state management.
   - `SettingsPanel.test.ts`: Tests UI state toggling and preference callbacks.
   - `main.test.ts`: Asserts safe scene initialization and teardown memory handling.
+- **Python Tests**: Executed directly via Python unit test discovery (e.g. `tests/test_download_textures.py`).
 
 ### 2. Best Practices
 
@@ -242,10 +247,11 @@ Tests are organized by type:
 
 ### 3. Running Tests
 
-- **E2E**: `npm run test` (runs all Playwright tests).
-- **Headed**: `npm run test:headed` (runs tests in a visible browser).
-- **Unit**: `npm run test:unit` (runs Vitest).
-- **Debug**: `npm run test:ui` (opens Playwright UI).
+- **E2E**: `pnpm run test` (runs all Playwright tests).
+- **Headed**: `pnpm run test:headed` (runs tests in a visible browser).
+- **Unit**: `pnpm run test:unit` (runs Vitest).
+- **Debug**: `pnpm run test:ui` (opens Playwright UI).
+- **Python Unit**: `python3 -m unittest discover tests`
 - Use the **Playwright Report** (`npx playwright show-report`) to analyze failures.
 
 ---
