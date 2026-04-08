@@ -45,12 +45,8 @@ export class SceneManager {
     public dispose(): void {
         this.renderer.dispose();
         // labelRenderer doesn't have dispose in types usually, but we can remove element
-        if (this.labelRenderer.domElement.parentNode) {
-            this.labelRenderer.domElement.parentNode.removeChild(this.labelRenderer.domElement);
-        }
-        if (this.renderer.domElement.parentNode) {
-            this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
-        }
+        this.labelRenderer.domElement.remove();
+        this.renderer.domElement.remove();
     }
 
     public onResize(): void {

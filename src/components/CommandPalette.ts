@@ -233,9 +233,7 @@ export class CommandPalette implements Disposable {
      * Destroys the command palette and removes global event listeners.
      */
     dispose(): void {
-        if (this.overlay?.parentNode) {
-            this.overlay.parentNode.removeChild(this.overlay);
-        }
+        this.overlay?.remove();
     }
 
     /** Alias for dispose */
@@ -350,7 +348,7 @@ export class CommandPalette implements Disposable {
             for (let i = currentCount - 1; i >= targetCount; i--) {
                 const child = this.list.children[i];
                 if (child) {
-                    this.list.removeChild(child);
+                    child.remove();
                 }
             }
         }
