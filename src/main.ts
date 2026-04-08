@@ -77,6 +77,12 @@ let interactionHelpers: InteractionResult | null = null;
 
 let frameCount = 0;
 let closestObjectCache: THREE.Object3D | null = null;
+
+// Search state for amortized closest object calculation
+let closestSearchIndex = 0;
+let closestSearchBestDist = Infinity;
+let closestSearchBestObj: THREE.Object3D | null = null;
+
 const belts: Array<THREE.Object3D & { update?: (time: number) => void }> = [];
 let instanceRegistry: InstanceRegistry | null = null;
 let trailManager: TrailManager | null = null;
@@ -516,25 +522,33 @@ const _parentPosPhys = new THREE.Vector3();
 const _parentPosRender = new THREE.Vector3();
 const _renderPos = new THREE.Vector3();
 
-function updateLogic(frameCount: number): void {
-    if (playerShip && frameCount % LOGIC_UPDATE_INTERVAL === 0) {
-        let closestDist = Infinity;
-        let closestObj: THREE.Object3D | null = null;
+function updateLogic(_frameCount: number): void {
+    if (playerShip && planets.length > 0) {
         const shipPos = playerShip.position;
+        const planetsPerFrame = Math.max(1, Math.ceil(planets.length / LOGIC_UPDATE_INTERVAL));
 
-        const len = planets.length;
-        for (let i = 0; i < len; i++) {
-            const p = planets[i];
-            if (!p) continue;
-            getPositionFromMatrix(p, tempVec);
-            const dist = shipPos.distanceToSquared(tempVec);
-            if (dist < closestDist) {
-                closestDist = dist;
-                closestObj = p;
+        for (let i = 0; i < planetsPerFrame; i++) {
+            if (closestSearchIndex >= planets.length) {
+                // End of cycle: update cache and reset search
+                closestObjectCache = closestSearchBestObj;
+                closestSearchIndex = 0;
+                closestSearchBestDist = Infinity;
+                closestSearchBestObj = null;
             }
-        }
-        closestObjectCache = closestObj;
 
+            const p = planets[closestSearchIndex];
+            if (p) {
+                getPositionFromMatrix(p, tempVec);
+                const dist = shipPos.distanceToSquared(tempVec);
+                if (dist < closestSearchBestDist) {
+                    closestSearchBestDist = dist;
+                    closestSearchBestObj = p;
+                }
+            }
+            closestSearchIndex++;
+        }
+
+        // Phase 2: Per-frame visual update (Smooth tracking)
         if (closestObjectCache) {
             getPositionFromMatrix(closestObjectCache, tempVec);
             playerShip.lookAt(tempVec);
