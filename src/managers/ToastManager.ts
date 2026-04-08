@@ -84,9 +84,7 @@ export class ToastManager {
 
         // Wait for animation
         setTimeout(() => {
-            if (toast.parentNode === this.container) {
-                this.container.removeChild(toast);
-            }
+            toast.remove();
         }, 400); // Matches --duration-normal roughly
     }
 
