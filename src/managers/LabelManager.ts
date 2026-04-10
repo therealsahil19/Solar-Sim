@@ -229,14 +229,6 @@ export class LabelManager {
     }
 
     /**
-     * Helper to get linear index for spatial grid cell.
-     */
-    private getGridIndex(c: number, r: number): number {
-        if (c < 0 || c >= this.labelGridCols || r < 0 || r >= this.labelGridRows) return -1;
-        return r * this.labelGridCols + c;
-    }
-
-    /**
      * Resolves label overlaps using a spatial grid.
      */
     private runCollisionDetection(viewportWidth: number, viewportHeight: number): void {

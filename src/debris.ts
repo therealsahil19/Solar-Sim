@@ -283,9 +283,12 @@ function buildDebrisMaterial(matConfig: DebrisMaterialConfig): THREE.MeshStandar
 }
 
 function secureRandom(): number {
-    const arr = new Uint32Array(1);
-    crypto.getRandomValues(arr);
-    return arr[0] / 4294967296;
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+        const arr = new Uint32Array(1);
+        window.crypto.getRandomValues(arr);
+        return (arr[0] ?? 0) / 4294967296;
+    }
+    return Math.random();
 }
 
 function populateDebrisAttributes(mesh: DebrisSystem, count: number, distribution: DebrisDistribution): void {

@@ -115,6 +115,6 @@ export function calculateBenchmarkStats(frameTimes: number[]): BenchmarkResult &
     };
 }
 
-export function printBenchmarkStats(stats: BenchmarkResult & { p50: number, p95: number, max: number, min: number, avg: number }, durationMs: number): void {
+export function printBenchmarkStats(_stats: BenchmarkResult & { p50: number, p95: number, max: number, min: number, avg: number }, _durationMs: number): void {
     // Benchmarks calculated
 }

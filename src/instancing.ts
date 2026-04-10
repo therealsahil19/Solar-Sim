@@ -176,6 +176,7 @@ export class InstanceRegistry implements Disposable {
             } else {
                 for (let j = 0; j < group.dynamicInstances.length; j++) {
                     const i = group.dynamicInstances[j];
+                    if (i === undefined) continue;
                     const instanceData = group.instances[i];
                     if (!instanceData) continue;
 

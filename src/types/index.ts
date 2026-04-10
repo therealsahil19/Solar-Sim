@@ -135,7 +135,7 @@ export interface UserSettings {
 
 declare global {
     interface Window {
-        trailManager?: import('./trails').TrailManager; 
+        trailManager?: import('../trails').TrailManager; 
         boltBenchmark?: {
             (durationMs?: number): {
                 promise: Promise<BenchmarkResult | null>,
