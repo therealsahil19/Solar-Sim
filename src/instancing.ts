@@ -30,6 +30,8 @@ interface InstanceGroup {
     material: THREE.Material;
     /** List of instances */
     instances: InstanceData[];
+    /** Indices of dynamic instances */
+    dynamicInstances: number[];
     /** The instanced mesh (null until build() is called) */
     mesh: THREE.InstancedMesh | null;
     /** Flag to force full update (e.g. after rebuild) */
@@ -81,6 +83,7 @@ export class InstanceRegistry implements Disposable {
                 geometry,
                 material,
                 instances: [],
+                dynamicInstances: [],
                 mesh: null,
                 firstUpdatePending: false
             });
@@ -99,6 +102,9 @@ export class InstanceRegistry implements Disposable {
         });
 
         group.instances.push({ pivot, dynamic });
+        if (dynamic) {
+            group.dynamicInstances.push(index);
+        }
         this.dirty = true;
     }
 
@@ -154,20 +160,33 @@ export class InstanceRegistry implements Disposable {
             let needsUpdate = forceUpdate;
 
             // Only iterate if we have dynamic instances or a fresh build
-            for (let i = 0; i < group.instances.length; i++) {
-                const instanceData = group.instances[i];
-                if (!instanceData) continue;
+            if (forceUpdate) {
+                for (let i = 0; i < group.instances.length; i++) {
+                    const instanceData = group.instances[i];
+                    if (!instanceData) continue;
 
-                // Skip static instances unless it's the first update after build
-                if (!instanceData.dynamic && !forceUpdate) continue;
+                    const { pivot } = instanceData;
+                    const te = pivot.matrixWorld.elements;
+                    const offset = i * 16;
 
-                const { pivot } = instanceData;
-                const te = pivot.matrixWorld.elements;
-                const offset = i * 16;
+                    // Bulk copy matrix elements into the buffer
+                    array.set(te, offset);
+                    needsUpdate = true;
+                }
+            } else {
+                for (let j = 0; j < group.dynamicInstances.length; j++) {
+                    const i = group.dynamicInstances[j];
+                    const instanceData = group.instances[i];
+                    if (!instanceData) continue;
 
-                // Bulk copy matrix elements into the buffer
-                array.set(te, offset);
-                needsUpdate = true;
+                    const { pivot } = instanceData;
+                    const te = pivot.matrixWorld.elements;
+                    const offset = i * 16;
+
+                    // Bulk copy matrix elements into the buffer
+                    array.set(te, offset);
+                    needsUpdate = true;
+                }
             }
 
             if (needsUpdate) {

@@ -51,7 +51,6 @@ export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
         } else {
             // Prevent division by zero if no frames captured
             if (frameTimes.length === 0) {
-                console.warn('%c⚡ Bolt Benchmark: No frames captured.', 'color: #ffc107;');
                 if (resolvePromise) resolvePromise(null);
                 return;
             }
@@ -65,14 +64,12 @@ export function startBenchmark(durationMs: number = 5000): BenchmarkHandle {
         }
     }
 
-    console.log(`%c⚡ Starting ${durationMs / 1000}s benchmark...`, 'color: #ffc107;');
     frameId = requestAnimationFrame(measure);
 
     return {
         promise: resultPromise,
         cancel: (): void => {
             if (frameId !== null) cancelAnimationFrame(frameId);
-            console.log('Benchmark cancelled.');
             if (resolvePromise) resolvePromise(null);
         }
     };
@@ -119,20 +116,5 @@ export function calculateBenchmarkStats(frameTimes: number[]): BenchmarkResult &
 }
 
 export function printBenchmarkStats(stats: BenchmarkResult & { p50: number, p95: number, max: number, min: number, avg: number }, durationMs: number): void {
-    console.log('%c⚡ Bolt Benchmark Results', 'color: #ffc107; font-weight: bold; font-size: 14px;');
-    console.log(`   Duration: ${(durationMs / 1000).toFixed(1)}s`);
-    console.log(`   Frames:   ${stats.frames}`);
-    console.log(`   Avg FPS:  ${stats.avgFps.toFixed(1)}`);
-    console.log('   ─────────────────────────');
-    console.log(`   Avg Frame:  ${stats.avg.toFixed(2)}ms`);
-    console.log(`   P50 Frame:  ${stats.p50.toFixed(2)}ms`);
-    console.log(`   P95 Frame:  ${stats.p95.toFixed(2)}ms`);
-    console.log(`   P99 Frame:  ${stats.p99.toFixed(2)}ms (GC indicator)`);
-    console.log(`   Max Frame:  ${stats.max.toFixed(2)}ms (worst spike)`);
-    console.log(`   Min Frame:  ${stats.min.toFixed(2)}ms`);
-    console.log(`   Std Dev:    ${stats.stdDev.toFixed(2)}ms`);
-    console.log('   ─────────────────────────');
-
-    const jankFrames = (stats.jankPercent / 100) * stats.frames;
-    console.log(`   Jank Frames (>16.67ms): ${Math.round(jankFrames)} (${stats.jankPercent.toFixed(1)}%)`);
+    // Benchmarks calculated
 }

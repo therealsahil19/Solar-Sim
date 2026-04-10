@@ -1,188 +1,115 @@
-easy
-
 Description
-The createStarfield function is exported but has no corresponding unit tests.
+Repeated iteration over labelGrid cells in nested loops causing potential performance degradation when many labels are present.
 
 Location
-src/procedural.ts:126
+src/managers/LabelManager.ts:305
 
 Rationale
-The function simply creates and returns a THREE.Points object, which is easy to verify without complex setup.
+Optimizing inner loops is straightforward, e.g., by ensuring quick early exits or using better data structures.
 
 Code context
-    return Math.pow(a, 1.5);
-}
+            for (let c = startCol; c <= endCol; c++) {
+                const idx = this.getGridIndex(c, r);
+                if (idx === -1) continue;
 
-/**
- * Creates the background starfield.
- */
-export function createStarfield(): THREE.Points {
-    const starsGeometry = new THREE.BufferGeometry();
-    const starsMaterial = new THREE.PointsMaterial({
+                const cell = this.labelGrid[idx];
+                if (!cell) continue;
+
+                for (const other of cell) {
+                    if (this.checkOverlap(item, other)) {
+                        return true;
 
 Description
-Remove console.warn on localStorage read failure in SettingsManager.
+The private validateSettings method handles crucial logic to ensure settings conform to the default schema types but is not explicitly tested.
 
 Location
-src/managers/SettingsManager.ts:99
+src/managers/SettingsManager.ts:106
 
 Rationale
-Clear fix (< 20 lines). Reduces console noise.
+High confidence as we can use reflection or test it via the public `load()`/`set()` methods to verify settings validation logic.
 
 Code context
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                const parsed = JSON.parse(stored) as Record<string, unknown>;
-                const validated = this.validateSettings(parsed);
-                this.settings = { ...DEFAULT_SETTINGS, ...validated };
-            }
-        } catch (e) {
-            console.warn('SettingsManager: Unable to load preferences.', e);
-            this.settings = { ...DEFAULT_SETTINGS };
-        }
-    }
-
-Description
-Either throw an Error or ignore invalid keys quietly instead of using console.warn.
-
-Location
-src/managers/SettingsManager.ts:153
-
-Rationale
-Clear fix (< 20 lines). Throwing an error provides better development feedback.
-
-Code context
-     * @example settings.set('speed', 2.0);
+    /**
+     * Validates parsed settings against the default schema types.
      */
-    set<K extends SettingKey>(key: K, value: Settings[K]): void {
-        if (!(key in DEFAULT_SETTINGS)) {
-            console.warn(`SettingsManager: Unknown setting "${key}"`);
-            return;
+    private validateSettings(parsed: Record<string, unknown>): Partial<Settings> {
+        const validated: Record<string, unknown> = {};
+        for (const key of Object.keys(DEFAULT_SETTINGS) as SettingKey[]) {
+            if (key in parsed && typeof parsed[key] === typeof DEFAULT_SETTINGS[key]) {
+                validated[key] = parsed[key];
+            }
         }
 
-        this.settings[key] = value;
-        this.save();
-        this.notifyListeners(key, value);
-
 Description
-The error is logged via console.error and immediately thrown. The console.error is redundant.
+A commented out snippet for adding a glow sprite exists in `src/procedural.ts` and appears to be dead code.
 
 Location
-src/main.ts:297
+src/procedural.ts:400
 
 Rationale
-Clear fix (< 20 lines). Reduces log duplication.
+Commented out code adds clutter and confusion. Removing it is safe.
 
 Code context
-        instanceRegistry!.groups.forEach(group => {
-            if (group.mesh) interactionTargets.push(group.mesh);
-        });
-    } catch (error) {
-        console.error("Failed to load system data:", error);
-        initFailed = true;
-        throw error;
-    }
+    // Add Glow Sprite (already created above)
+    // const glow = createGlowSprite(data.visual.radius, data.visual.color);
+    // visualGroup.add(glow);
 
-    setupInteractionsAndUI(planetData);
 
 Description
-Remove the commented out `allLabels.forEach(...)` as labels are now handled by LabelManager.
+The doc block for getOrbitalPosition contains duplicate descriptive sentences and numbered lists.
 
 Location
-src/main.ts:456
+src/physics.ts:23
 
 Rationale
-Clear fix (< 20 lines). Removes confusing historical code.
+Fixing a JSDoc block is straightforward and zero risk.
 
 Code context
-    labelManager?.toggle(showLabels);
-    // labelsNeedUpdate = true; // Handled by LabelManager
-    const btn = document.getElementById('btn-labels');
-    if (btn) btn.setAttribute('aria-pressed', String(showLabels));
-    // allLabels.forEach(label => { label.visible = showLabels; });
-    ToastManager.getInstance().show(`Labels: ${showLabels ? "ON" : "OFF"}`);
-}
-
-function toggleBelt(type: string, visible: boolean): void {
-    belts.forEach(belt => {
+ * Calculates the 3D position of a celestial body using Kepler's Laws.
+ *
+ * Logic:
+ * 1. Calculates Mean Anomaly (M) based on time and orbital period.
+ * Calculates the astronomical position of a body based on its orbital parameters.
+ *
+ * Technical Details:
+ * 1. Mean Anomaly (M) is calculated from Time and Period.
+ * 2. Eccentric Anomaly (E) is solved via Newton-Raphson iteration of Kepler's Equation: M = E - e*sin(E).
 
 Description
-Silently clamp or expose configuration to handle maxTrails limits without spamming console.
+The trailManager property on the Window interface is typed as 'any', circumventing TypeScript's type safety.
 
 Location
-src/trails.ts:75
+src/types/index.ts:138
 
 Rationale
-Clear fix (< 20 lines). Cleans up expected runtime limits logging.
+The type 'TrailManager' is well defined and can simply be imported and used instead of 'any'. Requires a small, isolated change.
 
 Code context
-    constructor(scene: THREE.Scene, maxTrails: number = 5000, pointsPerTrail: number = 100) {
-        this.scene = scene;
-        // Clamp maxTrails to 4096 to ensure compatibility with most devices
-        this.maxTrails = Math.min(maxTrails, 4096);
-        if (maxTrails > 4096) {
-            console.warn(`TrailManager: Clamping maxTrails from ${maxTrails} to ${this.maxTrails} for texture compatibility.`);
-        }
-
-        this.pointsPerTrail = pointsPerTrail;
-        this.segmentsPerTrail = pointsPerTrail;
-
+        trailManager: any; // Using any for simplicity in global scope for tests
+        boltBenchmark?: {
+            (durationMs?: number): {
 Description
-Initialization failures in SettingsPanel should throw an Error to be caught by the application instead of using console.error.
+Multiple debug console.log statements are left in the benchmark.ts file, which clutter the console output.
 
 Location
-src/components/SettingsPanel.ts:87
+src/benchmark.ts:122
 
 Rationale
-Clear fix (< 20 lines). Throwing an Error is a more robust way to handle missing required UI elements.
+Removing these console.log statements is safe and does not affect the actual logic. They are purely diagnostic.
 
 Code context
-            toggleOortCloud: document.getElementById('setting-oort-cloud') as HTMLInputElement | null,
-            themeButtons: document.querySelectorAll<HTMLButtonElement>('.theme-btn'),
-            sliderSpeed: document.getElementById('setting-speed') as HTMLInputElement | null,
-            speedValue: document.getElementById('setting-speed-value'),
-        };
-
-        if (!this.dom.panel) {
-            console.error('SettingsPanel: #settings-panel not found in DOM.');
-            return;
-        }
-
-        this.initializeFromSettings();
+    console.log('%c⚡ Bolt Benchmark Results', 'color: #ffc107; font-weight: bold; font-size: 14px;');
+    console.log(`   Duration: ${(durationMs / 1000).toFixed(1)}s`);
+    console.log(`   Frames:   ${stats.frames}`);
 
 Description
-If a Modal element is not a DIALOG tag, throw an Error instead of using console.error.
+The try/catch block inside `notifyListeners` catches errors thrown by listeners but throws them again; this should be verified with a test.
 
 Location
-src/components/Modal.ts:55
+src/managers/SettingsManager.ts:180
 
 Rationale
-Clear fix (< 20 lines). Validates preconditions explicitly by throwing.
-
-Code context
-            this.element = null;
-            this.options = options;
-            return;
-        }
-
-        if (el.tagName !== 'DIALOG') {
-            console.error(`Modal: Element must be a <dialog> tag.`);
-            this.element = null;
-            this.options = options;
-            return;
-        }
-
-        this.element = el as HTMLDialogElement;
-
-Description
-Consider catching and re-throwing errors or passing them to a global error handler instead of suppressing with console.error.
-
-Location
-src/managers/SettingsManager.ts:185
-
-Rationale
-Clear fix (< 20 lines). Helps surface listener errors directly to the application.
+High confidence. The test setup simply requires registering a mock listener that throws an error and asserting that the error propagates.
 
 Code context
     private notifyListeners(key: SettingKey, value: SettingValue): void {
@@ -190,388 +117,131 @@ Code context
             try {
                 listener(key, value);
             } catch (e) {
-                console.error('SettingsManager: Listener error', e);
+                throw e;
             }
         }
     }
 
-    /**
-
 Description
-Warn users gracefully via the UI or throw an error rather than logging to console when a CommandPalette item lacks a valid handler.
+The config object is cast to 'any' when passed to createBelt, which weakens type safety and can hide type mismatches.
 
 Location
-src/components/CommandPalette.ts:441
+src/main.ts:222
 
 Rationale
-Clear fix (< 20 lines). Prevents silent failures in the command palette UI from the user's perspective.
+Requires updating the type signature of createBelt or ensuring 'config' conforms to the expected type, which is straightforward but might require minor type adjustments.
 
 Code context
-    private executeCurrent(): void {
-        const item = this.filteredItems[this.selectedIndex];
-        if (item) {
-            this.close();
-            if (typeof item.handler === 'function') {
-                item.handler();
-            } else {
-                console.warn(`CommandPalette: Item "${item.name}" has no valid handler.`);
-            }
-        }
-    }
-}
+        chunk.forEach(config => {
+            if (config.type === 'Belt') {
+                const belt = createBelt(config as any);
+                scene.add(belt);
+                belts.push(belt);
+
 
 Description
-Remove console.warn on localStorage write failure, as it is expected behavior in some privacy modes.
+Math.random() is used to generate parameters for procedural debris generation. While acceptable for non-security visual tasks, it is a weak pseudo-random number generator and should be replaced with Crypto.getRandomValues() if any parameters ever influence security-sensitive application logic.
 
 Location
-src/managers/ThemeManager.ts:101
+src/debris.ts:292
 
 Rationale
-Clear fix (< 20 lines). Reduces console noise.
+While the fix (switching to Crypto.getRandomValues()) is simple, it requires a small utility function to map the generated values to a [0, 1) range, which adds a few lines of code and minor overhead. However, it's a straightforward replacement.
 
 Code context
-    private setStoredTheme(themeName: string): void {
-        try {
-            localStorage.setItem('theme', themeName);
-        } catch (e) {
-            console.warn('ThemeManager: Unable to persist theme preference.', e);
-        }
-    }
+    for (let i = 0; i < count; i++) {
+        // Generate random Keplerian elements within the distribution bounds
+        const a = distribution.minA + Math.random() * (distribution.maxA - distribution.minA);
+        const e = distribution.minE + Math.random() * (distribution.maxE - distribution.minE);
+        const inc = distribution.minI + Math.random() * (distribution.maxI - distribution.minI);
 
-    /**
-     * Type guard to check if a string is a valid theme name.
+        const omega = Math.random() * 360;
+        const Omega = Math.random() * 360;
+        const M0 = Math.random() * 360;
 
 Description
-Remove console.warn on localStorage write failure in SettingsManager.
+Iterating over every instance in instanced groups continuously during update cycles.
 
 Location
-src/managers/SettingsManager.ts:124
+src/instancing.ts:157
 
 Rationale
-Clear fix (< 20 lines). Reduces console noise.
+Requires ensuring only dynamic or changed instances are processed.
 
 Code context
-    private save(): void {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
-        } catch (e) {
-            console.warn('SettingsManager: Unable to save preferences.', e);
-        }
-    }
+            const forceUpdate = group.firstUpdatePending;
+            let needsUpdate = forceUpdate;
 
-    /**
-     * Retrieves the current value for a specific setting key.
+            // Only iterate if we have dynamic instances or a fresh build
+            for (let i = 0; i < group.instances.length; i++) {
+                const instanceData = group.instances[i];
+                if (!instanceData) continue;
+
+                // Skip static instances unless it's the first update after build
+                if (!instanceData.dynamic && !forceUpdate) continue;
 
 Description
-Invalid config URLs are gracefully handled; the console.warn can be removed or replaced with an application-level toast.
+Double nested loop for updating trail segments can be optimized by flattening or utilizing typed arrays better.
 
 Location
-src/main.ts:203
+src/trails.ts:149
 
 Rationale
-Clear fix (< 20 lines). Removes unnecessary developer logs from production.
+Requires modifying how trails are stored and updated.
 
 Code context
-            configUrl = 'system.json';
-            ToastManager.getInstance().show("External config blocked. Loaded default system.", { type: 'error' });
-        }
-    } catch (e) {
-        console.warn('Invalid config URL:', configUrl);
-        configUrl = 'system.json';
-    }
+        let ptr = 0;
+        for (let t = 0; t < this.maxTrails; t++) {
+            for (let s = 0; s < this.segmentsPerTrail; s++) {
+                // Vertex 0 (Start)
+                indices[ptr] = s;
+                vertexIndices[ptr] = 0;
+                trailIndices[ptr] = t;
+                ptr++;
 
-    const response = await fetch(configUrl);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                // Vertex 1 (End)
 
 Description
-Remove the commented out `labelsNeedUpdate = true` code to clean up the source.
+Iterating through all animated objects linearly for physics updates, which scales poorly with large numbers of objects.
 
 Location
-src/main.ts:453
+src/main.ts:553
 
 Rationale
-Clear fix (< 20 lines). Cleans up obsolete code comments.
+Requires optimizing how animated objects are stored or processed, potentially requiring some restructuring.
 
 Code context
-function toggleLabels(): void {
-    showLabels = !showLabels;
-    labelManager?.toggle(showLabels);
-    // labelsNeedUpdate = true; // Handled by LabelManager
-    const btn = document.getElementById('btn-labels');
-    if (btn) btn.setAttribute('aria-pressed', String(showLabels));
-    // allLabels.forEach(label => { label.visible = showLabels; });
-    ToastManager.getInstance().show(`Labels: ${showLabels ? "ON" : "OFF"}`);
-}
+    simulationTime += dt * SIMULATION_SPEED_BASE * timeScale;
 
-function toggleBelt(type: string, visible: boolean): void {
-
-Description
-The error is already being rendered into the DOM overlay. The console.error is unnecessary.
-
-Location
-src/main.ts:716
-
-Rationale
-Clear fix (< 20 lines). Consolidates error presentation logic.
-
-Code context
-    instanceRegistry = null;
-    interactionHelpers?.dispose();
-}
-
-// Auto-initialize unless skipped (for testing)
-if (!window.__SKIP_INIT__) {
-    init().catch((err: Error) => {
-        console.error("Initialization failed:", err);
-        // Show error toast even if init fails
-        ToastManager.getInstance().show(`Initialization Error: ${err.message}`, { type: 'error', duration: 10000 });
-
-        // Fallback visual
+    const len = animatedObjects.length;
+    for (let i = 0; i < len; i++) {
+        const obj = animatedObjects[i];
+        if (!obj) continue;
+        const physics = obj.physics;
+        if (physics && physics.a !== undefined) {
+            getOrbitalPosition(physics, simulationTime, _localPos);
+            _worldPos.copy(_localPos);
 
 Description
-If a mesh is not found in input interaction, silently ignore or handle it instead of throwing warnings.
+Not inferrable
 
 Location
-src/input.ts:243
-
-Rationale
-Clear fix (< 20 lines). Users shouldn't see developer warnings for failed raycasts or missing items.
-
-Code context
-    function selectByName(name: string): void {
-        const mesh = findMeshByName(name);
-        if (mesh) {
-            callbacks.onSetFocus(mesh);
-            callbacks.onObjectSelected(mesh);
-            updateSelectionUI(mesh);
-        } else {
-            console.warn(`Mesh not found for: ${name}`);
-        }
-    }
-
-    return { updateSelectionUI, selectByName };
-
-Description
-Initialization failures in NavigationSidebar should throw an Error or be handled by an Error Boundary instead of silently logging to console.
-
-Location
-src/components/NavigationSidebar.ts:88
-
-Rationale
-Clear fix (< 20 lines). Throwing an Error allows the top-level application to catch and display a meaningful error state to the user.
-
-Code context
-        this.dom = {
-            sidebar: document.getElementById('nav-sidebar'),
-            list: document.getElementById('nav-list'),
-            search: document.getElementById('nav-search') as HTMLInputElement | null,
-            btnClose: document.getElementById('btn-close-nav') as HTMLButtonElement | null,
-            btnOpen: document.getElementById('btn-planets') as HTMLButtonElement | null,
-        };
-
-        if (!this.dom.sidebar) {
-            console.error('NavigationSidebar: #nav-sidebar not found in DOM.');
-            return;
-        }
-
-        if (!this.dom.list) {
-            console.warn('NavigationSidebar: #nav-list not found in DOM.');
-
-Description
-If a Modal element is not found, throw an Error instead of using console.error and returning silently.
-
-Location
-src/components/Modal.ts:48
-
-Rationale
-Clear fix (< 20 lines). Allows calling code to properly handle the failure.
-
-Code context
-        const el = typeof elementOrId === 'string'
-            ? document.getElementById(elementOrId)
-            : elementOrId;
-
-        if (!el) {
-            console.error(`Modal: Element not found.`);
-            this.element = null;
-            this.options = options;
-            return;
-        }
-
-        if (el.tagName !== 'DIALOG') {
-
-Description
-Initialization failures in InfoPanel should throw an Error to be caught by the application instead of using console.error.
-
-Location
-src/components/InfoPanel.ts:73
-
-Rationale
-Clear fix (< 20 lines). Consistent error handling strategy across UI components.
-
-Code context
-            desc: document.getElementById('info-desc'),
-            radius: document.getElementById('info-radius'),
-            distance: document.getElementById('info-distance'),
-            distSun: document.getElementById('info-dist-sun'),
-            btnFollow: document.getElementById('btn-follow') as HTMLButtonElement | null,
-        };
-
-        if (!this.dom.panel) {
-            console.error('InfoPanel: #info-panel not found in DOM.');
-        }
-
-        this.bindEvents();
-    }
-
-Description
-Remove console.warn on localStorage read failure, as it is expected behavior in some privacy modes (e.g. Safari Private).
-
-Location
-src/managers/ThemeManager.ts:89
-
-Rationale
-Clear fix (< 20 lines). Reduces console noise in standard environments that restrict localStorage.
-
-Code context
-    private getStoredTheme(): string | null {
-        try {
-            return localStorage.getItem('theme');
-        } catch (e) {
-            console.warn('ThemeManager: Unable to read theme preference.', e);
-            return null;
-        }
-    }
-
-    /**
-
-Description
-In CommandPalette and NavigationSidebar, DOM elements are appended one by one in a loop, triggering layout thrashing.
-
-Location
-src/components/CommandPalette.ts:382
-
-Rationale
-Using a DocumentFragment allows appending all list items to the DOM in a single operation, which prevents multiple reflows/repaints.
-
-Code context
-                li.addEventListener('mouseenter', () => {
-                    this.selectIndex(index, false);
-                });
-
-                this.list.appendChild(li);
-            }
-
-            // Update dynamic content
-            li.id = `cmd-item-${index}`;
-
-Description
-The findMeshByName function iterates over the entire interactionTargets array to find a mesh by its name, which scales linearly O(N).
-
-Location
-src/input.ts:227
-
-Rationale
-For frequently accessed lookups, replacing the array `.find()` with a Map<string, THREE.Object3D> lookup changes the time complexity from O(N) to O(1).
-
-Code context
-    function findMeshByName(name: string): THREE.Object3D | null {
-        const found = interactionTargets.find(obj => obj.userData.name === name);
-        if (found) return found;
-
-        if (context.instanceRegistry) {
-            return context.instanceRegistry.findInstanceByName(name);
-        }
-        return null;
-    }
-
-Description
-Using 'for...in' loops to delete properties from an object is generally slower than assigning a new empty object or using 'Map' if frequent clearing is needed.
-
-Location
-src/procedural.ts:74
-
-Rationale
-Deleting properties one-by-one is slow in V8 because it deoptimizes the object structure. While re-assigning requires changing to a 'let' variable, it's safer and faster. However, if 'delete' must be used, a Map is preferable.
-
-Code context
-export function clearMaterialCache(): void {
-    Object.values(materialCache).forEach(mat => mat.dispose());
-    for (const key in materialCache) delete materialCache[key];
-
-    Object.values(textureMaterialCache).forEach(mat => mat.dispose());
-    for (const key in textureMaterialCache) delete textureMaterialCache[key];
-
-    Object.values(ringMaterialCache).forEach(mat => mat.dispose());
-    for (const key in ringMaterialCache) delete ringMaterialCache[key];
-
-Description
-2 calls (manual + renderer)
-
-Location
-tests/unit/redundant_update.test.ts:142
+tests/unit/redundant_update.test.ts:132
 
 Rationale
 Matched regex for TODO/FIXME/etc in comments, but seems like test documentation rather than an actionable task.
 
 Code context
-        expect(scene.matrixWorldAutoUpdate).toBe(false);
-    });
+        vi.mock('../../src/trails', () => ({
+            TrailManager: class {
+                constructor() { }
+                update() { }
+                flushRegistrations() { }
+                dispose() { }
+            }
+        }));
 
-    it('should call updateMatrixWorld only once per frame', async () => {
-        await mainModule.init();
-
-        if (animateCallback) {
-            sceneUpdateSpy.mockClear();
-            animateCallback(performance.now());
-
-            // Without fix: 2 calls (manual + renderer)
-            // With fix: 1 call (manual)
-            expect(sceneUpdateSpy).toHaveBeenCalledTimes(1);
-        } else {
-            throw new Error("animate callback was not registered");
-        }
-    });
-});
-
-Description
-1 call (manual)
-
-Location
-tests/unit/redundant_update.test.ts:143
-
-Rationale
-Matched regex for TODO/FIXME/etc in comments, but seems like test documentation rather than an actionable task.
-
-Code context
-    });
-
-    it('should call updateMatrixWorld only once per frame', async () => {
-        await mainModule.init();
-
-        if (animateCallback) {
-            sceneUpdateSpy.mockClear();
-            animateCallback(performance.now());
-
-            // Without fix: 2 calls (manual + renderer)
-            // With fix: 1 call (manual)
-            expect(sceneUpdateSpy).toHaveBeenCalledTimes(1);
-        } else {
-            throw new Error("animate callback was not registered");
-        }
-    });
-});
-
-Description
-Needs fix
-
-Location
-tests/unit/redundant_update.test.ts:131
-
-Rationale
-Matched regex for TODO/FIXME/etc in comments, but seems like test documentation rather than an actionable task.
-
-Code context
+        mainModule = await import('../../src/main');
     });
 
     afterEach(() => {
@@ -592,4 +262,28 @@ Code context
         if (animateCallback) {
             sceneUpdateSpy.mockClear();
             animateCallback(performance.now());
+
+            // Without fix: 2 calls (manual + renderer)
+
+Description
+The `init` function is overly long and does too many things (DOM manipulation, Three.js initialization, async fetching, event binding, lazy loading).
+
+Location
+src/main.ts:252
+
+Rationale
+Refactoring an initialization sequence involves decoupling multiple interdependent systems and carries risk of breaking the start sequence.
+
+Code context
+export async function init(): Promise<void> {
+    interactionTargets.length = 0;
+    animatedObjects.length = 0;
+    planets.length = 0;
+    allOrbits.length = 0;
+    allTrails.length = 0;
+
+    clearMaterialCache();
+
+    initThreeJSEnvironment();
+
 

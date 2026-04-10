@@ -144,21 +144,21 @@ export class TrailManager implements Disposable {
         const positions = new Float32Array(totalVertices * 3);
 
         // Fill static attributes
-        let ptr = 0;
-        for (let t = 0; t < this.maxTrails; t++) {
-            for (let s = 0; s < this.segmentsPerTrail; s++) {
-                // Vertex 0 (Start)
-                indices[ptr] = s;
-                vertexIndices[ptr] = 0;
-                trailIndices[ptr] = t;
-                ptr++;
+        const numSegments = this.maxTrails * this.segmentsPerTrail;
+        for (let i = 0; i < numSegments; i++) {
+            const t = Math.floor(i / this.segmentsPerTrail);
+            const s = i % this.segmentsPerTrail;
+            const ptr = i * 2;
 
-                // Vertex 1 (End)
-                indices[ptr] = s;
-                vertexIndices[ptr] = 1;
-                trailIndices[ptr] = t;
-                ptr++;
-            }
+            // Vertex 0 (Start)
+            indices[ptr] = s;
+            vertexIndices[ptr] = 0;
+            trailIndices[ptr] = t;
+
+            // Vertex 1 (End)
+            indices[ptr + 1] = s;
+            vertexIndices[ptr + 1] = 1;
+            trailIndices[ptr + 1] = t;
         }
 
         this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));

@@ -129,7 +129,6 @@ describe('Redundant Scene Update Optimization', () => {
     it('should have scene.matrixWorldAutoUpdate disabled', async () => {
         await mainModule.init();
         const scene = mainModule.scene;
-        // Should be false after fix
         expect(scene.matrixWorldAutoUpdate).toBe(false);
     });
 
@@ -139,9 +138,6 @@ describe('Redundant Scene Update Optimization', () => {
         if (animateCallback) {
             sceneUpdateSpy.mockClear();
             animateCallback(performance.now());
-
-            // Without fix: 2 calls (manual + renderer)
-            // With fix: 1 call (manual)
             expect(sceneUpdateSpy).toHaveBeenCalledTimes(1);
         } else {
             throw new Error("animate callback was not registered");

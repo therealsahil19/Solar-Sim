@@ -282,6 +282,12 @@ function buildDebrisMaterial(matConfig: DebrisMaterialConfig): THREE.MeshStandar
     return material;
 }
 
+function secureRandom(): number {
+    const arr = new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    return arr[0] / 4294967296;
+}
+
 function populateDebrisAttributes(mesh: DebrisSystem, count: number, distribution: DebrisDistribution): void {
     const aOrbit = new Float32Array(count * 4);
     const aParams = new Float32Array(count * 3);
@@ -289,14 +295,14 @@ function populateDebrisAttributes(mesh: DebrisSystem, count: number, distributio
 
     for (let i = 0; i < count; i++) {
         // Random Distribution
-        const a = distribution.minA + Math.random() * (distribution.maxA - distribution.minA);
-        const e = distribution.minE + Math.random() * (distribution.maxE - distribution.minE);
-        const inc = distribution.minI + Math.random() * (distribution.maxI - distribution.minI);
+        const a = distribution.minA + secureRandom() * (distribution.maxA - distribution.minA);
+        const e = distribution.minE + secureRandom() * (distribution.maxE - distribution.minE);
+        const inc = distribution.minI + secureRandom() * (distribution.maxI - distribution.minI);
 
-        const omega = Math.random() * 360;
-        const Omega = Math.random() * 360;
-        const M0 = Math.random() * 360;
-        const tumbleSpeed = 0.5 + Math.random() * 2.0;
+        const omega = secureRandom() * 360;
+        const Omega = secureRandom() * 360;
+        const M0 = secureRandom() * 360;
+        const tumbleSpeed = 0.5 + secureRandom() * 2.0;
 
         // Fill Attributes
         aOrbit[i * 4 + 0] = a;
@@ -310,8 +316,8 @@ function populateDebrisAttributes(mesh: DebrisSystem, count: number, distributio
 
         // Set Instance Matrix
         dummy.position.set(0, 0, 0);
-        dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-        const s = 0.5 + Math.random() * 0.5;
+        dummy.rotation.set(secureRandom() * Math.PI, secureRandom() * Math.PI, secureRandom() * Math.PI);
+        const s = 0.5 + secureRandom() * 0.5;
         dummy.scale.set(s, s, s);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);

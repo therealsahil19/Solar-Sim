@@ -296,14 +296,15 @@ export class LabelManager {
     private isLabelBlocked(item: LabelCollisionData, startCol: number, endCol: number, startRow: number, endRow: number): boolean {
         for (let r = startRow; r <= endRow; r++) {
             for (let c = startCol; c <= endCol; c++) {
-                const idx = this.getGridIndex(c, r);
-                if (idx === -1) continue;
+                const idx = r * this.labelGridCols + c;
+                if (idx < 0 || idx >= this.labelGrid.length) continue;
 
                 const cell = this.labelGrid[idx];
                 if (!cell) continue;
 
-                for (const other of cell) {
-                    if (this.checkOverlap(item, other)) {
+                for (let i = 0; i < cell.length; i++) {
+                    const other = cell[i];
+                    if (other && this.checkOverlap(item, other)) {
                         return true;
                     }
                 }
@@ -315,8 +316,8 @@ export class LabelManager {
     private addLabelToGrid(item: LabelCollisionData, startCol: number, endCol: number, startRow: number, endRow: number): void {
         for (let r = startRow; r <= endRow; r++) {
             for (let c = startCol; c <= endCol; c++) {
-                const idx = this.getGridIndex(c, r);
-                if (idx !== -1) {
+                const idx = r * this.labelGridCols + c;
+                if (idx >= 0 && idx < this.labelGrid.length) {
                     const cell = this.labelGrid[idx];
                     if (cell) cell.push(item);
                 }

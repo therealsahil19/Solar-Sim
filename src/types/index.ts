@@ -135,7 +135,7 @@ export interface UserSettings {
 
 declare global {
     interface Window {
-        trailManager: any; // Using any for simplicity in global scope for tests
+        trailManager?: import('./trails').TrailManager; 
         boltBenchmark?: {
             (durationMs?: number): {
                 promise: Promise<BenchmarkResult | null>,

@@ -20,11 +20,7 @@ import type { OrbitalParameters } from './types/system';
 const DEG_TO_RAD = Math.PI / 180;
 
 /**
- * Calculates the 3D position of a celestial body using Kepler's Laws.
- *
- * Logic:
- * 1. Calculates Mean Anomaly (M) based on time and orbital period.
- * Calculates the astronomical position of a body based on its orbital parameters.
+ * Calculates the astronomical position of a body based on its orbital parameters using Kepler's Laws.
  *
  * Technical Details:
  * 1. Mean Anomaly (M) is calculated from Time and Period.

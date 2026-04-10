@@ -19,7 +19,7 @@ import {
 } from './procedural';
 import type { CelestialBody } from './types/system';
 import type { SolarSimUserData } from './types';
-import { createBelt } from './debris';
+import { createBelt, type BeltSystemConfig } from './debris';
 import { setupControls, setupInteraction, type InteractionResult } from './input';
 import { injectSkeletons } from './utils/SkeletonUtils';
 import { InstanceRegistry } from './instancing';
@@ -225,7 +225,7 @@ async function buildSystemChunks(planetData: CelestialBody[], textureLoader: Ext
 
         chunk.forEach(config => {
             if (config.type === 'Belt') {
-                const belt = createBelt(config as any);
+                const belt = createBelt(config as BeltSystemConfig);
                 scene.add(belt);
                 belts.push(belt);
                 return;
@@ -252,6 +252,38 @@ async function buildSystemChunks(planetData: CelestialBody[], textureLoader: Ext
     }
 }
 
+function initDOMUI(): void {
+    const navList = document.getElementById('nav-list');
+    if (navList) {
+        injectSkeletons(navList, 5, { height: '32px' }, 'nav-btn');
+    }
+}
+
+function createLoadingManager(initStatus: { failed: boolean }): THREE.LoadingManager {
+    const manager = new THREE.LoadingManager();
+    manager.onLoad = function (): void {
+        if (initStatus.failed) return;
+        const screen = document.getElementById('loading-screen');
+        if (screen) screen.setAttribute('aria-hidden', 'true');
+    };
+    return manager;
+}
+
+function processLazyLoadQueue(textureLoader: ExtendedTextureLoader, initStatus: { failed: boolean }): void {
+    if (textureLoader.lazyLoadQueue && textureLoader.lazyLoadQueue.length > 0) {
+        setTimeout(() => {
+            if (initStatus.failed || !textureLoader.lazyLoadQueue) return;
+            textureLoader.lazyLoadQueue.forEach(item => {
+                const tex = textureLoader.load(item.url);
+                item.material.map = tex;
+                item.material.color.setHex(0xffffff);
+                item.material.needsUpdate = true;
+            });
+            textureLoader.lazyLoadQueue = [];
+        }, LAZY_LOAD_DELAY);
+    }
+}
+
 /**
  * Initializes the entire application state and kicks off the render loop.
  */
@@ -266,21 +298,12 @@ export async function init(): Promise<void> {
 
     initThreeJSEnvironment();
     initLighting();
+    initDOMUI();
 
-    const navList = document.getElementById('nav-list');
-    if (navList) {
-        injectSkeletons(navList, 5, { height: '32px' }, 'nav-btn');
-    }
-
-    let initFailed = false;
-    const manager = new THREE.LoadingManager();
-    manager.onLoad = function (): void {
-        if (initFailed) return;
-        const screen = document.getElementById('loading-screen');
-        if (screen) screen.setAttribute('aria-hidden', 'true');
-    };
-
+    const initStatus = { failed: false };
+    const manager = createLoadingManager(initStatus);
     const textureLoader = initManagers(manager);
+    
     initInitialObjects(textureLoader);
 
     lastFrameTime = performance.now();
@@ -298,24 +321,12 @@ export async function init(): Promise<void> {
             if (group.mesh) interactionTargets.push(group.mesh);
         });
     } catch (error) {
-        initFailed = true;
+        initStatus.failed = true;
         throw error;
     }
 
     setupInteractionsAndUI(planetData);
-
-    if (textureLoader.lazyLoadQueue && textureLoader.lazyLoadQueue.length > 0) {
-        setTimeout(() => {
-            if (initFailed || !textureLoader.lazyLoadQueue) return;
-            textureLoader.lazyLoadQueue.forEach(item => {
-                const tex = textureLoader.load(item.url);
-                item.material.map = tex;
-                item.material.color.setHex(0xffffff);
-                item.material.needsUpdate = true;
-            });
-            textureLoader.lazyLoadQueue = [];
-        }, LAZY_LOAD_DELAY);
-    }
+    processLazyLoadQueue(textureLoader, initStatus);
 
     window.addEventListener('resize', onWindowResize);
     lastFrameTime = performance.now();
@@ -573,14 +584,28 @@ function updatePhysics(dt: number): void {
             _worldPos.copy(_localPos);
 
             if (obj.parent) {
-                getOrbitalPosition(obj.parent, simulationTime, _parentPosPhys);
+                if ((obj.parent as any)._posCache) {
+                    _parentPosPhys.copy((obj.parent as any)._posCache);
+                } else {
+                    getOrbitalPosition(obj.parent, simulationTime, _parentPosPhys);
+                }
                 _worldPos.add(_parentPosPhys);
             }
 
+            if (!(physics as any)._posCache) (physics as any)._posCache = new THREE.Vector3();
+            (physics as any)._posCache.copy(_worldPos);
+
             physicsToRender(_worldPos, _renderPos);
 
+            if (!(physics as any)._renderPosCache) (physics as any)._renderPosCache = new THREE.Vector3();
+            (physics as any)._renderPosCache.copy(_renderPos);
+
             if (obj.parent) {
-                physicsToRender(_parentPosPhys, _parentPosRender);
+                if ((obj.parent as any)._renderPosCache) {
+                    _parentPosRender.copy((obj.parent as any)._renderPosCache);
+                } else {
+                    physicsToRender(_parentPosPhys, _parentPosRender);
+                }
                 obj.pivot.position.copy(_renderPos).sub(_parentPosRender);
             } else {
                 obj.pivot.position.copy(_renderPos);
