@@ -271,8 +271,8 @@ For asteroid belts and other debris fields, the configuration uses a `distributi
 | `distribution.minA/maxA` | Number | Range for Semi-major axis (AU). |
 | `distribution.minE/maxE` | Number | Range for Eccentricity. |
 | `distribution.minI/maxI` | Number | Range for Inclination (degrees). |
-| `distribution.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
 | `visual` | Object | **Visual properties**: |
+| `visual.isSpherical`| Bool | (Optional) If true, generates a spherical cloud (Oort) instead of a disk. |
 | `visual.count` | Number | Number of particles to generate. |
 | `visual.color` | String | Hex color of the particles. |
 | `visual.size` | Number | Size of each particle. |
@@ -283,14 +283,14 @@ For asteroid belts and other debris fields, the configuration uses a `distributi
 ### 1. Prerequisites
 
 - **Node.js** (v18 or higher)
-- **npm** (comes with Node.js)
+- **pnpm**
 
 ### 2. Setup
 
 Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 Download textures (if `textures/` is empty):
@@ -302,7 +302,7 @@ python3 download_textures.py
 ### 3. Start Development Server
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 ### 4. View
@@ -314,7 +314,7 @@ Open your browser to: `http://localhost:5173`
 To build the project for deployment:
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 The output will be in the `dist/` directory.
@@ -327,25 +327,34 @@ The project uses **Playwright** for E2E testing and **Vitest** for unit testing.
 
 ### 1. End-to-End Tests (Playwright)
 
+> **Note:** Playwright tests are prone to timeout or `ERR_CONNECTION_REFUSED` under high concurrency due to sandbox resource limits. Run `npx playwright install` to fix missing browser binaries, manually start the Vite dev server (`pnpm run dev`), and limit concurrency (e.g., `npx playwright test --workers=2`).
+
 ```bash
 # Install browsers first
 npx playwright install
 
 # Run all E2E tests
-npm run test
+pnpm run test
 
 # Run tests with UI for debugging
-npm run test:ui
+pnpm run test:ui
 
 # Run tests in headed mode
-npm run test:headed
+pnpm run test:headed
 ```
 
 ### 2. Unit Tests (Vitest)
 
 ```bash
 # Run unit tests
-npm run test:unit
+pnpm run test:unit --run
+```
+
+### 3. Python Tests
+
+```bash
+# Run python tests for the texture downloader
+python3 -m unittest discover tests
 ```
 
 ## Environment Variables
@@ -396,7 +405,7 @@ The application is designed to be accessible:
 
 ### Textures not loading?
 
-- Ensure you are running the project via `npm run dev` or a proper web server.
+- Ensure you are running the project via `pnpm run dev` or a proper web server.
 - Check the console for 404 errors; you may need to run `python3 download_textures.py` to fetch assets.
 
 ### Performance Lag?

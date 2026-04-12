@@ -22,7 +22,7 @@ The project uses **Vite** for building and serving the application.
 ### Prerequisites
 
 - **Node.js** (v18+)
-- **npm**
+- **pnpm**
 
 ### Setup
 
@@ -30,7 +30,7 @@ The project uses **Vite** for building and serving the application.
 2. **Install Dependencies**:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Download Textures** (Required for first run):
@@ -44,7 +44,7 @@ The project uses **Vite** for building and serving the application.
 4. **Start Development Server**:
 
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
 5. **Open in Browser**:
@@ -172,6 +172,7 @@ Understanding how `system.json` turns into a 3D orbit:
   - Throttle expensive operations in the render loop (use `frameCount`).
   - Use `Map` for O(1) performance instead of array `.find()` for frequent lookups.
   - Use `DocumentFragment` when appending multiple elements to the DOM to prevent layout thrashing.
+  - Use `.getX(i)`, `.getY(i)`, `.getZ(i)` instead of allocating intermediate `THREE.Vector3` objects when iterating over `THREE.BufferAttribute` data.
 
 ### 3. CSS & Design
 
@@ -242,10 +243,10 @@ Tests are organized by type:
 
 ### 3. Running Tests
 
-- **E2E**: `npm run test` (runs all Playwright tests).
-- **Headed**: `npm run test:headed` (runs tests in a visible browser).
-- **Unit**: `npm run test:unit` (runs Vitest).
-- **Debug**: `npm run test:ui` (opens Playwright UI).
+- **E2E**: `pnpm run test` (runs all Playwright tests).
+- **Headed**: `pnpm run test:headed` (runs tests in a visible browser).
+- **Unit**: `pnpm run test:unit --run` (runs Vitest).
+- **Debug**: `pnpm run test:ui` (opens Playwright UI).
 - Use the **Playwright Report** (`npx playwright show-report`) to analyze failures.
 
 ---
