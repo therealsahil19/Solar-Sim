@@ -15,11 +15,11 @@ Solar-Sim is a 3D solar system simulation built with TypeScript and Three.js. It
 
 ## How to run
 
-Install dependencies and start the dev server:
+Install dependencies and start the dev server (strictly use `pnpm`, not `npm` or `yarn`):
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Open the browser to <http://localhost:5173>
@@ -47,6 +47,7 @@ Orbit/trail logic is heavily optimized; be conservative when changing those file
 Configuration changes (e.g., orbital parameters, colors, textures) should mostly be done through `system.json`, not hard-coding in TS.
 For high-frequency DOM insertions, we use `DocumentFragment`. For fast lookups (e.g., mesh by name), we use `Map` for O(1) performance instead of array iteration.
 Initialization errors throw explicit `Error` objects instead of using silent `console.error` logs, enabling proper error boundaries.
+The project's `tsconfig.json` enables `"noUncheckedIndexedAccess": true", mandating that all array index accesses must handle potential `undefined` results (e.g., using nullish coalescing `??` or existence checks).
 
 ## Jules-specific preferences
 

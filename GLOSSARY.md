@@ -16,6 +16,9 @@ This document defines the domain-specific terminology, architectural patterns, a
 * **Pre/Post-Render Split:** separating physics updates from trail rendering to prevent CPU stalls.
 * **Chunked Initialization:** Processing heavy scene graph generation asynchronously using `requestAnimationFrame`, preventing main-thread locks and enabling immediate skeleton UI.
 * **Core Code Optimizations:** Utilizing `Map` for O(1) lookups instead of array iterations, `DocumentFragment` for DOM batching, and avoiding `for...in` loop `delete` operations to preserve V8 optimizations.
+* **WeakMap Caching:** Using a per-frame `WeakMap` to store generated orbital vectors, reducing redundant physics calculations across hierarchical parent bodies.
+* **Direct Matrix Access:** Directly accessing `THREE.Matrix4` array components (e.g. `elements[12]`) to extract translation coordinates instead of running `setFromMatrixPosition`, accelerating performance by 1.4-1.8x.
+* **Object Pooling:** Storing objects in persistent temporary properties (like `_tempVec2` in `TrailManager`) to avoid per-frame allocations during the render loop.
 
 ### Sentinel 🛡️
 
@@ -95,6 +98,9 @@ This document defines the domain-specific terminology, architectural patterns, a
 2. **Kuiper Log (30-50 AU):** Mild logarithmic compression for the Kuiper belt.
 3. **Oort Log (>50 AU):** Aggressive compression for far objects like the Oort Cloud.
 **Why:** Maintains visibility of distant objects (Pluto, Oort Cloud) without making the inner system too small to see.
+
+**Inverse Mapping:**
+The `renderToPhysicsEstimate` function inverses this compression logic, mapping multi-zone scaled 3D visual coordinates back to actual Astronomical Units (AU), essential for operations like dynamic Raycasting.
 
 ---
 

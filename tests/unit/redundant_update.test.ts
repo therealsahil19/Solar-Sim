@@ -76,7 +76,7 @@ describe('Redundant Scene Update Optimization', () => {
 
     beforeEach(async () => {
         vi.resetModules();
-        document.body.innerHTML = '<div id="nav-list"></div><div id="loading-screen"></div><div id="info-panel"></div><div id="settings-panel"></div><div id="nav-sidebar"></div><dialog id="welcome-modal"></dialog>';
+        document.body.innerHTML = '<div id="nav-list"></div><div id="loading-screen"></div><div id="info-panel"></div><div id="info-name"></div><div id="info-type"></div><div id="info-desc"></div><div id="info-radius"></div><div id="info-distance"></div><div id="info-dist-sun"></div><div id="info-dist-earth"></div><button id="btn-follow"></button><div id="settings-panel"></div><div id="nav-sidebar"></div><dialog id="welcome-modal"></dialog><input id="nav-search" /><button id="btn-close-nav"></button><button id="btn-planets"></button><button id="btn-settings"></button><button id="btn-close-settings"></button>';
 
         HTMLCanvasElement.prototype.getContext = vi.fn() as any;
 

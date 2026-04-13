@@ -14,7 +14,13 @@ This document provides a summary of the test execution status, an analysis of te
   - Logic/Managers: `SettingsManager`, `ThemeManager`, `LabelManager`, `ToastManager`
   - Performance: `physics_perf.test.ts`, `instancing_perf.test.ts`, `orbit_perf.test.ts`, `texture_caching_perf.test.ts`, `trails_perf.test.ts`
   - Optimizations: `redundant_update.test.ts`, `matrix_perf.test.ts`, `instancing_optimization.test.ts`
-  - Core Modules: `physics.test.ts`, `debris.test.ts`, `input.test.ts`, `procedural_starfield.test.ts`
+  - Utilities: `ThreeUtils.test.ts` (verifies translation extraction, nested hierarchies, rotation/scale isolation, and nullish coalescing fallback logic)
+  - Core Modules: `physics.test.ts` (including `getOrbitalPosition` zero semi-major axis edge cases), `debris.test.ts`, `input.test.ts`, `procedural_starfield.test.ts`
+
+### Python Unit Tests
+
+- **Status:** Successful.
+- **Coverage:** Tests located in `tests/test_download_textures.py` verify connection timeouts, SHA-256 hash mismatches, and automatic cleanup of partial/corrupted files during texture downloading.
 
 ### End-to-End Tests (Playwright)
 
@@ -39,7 +45,6 @@ The existing testing suite is extremely detailed, especially regarding performan
 2. **Three.js Mocking:** The unhandled error regarding `scene.updateMatrixWorld` suggests that `main.test.ts` could benefit from better stubs or mocks for `THREE.Scene` elements so that testing the conductor does not crash in a Node/JSDOM context.
 3. **WebGL Error Handling:** Ensure the application correctly identifies missing WebGL support and renders a fallback or a warning.
 4. **Mobile Touch Simulation:** Playwright tests are comprehensive for desktop workflows, but testing touch inputs (drag/pinch-to-zoom) specifically for `OrbitControls` on mobile devices should be considered.
-5. **Python Script tests:** Currently there is a python script `download_textures.py`. Running `python3 -m unittest discover tests` reported 0 tests executed. Even though the README notes a test suite exists, there are no python files containing unit tests for this downloader. Consider adding a python test to assert connection timeouts are gracefully handled.
 
 ## Test Efficiency
 
