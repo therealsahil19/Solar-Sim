@@ -16,6 +16,10 @@ This document defines the domain-specific terminology, architectural patterns, a
 * **Pre/Post-Render Split:** separating physics updates from trail rendering to prevent CPU stalls.
 * **Chunked Initialization:** Processing heavy scene graph generation asynchronously using `requestAnimationFrame`, preventing main-thread locks and enabling immediate skeleton UI.
 * **Core Code Optimizations:** Utilizing `Map` for O(1) lookups instead of array iterations, `DocumentFragment` for DOM batching, and avoiding `for...in` loop `delete` operations to preserve V8 optimizations.
+* **Per-Frame Caching:** Using `WeakMap` to reuse computed math (e.g. orbit positions) within the same frame across multiple components.
+* **Direct Property Access:** Eliminating `THREE.Vector3` garbage collection by accessing raw array data (e.g. `elements[12]` on a matrix or `.getX(i)` on a BufferAttribute).
+* **Object Pooling:** Using static temporary vectors (`_tempVec2`) for math operations that run thousands of times per frame.
+* **DOM Caching:** Storing localized references to DOM nodes to eliminate repetitive `getElementById` calls in the render loop.
 
 ### Sentinel 🛡️
 
