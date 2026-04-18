@@ -119,4 +119,16 @@ describe('ThemeManager', () => {
         // Should have tried to read
         expect(getItemSpy).toHaveBeenCalledWith('theme');
     });
+
+    it('should return null from getStoredTheme when localStorage.getItem throws', () => {
+        const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new Error('Simulated error');
+        });
+
+        themeManager = new ThemeManager();
+        const result = (themeManager as any).getStoredTheme();
+
+        expect(result).toBeNull();
+        expect(getItemSpy).toHaveBeenCalledWith('theme');
+    });
 });
