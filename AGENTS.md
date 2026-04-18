@@ -18,8 +18,8 @@ Solar-Sim is a 3D solar system simulation built with TypeScript and Three.js. It
 Install dependencies and start the dev server:
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Open the browser to <http://localhost:5173>
