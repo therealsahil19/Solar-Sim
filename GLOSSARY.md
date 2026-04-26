@@ -110,6 +110,11 @@ This document defines the domain-specific terminology, architectural patterns, a
 **Definition:** Passing dependencies (like `scene`, `camera`, `controls`) into a module/function rather than having that module import a global singleton.
 **Usage:** `src/input.ts` receives the scene context during initialization.
 
+### Amortized Search
+
+**Definition:** Distributing a heavy computation over multiple frames instead of executing it entirely on a single frame.
+**Usage:** In `src/main.ts`, the `closestObjectCache` search distributes the planet distance evaluation over successive frames using a `closestSearchIndex` to prevent CPU spikes, maintaining a rolling update cycle rather than throttling the entire operation.
+
 ### Throttling
 
 **Definition:** Limiting how often a function executes.

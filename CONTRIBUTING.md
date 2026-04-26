@@ -129,6 +129,10 @@ graph TD
 
 ### State Management
 
+### UI Component Strictness
+
+UI components in `src/components/` follow a strict error-handling strategy for DOM dependencies: constructors must verify the existence of all required elements and throw descriptive `Error`s if any are missing. This requires JSDOM tests to fully mock these HTML elements in `document.body.innerHTML` to prevent initialization failures.
+
 We avoid global state objects. Instead, we use dedicated **Managers** (`src/managers/`) that follow the Observer pattern.
 
 | Manager | Responsibility | Persistence |
@@ -172,6 +176,7 @@ Understanding how `system.json` turns into a 3D orbit:
   - Throttle expensive operations in the render loop (use `frameCount`).
   - Use `Map` for O(1) performance instead of array `.find()` for frequent lookups.
   - Use `DocumentFragment` when appending multiple elements to the DOM to prevent layout thrashing.
+  - The codebase prefers the modern `Element.remove()` method over the legacy `parentNode.removeChild(element)` pattern for removing DOM elements; this approach handles the absence of a parent node gracefully without explicit checks.
   - Use `.getX(i)`, `.getY(i)`, `.getZ(i)` instead of allocating intermediate `THREE.Vector3` objects when iterating over `THREE.BufferAttribute` data.
 
 ### 3. CSS & Design
@@ -233,6 +238,7 @@ Tests are organized by type:
 ### 2. Best Practices
 
 - **Isolation**: Each `test()` block should ideally be independent.
+- **Testing Private Methods**: When unit testing private methods in TypeScript classes using Vitest, the project convention permits accessing them by casting the class instance to `any` (e.g., `(instance as any).privateMethod()`).
 - **Wait for Loading**: Always wait for the `#loading-screen` to be hidden before interacting with the simulation.
 
   ```typescript

@@ -18,7 +18,9 @@ This document provides a summary of the test execution status, an analysis of te
 
 ### End-to-End Tests (Playwright)
 
-- **Status:** Successful. All previous flakes have been resolved.
+- **Status:** Mostly successful, though tests are prone to timeout or `ERR_CONNECTION_REFUSED` under high concurrency due to sandbox resource limits.
+  - **Timeouts Observed:** `tests/e2e/camera-controls.spec.js` (in the 'should follow selected object' test) and `tests/e2e/navigation-sidebar.spec.js` (in the 'should filter planets via search' test) have timed out under load.
+  - **Skipped tests:** `tests/e2e/ux-upgrade.spec.js` contains a skipped test for mobile viewport handling.
 - **Recent Fixes Documented:**
   - `tests/e2e/camera-controls.spec.js` timed out historically but has now been stabilized with proper `waitFor` assertions rather than fixed timeouts.
 
