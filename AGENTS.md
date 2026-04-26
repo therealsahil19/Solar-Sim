@@ -6,6 +6,7 @@ Solar-Sim is a 3D solar system simulation built with TypeScript and Three.js. It
 
 ## Stack
 
+- **Package Manager**: pnpm (Only `pnpm` is permitted; do not use `npm` or `yarn`)
 - **Language**: TypeScript
 - **Build Tool**: Vite
 - **Rendering**: Three.js
@@ -46,7 +47,8 @@ Label collision logic is optimized via a spatial grid in `LabelManager`.
 Orbit/trail logic is heavily optimized; be conservative when changing those files.
 Configuration changes (e.g., orbital parameters, colors, textures) should mostly be done through `system.json`, not hard-coding in TS.
 For high-frequency DOM insertions, we use `DocumentFragment`. For fast lookups (e.g., mesh by name), we use `Map` for O(1) performance instead of array iteration.
-Initialization errors throw explicit `Error` objects instead of using silent `console.error` logs, enabling proper error boundaries.
+Initialization errors throw explicit `Error` objects instead of using silent `console.error` logs, enabling proper error boundaries. In testing, this necessitates that UI components have all required DOM elements fully mocked in `document.body.innerHTML` via JSDOM to prevent initialization failures.
+Vitest is configured to only run tests inside `tests/unit/`, actively ignoring test scripts placed in the root `tests/` directory (e.g. Python tests).
 
 ## Jules-specific preferences
 

@@ -91,6 +91,8 @@ The application enforces strict security measures:
 
 ## Project Structure
 
+- **`.jules/`**: Contains internal agent workspace data, including a nested `screenshots/` directory.
+
 The project is organized into a modular architecture:
 
 ```
@@ -283,7 +285,7 @@ For asteroid belts and other debris fields, the configuration uses a `distributi
 ### 1. Prerequisites
 
 - **Node.js** (v18 or higher)
-- **pnpm**
+- **pnpm** (The project explicitly forbids using `npm` or `yarn`; only `pnpm` must be used for package management, script execution, and building)
 
 ### 2. Setup
 
