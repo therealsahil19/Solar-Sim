@@ -66,6 +66,68 @@ describe('SettingsManager', () => {
         });
     });
 
+    describe('validateSettings', () => {
+        beforeEach(() => {
+            settingsManager = new SettingsManager();
+        });
+
+        it('should validate and return valid settings', () => {
+            const input = {
+                textures: false,
+                speed: 2.5,
+                theme: 'oled'
+            };
+            const validated = (settingsManager as any).validateSettings(input);
+            expect(validated).toEqual(input);
+        });
+
+        it('should filter out unknown keys', () => {
+            const input = {
+                textures: false,
+                unknownKey: 'value'
+            };
+            const validated = (settingsManager as any).validateSettings(input);
+            expect(validated).toEqual({ textures: false });
+            expect(validated).not.toHaveProperty('unknownKey');
+        });
+
+        it('should filter out keys with invalid types', () => {
+            const input = {
+                textures: 'not-a-boolean', // should be boolean
+                speed: 'not-a-number',    // should be number
+                orbits: true               // valid
+            };
+            const validated = (settingsManager as any).validateSettings(input);
+            expect(validated).toEqual({ orbits: true });
+        });
+
+        it('should return an empty object for empty input', () => {
+            const validated = (settingsManager as any).validateSettings({});
+            expect(validated).toEqual({});
+        });
+
+        it('should handle null or non-object values gracefully (via parsed Record type)', () => {
+            // Even though types say Record<string, unknown>, at runtime JSON.parse could return anything
+            // but the loop uses Object.keys(DEFAULT_SETTINGS), so it's safe if input is an object.
+            const validated = (settingsManager as any).validateSettings({ speed: null });
+            expect(validated).toEqual({});
+        });
+
+        it('should handle malformed data in localStorage by falling back to defaults', () => {
+            // This test is migrated from the deleted settings_manager.test.ts
+            localStorage.setItem('solar-sim-settings', JSON.stringify({
+                'textures': 'not-a-boolean',
+                'speed': '123'
+            }));
+
+            settingsManager = new SettingsManager();
+
+            // It should use defaults instead of types crashing
+            expect(settingsManager.get('textures')).toBe(true);
+            expect(settingsManager.get('speed')).toBe(1.0);
+        });
+    });
+
     describe('Getters and Setters', () => {
         beforeEach(() => {
             settingsManager = new SettingsManager();
@@ -147,6 +209,19 @@ describe('SettingsManager', () => {
 
             expect(errorListener).toHaveBeenCalled();
             // In synchronous mode, if error is thrown, the rest might not be called in standard iteration unless loop caught it
+        });
+
+        it('should propagate errors from notifyListeners', () => {
+            // This test is migrated from the deleted settings_manager.test.ts
+            const listener = vi.fn().mockImplementation(() => {
+                throw new Error('Listener crashed');
+            });
+            settingsManager.subscribe(listener);
+
+            // The manager rethrows the error synchronously when mutating settings
+            expect(() => {
+                settingsManager.set('textures', false);
+            }).toThrow('Listener crashed');
         });
     });
 
