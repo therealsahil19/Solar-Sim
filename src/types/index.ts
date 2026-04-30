@@ -147,7 +147,7 @@ declare global {
         controls?: import('three/addons/controls/OrbitControls.js').OrbitControls | null;
         __SKIP_INIT__?: boolean;
         scene?: import('three').Scene;
-        THREE?: any;
+        THREE?: typeof import('three');
     }
 }
 
