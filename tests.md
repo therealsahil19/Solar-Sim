@@ -6,10 +6,8 @@ This document provides a summary of the test execution status, an analysis of te
 
 ### Unit Tests (Vitest)
 
-- **Status:** Passes locally, however one unhandled exception occurred during `tests/unit/main.test.ts`.
-- **Failure Documented:**
-  - `TypeError: scene.updateMatrixWorld is not a function`
-  - **Context:** The `main.test.ts` file calls the `updatePhysics` method that attempts to invoke `updateMatrixWorld()`. Because the unit test environment uses `jsdom`, certain Three.js canvas or renderer methods might be missing.
+- **Status:** Passes locally.
+
 - **Passed Areas:**
   - Logic/Managers: `SettingsManager`, `ThemeManager`, `LabelManager`, `ToastManager`
   - Performance: `physics_perf.test.ts`, `instancing_perf.test.ts`, `orbit_perf.test.ts`, `texture_caching_perf.test.ts`, `trails_perf.test.ts`
@@ -36,10 +34,9 @@ The existing testing suite is extremely detailed, especially regarding performan
 ### What is missing / Recommendations for testing?
 
 1. **Network & Error State Edge Cases:** E2E or Unit Tests verifying how the UI reacts when `system.json` is malformed, missing, or returns a 404/500 error. A test exists in `ux-upgrade.spec.js`, but it could be expanded in the Unit testing layer using mocks.
-2. **Three.js Mocking:** The unhandled error regarding `scene.updateMatrixWorld` suggests that `main.test.ts` could benefit from better stubs or mocks for `THREE.Scene` elements so that testing the conductor does not crash in a Node/JSDOM context.
-3. **WebGL Error Handling:** Ensure the application correctly identifies missing WebGL support and renders a fallback or a warning.
-4. **Mobile Touch Simulation:** Playwright tests are comprehensive for desktop workflows, but testing touch inputs (drag/pinch-to-zoom) specifically for `OrbitControls` on mobile devices should be considered.
-5. **Python Script tests:** `tests/test_download_textures.py` exists to verify `download_textures.py`. It tests connection timeouts, SHA-256 hash mismatches, and automatic cleanup of partial/corrupted files. It runs successfully via `python3 -m unittest discover tests`.
+2. **WebGL Error Handling:** Ensure the application correctly identifies missing WebGL support and renders a fallback or a warning.
+3. **Mobile Touch Simulation:** Playwright tests are comprehensive for desktop workflows, but testing touch inputs (drag/pinch-to-zoom) specifically for `OrbitControls` on mobile devices should be considered.
+4. **Python Script tests:** `tests/test_download_textures.py` exists to verify `download_textures.py`. It tests connection timeouts, SHA-256 hash mismatches, and automatic cleanup of partial/corrupted files. It runs successfully via `python3 -m unittest discover tests`.
 
 ## Test Efficiency
 
