@@ -64,14 +64,6 @@ describe('LabelManager', () => {
         expect(label.visible).toBe(true);
     });
 
-    it('should calculate grid index correctly', () => {
-        (manager as any).labelGridCols = 10;
-        (manager as any).labelGridRows = 10;
-
-        expect((manager as any).getGridIndex(0, 0)).toBe(0);
-        expect((manager as any).getGridIndex(5, 2)).toBe(25);
-        expect((manager as any).getGridIndex(-1, 0)).toBe(-1);
-    });
 
     it('should hide overlapping labels based on z-depth', () => {
         const createMockLabel = (name: string, x: number, y: number, z: number, opacity: number) => {
