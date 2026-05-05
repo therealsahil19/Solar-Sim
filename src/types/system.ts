@@ -6,6 +6,8 @@
  * dwarf planets, and other celestial bodies in the simulation.
  */
 
+import type * as THREE from 'three';
+
 /**
  * Orbital parameters using Keplerian elements.
  * Used for calculating accurate orbital positions.
@@ -35,6 +37,8 @@ export interface OrbitalParameters {
     _sinOm?: number;
     _cosI?: number;
     _sinI?: number;
+    _posCache?: THREE.Vector3;
+    _renderPosCache?: THREE.Vector3;
 }
 
 /**

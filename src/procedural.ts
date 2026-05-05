@@ -498,8 +498,12 @@ export function createSystem(
     parentBody: CelestialBody | null = null
 ): SystemResult {
     // ⚡ Bolt Optimization: Pre-calculate period if missing to avoid repeated Math.pow() in loop
-    if (data.physics && data.physics.period === undefined) {
-        data.physics.period = Math.pow(data.physics.a, 1.5);
+    if (data.physics) {
+        if (data.physics.period === undefined) {
+            data.physics.period = Math.pow(data.physics.a, 1.5);
+        }
+        data.physics._posCache = new THREE.Vector3();
+        data.physics._renderPosCache = new THREE.Vector3();
     }
 
     // Pivot & Body Container

@@ -584,25 +584,24 @@ function updatePhysics(dt: number): void {
             _worldPos.copy(_localPos);
 
             if (obj.parent) {
-                if ((obj.parent as any)._posCache) {
-                    _parentPosPhys.copy((obj.parent as any)._posCache);
+                // Optimization: Re-use cached world positions when available.
+                // Note: Parents (like the Sun) might not have orbital parameters/caches.
+                if (obj.parent._posCache) {
+                    _parentPosPhys.copy(obj.parent._posCache);
                 } else {
                     getOrbitalPosition(obj.parent, simulationTime, _parentPosPhys);
                 }
                 _worldPos.add(_parentPosPhys);
             }
 
-            if (!(physics as any)._posCache) (physics as any)._posCache = new THREE.Vector3();
-            (physics as any)._posCache.copy(_worldPos);
-
+            // Always update our own cache for children to use
+            physics._posCache?.copy(_worldPos);
             physicsToRender(_worldPos, _renderPos);
-
-            if (!(physics as any)._renderPosCache) (physics as any)._renderPosCache = new THREE.Vector3();
-            (physics as any)._renderPosCache.copy(_renderPos);
+            physics._renderPosCache?.copy(_renderPos);
 
             if (obj.parent) {
-                if ((obj.parent as any)._renderPosCache) {
-                    _parentPosRender.copy((obj.parent as any)._renderPosCache);
+                if (obj.parent._renderPosCache) {
+                    _parentPosRender.copy(obj.parent._renderPosCache);
                 } else {
                     physicsToRender(_parentPosPhys, _parentPosRender);
                 }
